@@ -1,5 +1,20 @@
 # RA-H Open Source Porting Notes (2025-12-09)
 
+## Agent Handover
+
+**What is this repo?** This is `ra-h_os`, the open source mirror of the private `ra-h` application. It's a BYO-key (bring your own API keys) version without Mac packaging, Supabase auth, or subscription features.
+
+**Quick context:**
+- Read `CLAUDE.md` for system overview
+- Read `README.md` for setup instructions
+- Read `docs/9_open-source.md` for sync process with private repo
+
+**Current status:** Initial commit complete (2025-12-15). Repo is currently private on GitHub. Before making public, we need a more thorough audit to ensure no sensitive data, credentials, or private references remain. Review all docs, scripts, and code comments for anything that shouldn't be public.
+
+**Sync process:** Features are built in the private `ra-h` repo first, then synced here via Step 8 of the workflow (see private repo's `docs/development/process/1_workflow.md`).
+
+---
+
 This document captures every change required to bring the private RA-H repo into a runnable, local-only open-source build.
 
 ## 1. Repo Copy & Cleanup
