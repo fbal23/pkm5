@@ -170,35 +170,57 @@ export class ChunkService {
   // PostgreSQL path removed in SQLite-only consolidation
 
   private async searchChunksSQLite(
-    queryEmbedding: number[], 
+    queryEmbedding: number[],
     similarityThreshold = 0.5,
     matchCount = 5,
     nodeIds?: number[]
   ): Promise<Array<Chunk & { similarity: number }>> {
     const sqlite = getSQLiteClient();
-    
-    // Step 1: Determine vector search limit - more conservative approach
-    let vectorLimit = 50; // Start smaller for efficiency
-    
-    if (nodeIds && nodeIds.length > 0) {
-      // When searching specific nodes, get exact count and use reasonable multiplier
-      const candidateCountQuery = `SELECT COUNT(*) as count FROM chunks WHERE node_id IN (${nodeIds.map(() => '?').join(',')})`;
-      const candidateResult = sqlite.query<{count: number}>(candidateCountQuery, nodeIds);
-      const candidateCount = Number(candidateResult.rows[0].count);
-      
-      // Use 2x the candidate count but cap at reasonable limits
-      vectorLimit = Math.min(Math.max(candidateCount * 2, 50), 1000);
-      console.log(`🔍 Node-scoped search: ${candidateCount} candidates, using vector limit ${vectorLimit}`);
-    } else {
-      // For global search, use adaptive limit based on expected results
-      vectorLimit = Math.max(matchCount * 10, 50);
-    }
-    
     const startTime = Date.now();
-    
-    // Step 2: Use CTE-based query to avoid UNION ALL explosion
     const vectorString = `[${queryEmbedding.join(',')}]`;
-    let query = `
+
+    // When searching specific nodes, first get their chunk_ids to scope the vector search
+    if (nodeIds && nodeIds.length > 0) {
+      // Get chunk IDs for the target nodes
+      const chunkIdsQuery = `SELECT id FROM chunks WHERE node_id IN (${nodeIds.map(() => '?').join(',')})`;
+      const chunkIdsResult = sqlite.query<{id: number}>(chunkIdsQuery, nodeIds);
+      const chunkIds = chunkIdsResult.rows.map(r => r.id);
+
+      if (chunkIds.length === 0) {
+        console.log(`🔍 Node-scoped search: no chunks found for nodes ${nodeIds.join(', ')}`);
+        return [];
+      }
+
+      console.log(`🔍 Node-scoped search: ${chunkIds.length} chunks in nodes ${nodeIds.join(', ')}`);
+
+      // Search ONLY within those chunks using rowid filter
+      const query = `
+        SELECT c.*, (1.0 / (1.0 + v.distance)) AS similarity
+        FROM vec_chunks v
+        JOIN chunks c ON c.id = v.chunk_id
+        WHERE v.embedding MATCH ?
+          AND v.chunk_id IN (${chunkIds.map(() => '?').join(',')})
+          AND (1.0 / (1.0 + v.distance)) >= ?
+        ORDER BY v.distance
+        LIMIT ?
+      `;
+
+      const params = [vectorString, ...chunkIds, similarityThreshold, matchCount];
+      const result = sqlite.query<Chunk & { similarity: number }>(query, params);
+      const searchTime = Date.now() - startTime;
+
+      console.log(`📊 Vector search (node-scoped): ${result.rows.length} chunks, threshold=${similarityThreshold}, time=${searchTime}ms`);
+      if (result.rows.length > 0) {
+        console.log(`🎯 Top result: chunk ${result.rows[0].id} (similarity: ${result.rows[0].similarity.toFixed(3)})`);
+      }
+
+      return result.rows;
+    }
+
+    // Global search (no node filter)
+    const vectorLimit = Math.max(matchCount * 10, 50);
+
+    const query = `
       WITH vector_results AS (
         SELECT chunk_id, distance
         FROM vec_chunks
@@ -209,36 +231,20 @@ export class ChunkService {
       SELECT c.*, (1.0 / (1.0 + vr.distance)) AS similarity
       FROM vector_results vr
       JOIN chunks c ON c.id = vr.chunk_id
+      WHERE (1.0 / (1.0 + vr.distance)) >= ?
+      ORDER BY similarity DESC
+      LIMIT ?
     `;
-    
-    const params: any[] = [vectorString, vectorLimit];
-    const conditions = [];
-    
-    // Node ID filter if provided
-    if (nodeIds && nodeIds.length > 0) {
-      conditions.push(`c.node_id IN (${nodeIds.map(() => '?').join(',')})`);
-      params.push(...nodeIds);
-    }
-    
-    // Similarity threshold filter
-    conditions.push(`(1.0 / (1.0 + vr.distance)) >= ?`);
-    params.push(similarityThreshold);
-    
-    if (conditions.length > 0) {
-      query += ` WHERE ${conditions.join(' AND ')}`;
-    }
 
-    query += ` ORDER BY similarity DESC LIMIT ?`;
-    params.push(matchCount);
-
+    const params = [vectorString, vectorLimit, similarityThreshold, matchCount];
     const result = sqlite.query<Chunk & { similarity: number }>(query, params);
     const searchTime = Date.now() - startTime;
-    
-    console.log(`📊 Vector search: ${result.rows.length}/${vectorLimit} chunks, threshold=${similarityThreshold}, time=${searchTime}ms`);
+
+    console.log(`📊 Vector search (global): ${result.rows.length}/${vectorLimit} chunks, threshold=${similarityThreshold}, time=${searchTime}ms`);
     if (result.rows.length > 0) {
       console.log(`🎯 Top result: chunk ${result.rows[0].id} (similarity: ${result.rows[0].similarity.toFixed(3)})`);
     }
-    
+
     return result.rows;
   }
 

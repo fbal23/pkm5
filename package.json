@@ -15,7 +15,10 @@
     "type-check": "tsc --noEmit",
     "setup": "npm install",
     "sqlite:backup": "bash scripts/database/sqlite-backup.sh",
-    "sqlite:restore": "bash scripts/database/sqlite-restore.sh"
+    "sqlite:restore": "bash scripts/database/sqlite-restore.sh",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "evals": "RAH_EVALS_LOG=1 tsx tests/evals/runner.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.27",
@@ -62,6 +65,8 @@
     "prettier": "^3.3.3",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.7.2"
+    "tsx": "^4.19.4",
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.4"
   }
 }

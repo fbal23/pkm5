@@ -75,7 +75,10 @@ export default function ThreePanelLayout() {
         content: node.content,
         dimensions: node.dimensions,
         created_at: node.created_at,
-        updated_at: node.updated_at
+        updated_at: node.updated_at,
+        chunk_status: node.chunk_status,
+        chunk: node.chunk,
+        metadata: node.metadata,
       }));
       setOpenTabsData(validNodes);
     } catch (error) {

@@ -12,6 +12,10 @@ interface RequestContext {
     openai?: string;
     anthropic?: string;
   };
+  helperName?: string;
+  evalDatasetId?: string;
+  evalScenarioId?: string;
+  evalChatSpanId?: string;
 }
 
 let currentContext: RequestContext = {};
@@ -26,11 +30,11 @@ export const RequestContext = {
       }
     });
   },
-  
+
   get(): RequestContext {
     return currentContext;
   },
-  
+
   clear() {
     currentContext = {};
   },
