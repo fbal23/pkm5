@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { isLocalMode } from '@/config/runtime';
 import { apiKeyService } from '@/services/storage/apiKeys';
 
@@ -30,6 +31,11 @@ const buttonStyle: React.CSSProperties = {
 export function LocalKeyGate({ children }: LocalKeyGateProps) {
   const isLocal = useMemo(() => isLocalMode(), []);
   const [hasKeys, setHasKeys] = useState(() => (!isLocal) || apiKeyService.hasUserKeys());
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isLocal) return;
@@ -47,46 +53,47 @@ export function LocalKeyGate({ children }: LocalKeyGateProps) {
   }
 
   const openApiKeySettings = () => {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'apikeys' } }));
-    }
+    window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'apikeys' } }));
   };
+
+  const popupContent = (
+    <div
+      style={{
+        position: 'fixed',
+        top: 24,
+        right: 24,
+        maxWidth: 420,
+        zIndex: 99999,
+        pointerEvents: 'auto'
+      }}
+    >
+      <div style={panelStyle}>
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ marginBottom: 8, fontSize: '20px' }}>Connect your AI keys</h2>
+          <p style={{ color: '#b0b8c3', lineHeight: 1.6 }}>
+            Local mode needs an OpenAI or Anthropic key. Add one under <strong>Settings → API Keys</strong>
+            to unlock the workspace.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button style={buttonStyle} onClick={openApiKeySettings}>
+            Open API Key Settings
+          </button>
+          <button
+            style={{ ...buttonStyle, background: '#1f2933', color: '#e5e7eb' }}
+            onClick={() => setHasKeys(true)}
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>
       {children}
-      <div
-        style={{
-          position: 'fixed',
-          top: 24,
-          right: 24,
-          maxWidth: 420,
-          zIndex: 9999
-        }}
-      >
-        <div style={panelStyle}>
-          <div style={{ marginBottom: 16 }}>
-            <h2 style={{ marginBottom: 8, fontSize: '20px' }}>Connect your AI keys</h2>
-            <p style={{ color: '#b0b8c3', lineHeight: 1.6 }}>
-              Local mode needs an OpenAI or Anthropic key. Add one under <strong>Settings → API Keys</strong>
-              to unlock the workspace.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button style={buttonStyle} onClick={() => {
-              openApiKeySettings();
-            }}>
-              Open API Key Settings
-            </button>
-            <button
-              style={{ ...buttonStyle, background: '#1f2933', color: '#e5e7eb' }}
-              onClick={() => setHasKeys(true)}
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      </div>
+      {mounted && createPortal(popupContent, document.body)}
     </>
   );
 }
