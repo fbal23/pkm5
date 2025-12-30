@@ -47,7 +47,9 @@ export function LocalKeyGate({ children }: LocalKeyGateProps) {
   }
 
   const openApiKeySettings = () => {
+    console.log('[LocalKeyGate] openApiKeySettings clicked');
     if (typeof window !== 'undefined') {
+      console.log('[LocalKeyGate] Dispatching settings:open event');
       window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'apikeys' } }));
     }
   };
@@ -80,7 +82,10 @@ export function LocalKeyGate({ children }: LocalKeyGateProps) {
             </button>
             <button
               style={{ ...buttonStyle, background: '#1f2933', color: '#e5e7eb' }}
-              onClick={() => setHasKeys(true)}
+              onClick={() => {
+                console.log('[LocalKeyGate] Dismiss clicked');
+                setHasKeys(true);
+              }}
             >
               Dismiss
             </button>
