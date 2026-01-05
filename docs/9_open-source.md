@@ -1,6 +1,8 @@
 # RA-H Open Source
 
-This is the open source, BYO-key (bring your own API keys) version of RA-H.
+**Full docs:** [ra-h.app/docs](https://ra-h.app/docs)
+
+This is the open source, BYO-key version of RA-H.
 
 ## What's Included
 
@@ -8,6 +10,7 @@ This is the open source, BYO-key (bring your own API keys) version of RA-H.
 - Local SQLite storage with vector search
 - Complete agent system (ra-h, mini-rah, wise-rah)
 - All tools and workflows
+- MCP server for external AI assistants
 - Settings panel with API key management
 
 ## What's Not Included
@@ -17,14 +20,14 @@ This is the open source, BYO-key (bring your own API keys) version of RA-H.
 - Subscription/payment system
 - Auto-updates
 
-## Relationship to Private Repo
+## Relationship to Main Repo
 
-This repo is a **mirror** of the private `ra-h` repository. Features are developed privately and synced here periodically.
+This repo is a mirror of the private `ra-h` repository. Features are developed privately and synced here.
 
 - **Contributions welcome** - See [CONTRIBUTING.md](../CONTRIBUTING.md)
-- **Bug reports** - Open an issue on GitHub
-- **Feature requests** - Open an issue; major features are typically built in the private repo first
+- **Bug reports** - Open an issue
+- **Feature requests** - Open an issue; major features typically built privately first
 
 ## Setup
 
-See the main [README.md](../README.md) for installation instructions.
+See [README.md](../README.md) for installation.
