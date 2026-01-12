@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { WorkflowRegistry } from '@/services/workflows/registry';
 import { getSQLiteClient } from '@/services/database/sqlite-client';
 import { AgentDelegationService } from '@/services/agents/delegation';
-import { WiseRAHExecutor } from '@/services/agents/wiseRAHExecutor';
+import { WorkflowExecutor } from '@/services/agents/workflowExecutor';
 import { RequestContext } from '@/services/context/requestContext';
 import { getAutoContextSummaries } from '@/services/context/autoContext';
 
@@ -105,7 +105,7 @@ ${nodeId ? `Target Node ID: ${nodeId}` : 'No specific node targeted (general wor
     });
 
     // Fire-and-forget execution so main ra-h stays responsive while workflow runs
-    void WiseRAHExecutor.execute({
+    void WorkflowExecutor.execute({
       sessionId: delegation.sessionId,
       task,
       context: contextLines,

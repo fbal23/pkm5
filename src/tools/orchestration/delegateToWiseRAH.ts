@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { AgentDelegationService } from '@/services/agents/delegation';
-import { WiseRAHExecutor } from '@/services/agents/wiseRAHExecutor';
+import { WorkflowExecutor } from '@/services/agents/workflowExecutor';
 import { RequestContext } from '@/services/context/requestContext';
 
 export const delegateToWiseRAHTool = tool({
@@ -25,7 +25,7 @@ export const delegateToWiseRAHTool = tool({
       supabaseToken: null,
     });
 
-    const execution = await WiseRAHExecutor.execute({
+    const execution = await WorkflowExecutor.execute({
       sessionId: delegation.sessionId,
       task,
       context,

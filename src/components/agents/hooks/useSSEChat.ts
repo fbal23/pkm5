@@ -32,11 +32,17 @@ interface SendParams {
   mode: 'easy' | 'hard';
 }
 
+interface UsageData {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 interface UseSSEChatOptions {
   getAuthToken?: () => string | null | undefined;
   beforeRequest?: () => boolean;
   onRequestError?: (error: unknown, response?: Response) => boolean | void;
   onStreamComplete?: () => void | Promise<void>;
+  onUsageUpdate?: (usage: UsageData) => void;
 }
 
 export function useSSEChat(
@@ -44,7 +50,7 @@ export function useSSEChat(
   setMessages: (updater: (prev: ChatMessage[]) => ChatMessage[]) => void,
   options: UseSSEChatOptions = {}
 ) {
-  const { getAuthToken, beforeRequest, onRequestError, onStreamComplete } = options;
+  const { getAuthToken, beforeRequest, onRequestError, onStreamComplete, onUsageUpdate } = options;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -181,6 +187,14 @@ export function useSSEChat(
                 fullContent = '';
                 setMessages((prev) => [...prev, newAssistantMessage]);
               }
+            }
+
+            // Capture usage data from finish event (if AI SDK sends it)
+            if (data.type === 'finish' && data.usage) {
+              onUsageUpdate?.({
+                inputTokens: data.usage.promptTokens ?? data.usage.inputTokens ?? 0,
+                outputTokens: data.usage.completionTokens ?? data.usage.outputTokens ?? 0
+              });
             }
           } catch {
             // ignore malformed lines

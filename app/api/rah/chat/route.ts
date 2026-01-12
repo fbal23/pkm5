@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { streamText, convertToCoreMessages } from 'ai';
+import { streamText, convertToModelMessages } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { getHelperTools, getDefaultToolNamesForRole } from '@/tools/infrastructure/registry';
@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
       } : {})
     }));
 
-    const coreMessages = convertToCoreMessages(sanitizedMessages);
+    const coreMessages = await convertToModelMessages(sanitizedMessages);
     const allMessages = [...systemMessages, ...coreMessages];
     
     // Debug logging (can be removed in production)

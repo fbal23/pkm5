@@ -2,7 +2,7 @@ import { getSQLiteClient } from '@/services/database/sqlite-client';
 import { eventBroadcaster } from '@/services/events';
 
 export type DelegationStatus = 'queued' | 'in_progress' | 'completed' | 'failed';
-export type DelegationAgentType = 'mini' | 'wise-rah';
+export type DelegationAgentType = 'workflow' | 'wise-rah';
 
 export interface AgentDelegation {
   id: number;

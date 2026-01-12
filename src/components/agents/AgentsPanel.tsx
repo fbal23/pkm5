@@ -7,6 +7,7 @@ import QuickAddStatus from './QuickAddStatus';
 import { Zap, Flame, Minimize2 } from 'lucide-react';
 import type { AgentDelegation } from '@/services/agents/delegation';
 import { Node } from '@/types/database';
+import { parseAndRenderContent } from '@/components/helpers/NodeLabelRenderer';
 
 interface AgentsPanelProps {
   openTabsData: Node[];
@@ -509,6 +510,7 @@ export default function AgentsPanel({ openTabsData, activeTabId, activeDimension
                       return rest;
                     });
                   }}
+                  onNodeClick={onNodeClick}
                 />
               </div>
             )}
@@ -522,6 +524,7 @@ export default function AgentsPanel({ openTabsData, activeTabId, activeDimension
                   <DelegationSummaryView
                     delegation={selectedDelegation}
                     onBack={() => setActiveAgentTab('workflows')}
+                    onNodeClick={onNodeClick}
                   />
                 ) : (
                   <DelegationDetailView
@@ -647,7 +650,7 @@ export default function AgentsPanel({ openTabsData, activeTabId, activeDimension
 }
 
 // Summary view for completed delegations with no messages
-function DelegationSummaryView({ delegation, onBack }: { delegation: AgentDelegation; onBack?: () => void }) {
+function DelegationSummaryView({ delegation, onBack, onNodeClick }: { delegation: AgentDelegation; onBack?: () => void; onNodeClick?: (nodeId: number) => void }) {
   const isSuccess = delegation.status === 'completed';
   const statusColor = isSuccess ? '#22c55e' : '#ff6b6b';
   const statusLabel = isSuccess ? 'Completed' : 'Failed';
@@ -748,7 +751,7 @@ function DelegationSummaryView({ delegation, onBack }: { delegation: AgentDelega
             lineHeight: '1.6',
             whiteSpace: 'pre-wrap'
           }}>
-            {delegation.summary}
+            {parseAndRenderContent(delegation.summary || '', onNodeClick)}
           </div>
         </div>
       )}
@@ -771,11 +774,13 @@ function DelegationSummaryView({ delegation, onBack }: { delegation: AgentDelega
 function WorkflowsListView({
   delegations,
   onSelectDelegation,
-  onDeleteDelegation
+  onDeleteDelegation,
+  onNodeClick
 }: {
   delegations: AgentDelegation[];
   onSelectDelegation: (sessionId: string) => void;
   onDeleteDelegation: (sessionId: string) => void;
+  onNodeClick?: (nodeId: number) => void;
 }) {
   const activeDelegations = delegations.filter(d => d.status === 'queued' || d.status === 'in_progress');
   const completedDelegations = delegations.filter(d => d.status === 'completed' || d.status === 'failed');
@@ -863,6 +868,7 @@ function WorkflowsListView({
                   statusLabel={label}
                   onSelect={() => onSelectDelegation(delegation.sessionId)}
                   onDelete={() => onDeleteDelegation(delegation.sessionId)}
+                  onNodeClick={onNodeClick}
                 />
               );
             })}
@@ -887,6 +893,7 @@ function WorkflowsListView({
                   statusLabel={label}
                   onSelect={() => onSelectDelegation(delegation.sessionId)}
                   onDelete={() => onDeleteDelegation(delegation.sessionId)}
+                  onNodeClick={onNodeClick}
                 />
               );
             })}
@@ -903,13 +910,15 @@ function WorkflowCard({
   statusColor,
   statusLabel,
   onSelect,
-  onDelete
+  onDelete,
+  onNodeClick
 }: {
   delegation: AgentDelegation;
   statusColor: string;
   statusLabel: string;
   onSelect: () => void;
   onDelete: () => void;
+  onNodeClick?: (nodeId: number) => void;
 }) {
   const isActive = delegation.status === 'in_progress' || delegation.status === 'queued';
 
@@ -1009,7 +1018,7 @@ function WorkflowCard({
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap'
         }}>
-          {delegation.summary}
+          {parseAndRenderContent(delegation.summary, onNodeClick)}
         </div>
       )}
     </div>
@@ -1084,7 +1093,7 @@ function DelegationDetailView({
       </div>
 
       {/* RAHChat for streaming */}
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         <RAHChat
           openTabsData={openTabsData}
           activeTabId={activeTabId}

@@ -3,7 +3,7 @@ import { AgentRegistry } from '@/services/agents/registry';
 import { WorkflowRegistry } from '@/services/workflows/registry';
 import { getHelperTools, getDefaultToolNamesForRole } from '@/tools/infrastructure/registry';
 import type { CacheableBlock, SystemPromptResult } from '@/types/prompts';
-import { buildAutoContextBlock } from '@/services/context/autoContext';
+// buildAutoContextBlock removed - agent queries top nodes on-demand via sqliteQuery
 
 export interface NodeContext {
   nodes: Node[];
@@ -25,14 +25,27 @@ export interface ContextBuilderOptions {
 }
 
 const BASE_CONTEXT = `=== RA-H BASE CONTEXT ===
-- Nodes store content (title, content, dimensions, metadata, link, chunk)
-- Edges capture directed relationships between nodes
-- Dimensions organize nodes; locked dimensions (isPriority=true) auto-assign to new nodes
-- You can create and manage dimensions using dimension tools (createDimension, updateDimension, lockDimension, unlockDimension, deleteDimension)
-- When auto-context is enabled you'll see BACKGROUND CONTEXT with the 10 most-connected nodes (ID + title only)
-- Focused nodes show truncated content; use queryNodes, searchContentEmbeddings, or queryEdge when you need full detail
-- Node references must use [NODE:id:"title"] so the UI renders clickable labels
-- Pronouns or phrases like "this conversation/paper/video" refer to the primary focused node unless clarified
+You have access to the RA-H knowledge graph via two approaches:
+
+**sqliteQuery tool** — Use for flexible read operations:
+- Ad-hoc queries, exploration, complex JOINs, aggregations
+- Any query pattern not covered by structured tools
+- Example: SELECT n.title, COUNT(e.id) FROM nodes n LEFT JOIN edges e ON n.id = e.from_node_id GROUP BY n.id
+
+**Structured tools** — Use for these specific cases:
+- Writes: createNode, updateNode, createEdge (need validation, embeddings, hooks)
+- Semantic search: searchContentEmbeddings (needs vector DB)
+- External APIs: webSearch, youtubeExtract, websiteExtract, paperExtract
+
+**Schema Quick Reference:**
+- nodes: id, title, content, chunk, dimensions (JSON array), url, created_at
+- edges: id, from_node_id, to_node_id, context (JSON), source, explanation
+- dimensions: id, name, description, is_locked
+
+**Other Context:**
+- Node references: use [NODE:id:"title"] format for clickable UI labels
+- Focused nodes show truncated content; query for full detail
+- "this conversation/paper/video" refers to the primary focused node
 `;
 
 function buildStaticBaseContext(): string {
@@ -243,16 +256,9 @@ export async function buildSystemPromptBlocks(
     });
   }
 
-  const autoContextBlock = isPrimaryOrchestrator(helperComponentKey)
-    ? buildAutoContextBlock()
-    : null;
-  if (autoContextBlock && autoContextBlock.trim().length > 0) {
-    blocks.push({
-      type: 'text',
-      text: autoContextBlock,
-      ...(cacheControl ? { cache_control: cacheControl } : {})
-    });
-  }
+  // REMOVED: autoContextBlock (top 10 nodes)
+  // Agent can now query this on-demand via sqliteQuery:
+  // SELECT id, title, COUNT(e.id) as edges FROM nodes n LEFT JOIN edges e ON n.id = e.from_node_id OR n.id = e.to_node_id GROUP BY n.id ORDER BY edges DESC LIMIT 10
 
   // Add dimension context if an active dimension is provided
   if (nodeContext.activeDimension) {

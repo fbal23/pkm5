@@ -42,12 +42,9 @@ export const TOOL_GROUP_ASSIGNMENTS: Record<string, string> = {
   queryDimensionNodes: 'core',
   searchContentEmbeddings: 'core',
 
-  // Orchestration: Delegation and reasoning (orchestrator only)
+  // Orchestration: Workflows and reasoning (orchestrator only)
   webSearch: 'orchestration',
   think: 'orchestration',
-  delegateToMiniRAH: 'orchestration',
-  delegateNodeQuotes: 'orchestration',
-  delegateNodeComparison: 'orchestration',
   delegateToWiseRAH: 'orchestration',
   executeWorkflow: 'orchestration',
   listWorkflows: 'orchestration',

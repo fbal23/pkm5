@@ -1,32 +1,32 @@
 export const CONNECT_WORKFLOW_INSTRUCTIONS = `You are executing the CONNECT workflow for the currently focused node.
 
 MISSION
-Quick link: find explicitly related nodes and create edges. Fast text search only - no slow embedding search.
+Quick link: find explicitly related nodes and create edges.
 
 WORKFLOW STEPS
 
 1. READ NODE
-   Call getNodesById for the focused node. Note the title, type, and key names/entities mentioned.
+   Call getNodesById for the focused node. Extract the main topic/subject from the title.
 
 2. QUICK SEARCH
-   Call queryNodes ONCE with the most specific entity (person name, project name, company, tool).
-   - Use search parameter with the exact name
-   - Set limit: 10
-
-   DO NOT call searchContentEmbeddings - use queryNodes only for speed.
+   Call queryNodes with the main topic from the node title.
+   - search: the key term from the title (e.g., if title mentions "Nietzsche", search "Nietzsche")
+   - limit: 10
+   - DO NOT add dimensions filter - search across all nodes
 
 3. CREATE EDGES
-   From the search results, pick 2-4 nodes that are clearly related.
+   From results, pick 2-4 clearly related nodes.
    Call createEdge for each:
    - from_node_id: focused node ID
    - to_node_id: related node ID
    - context: { explanation: "brief reason" }
 
 4. DONE
-   Reply: "Linked [title] → [list of connected node titles]"
+   Reply: "Linked [NODE:id:title] → [list of connected nodes as NODE:id:title]"
 
 RULES
-- Total tool calls ≤ 5 (1 read + 1 search + up to 3 edges)
-- Use queryNodes only - NO searchContentEmbeddings
-- Only link nodes with clear, explicit relationships
-- Skip if no good matches found`;
+- Total tool calls ≤ 5
+- Search the MAIN TOPIC from the title, not random names from content
+- NO dimensions filter in queryNodes - search everything
+- Only link nodes with clear relationships
+- Skip if no matches found`;

@@ -9,8 +9,7 @@ import { updateEdgeTool } from '../database/updateEdge';
 import { quickLinkTool } from '../database/quickLink';
 import { createDimensionTool } from '../database/createDimension';
 import { updateDimensionTool } from '../database/updateDimension';
-import { lockDimensionTool } from '../database/lockDimension';
-import { unlockDimensionTool } from '../database/unlockDimension';
+// lockDimension and unlockDimension consolidated into updateDimension (use isPriority param)
 import { deleteDimensionTool } from '../database/deleteDimension';
 import { queryDimensionsTool } from '../database/queryDimensions';
 import { getDimensionTool } from '../database/getDimension';
@@ -18,8 +17,6 @@ import { queryDimensionNodesTool } from '../database/queryDimensionNodes';
 import { searchContentEmbeddingsTool } from '../other/searchContentEmbeddings';
 import { webSearchTool } from '../other/webSearch';
 import { thinkTool } from '../other/think';
-import { delegateToMiniRAHTool } from '../orchestration/delegateToMiniRAH';
-import { delegateNodeQuotesTool, delegateNodeComparisonTool } from '../orchestration/delegationHelpers';
 import { delegateToWiseRAHTool } from '../orchestration/delegateToWiseRAH';
 import { executeWorkflowTool } from '../orchestration/executeWorkflow';
 import { listWorkflowsTool } from '../orchestration/listWorkflows';
@@ -28,10 +25,12 @@ import { editWorkflowTool } from '../orchestration/editWorkflow';
 import { youtubeExtractTool } from '../other/youtubeExtract';
 import { websiteExtractTool } from '../other/websiteExtract';
 import { paperExtractTool } from '../other/paperExtract';
+import { sqliteQueryTool } from '../other/sqliteQuery';
 import { logEvalToolCall } from '@/services/evals/evalsLogger';
 
 // Core tools available to all agents (read-only graph operations)
 const CORE_TOOLS: Record<string, any> = {
+  sqliteQuery: sqliteQueryTool,
   queryNodes: queryNodesTool,
   getNodesById: getNodesByIdTool,
   queryEdge: queryEdgeTool,
@@ -44,9 +43,6 @@ const CORE_TOOLS: Record<string, any> = {
 const ORCHESTRATION_TOOLS: Record<string, any> = {
   webSearch: webSearchTool,
   think: thinkTool,
-  delegateToMiniRAH: delegateToMiniRAHTool,
-  delegateNodeQuotes: delegateNodeQuotesTool,
-  delegateNodeComparison: delegateNodeComparisonTool,
   delegateToWiseRAH: delegateToWiseRAHTool,
   executeWorkflow: executeWorkflowTool,
   listWorkflows: listWorkflowsTool,
@@ -63,8 +59,6 @@ const EXECUTION_TOOLS: Record<string, any> = {
   quickLink: quickLinkTool,
   createDimension: createDimensionTool,
   updateDimension: updateDimensionTool,
-  lockDimension: lockDimensionTool,
-  unlockDimension: unlockDimensionTool,
   deleteDimension: deleteDimensionTool,
   youtubeExtract: youtubeExtractTool,
   websiteExtract: websiteExtractTool,
@@ -98,8 +92,6 @@ const ORCHESTRATOR_TOOL_NAMES = Array.from(new Set([
   'quickLink',
   'createDimension',
   'updateDimension',
-  'lockDimension',
-  'unlockDimension',
   'deleteDimension',
   'youtubeExtract',
   'websiteExtract',
@@ -108,25 +100,22 @@ const ORCHESTRATOR_TOOL_NAMES = Array.from(new Set([
 
 const EXECUTOR_TOOL_NAMES = [
   ...Object.keys(CORE_TOOLS),
-  ...Object.keys(ORCHESTRATION_TOOLS).filter(name => 
-    name !== 'delegateToMiniRAH' &&
+  ...Object.keys(ORCHESTRATION_TOOLS).filter(name =>
     name !== 'delegateToWiseRAH' &&
-    name !== 'executeWorkflow' &&
-    name !== 'delegateNodeQuotes' &&
-    name !== 'delegateNodeComparison'
+    name !== 'executeWorkflow'
   ),
   ...Object.keys(EXECUTION_TOOLS),
 ];
 
+// Note: PLANNER_TOOL_NAMES kept for backwards compatibility but workflows now use specific tool sets
 const PLANNER_TOOL_NAMES = [
   ...Object.keys(CORE_TOOLS),
   'webSearch',
   'think',
-  'delegateToMiniRAH',
-  'updateNode', // For workflow execution (integrate workflow needs direct write access)
-  'createEdge', // For edge creation in workflows
-  'quickLink', // Fast edge creation via text search
-  'updateDimension', // For survey workflow (dimension analysis)
+  'updateNode',
+  'createEdge',
+  'quickLink',
+  'updateDimension',
 ];
 
 /**
@@ -194,6 +183,17 @@ export function getDefaultToolNamesForRole(role: 'orchestrator' | 'executor' | '
 export function getToolsForRole(role: 'orchestrator' | 'executor' | 'planner'): Record<string, any> {
   const names = getDefaultToolNamesForRole(role);
   return getHelperTools(names);
+}
+
+/**
+ * Get tools by their names (for workflow execution with specific tool sets)
+ */
+export function getToolsByNames(toolNames: string[]): Record<string, any> {
+  if (!Array.isArray(toolNames) || toolNames.length === 0) {
+    console.warn('[getToolsByNames] No tool names provided');
+    return {};
+  }
+  return getHelperTools(toolNames);
 }
 
 /**

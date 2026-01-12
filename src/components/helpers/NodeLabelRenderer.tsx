@@ -45,7 +45,7 @@ function NodeLabel({ id, title, dimensions, onNodeClick }: NodeLabelProps) {
           verticalAlign: 'baseline'
         }}
       >
-        #{id}
+        {id}
       </span>
       {/* Non-clickable title - bold and underlined */}
       <span style={{

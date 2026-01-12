@@ -1,8 +1,7 @@
 import { getDefaultToolNamesForRole } from '@/tools/infrastructure/registry';
 import { RAH_MAIN_SYSTEM_PROMPT } from '@/config/prompts/rah-main';
 import { RAH_EASY_SYSTEM_PROMPT } from '@/config/prompts/rah-easy';
-import { MINI_RAH_SYSTEM_PROMPT } from '@/config/prompts/rah-mini';
-import { WISE_RAH_SYSTEM_PROMPT } from '@/config/prompts/wise-rah';
+import { WORKFLOW_EXECUTOR_SYSTEM_PROMPT } from '@/config/prompts/workflow-executor';
 import type { AgentDefinition } from './types';
 
 /**
@@ -42,29 +41,30 @@ export class AgentRegistry {
       memory: null,
       prompts: undefined
     },
-    'mini-rah': {
-      id: 2,
-      key: 'mini-rah',
-      displayName: 'mini ra-h',
-      description: 'Executor agent for delegated tasks',
-      model: 'openai/gpt-4o-mini',
-      role: 'executor',
-      systemPrompt: MINI_RAH_SYSTEM_PROMPT,
-      availableTools: getDefaultToolNamesForRole('executor'),
+    'workflow': {
+      id: 3,
+      key: 'workflow',
+      displayName: 'workflow agent',
+      description: 'Workflow executor (uses same model as easy mode)',
+      model: 'openai/gpt-5-mini',
+      role: 'planner',
+      systemPrompt: WORKFLOW_EXECUTOR_SYSTEM_PROMPT,
+      availableTools: getDefaultToolNamesForRole('planner'),
       enabled: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       memory: null,
       prompts: undefined
     },
+    // Alias for backwards compatibility
     'wise-rah': {
       id: 3,
-      key: 'wise-rah',
-      displayName: 'wise ra-h',
-      description: 'Complex workflow planner and orchestrator',
-      model: 'openai/gpt-5',
+      key: 'workflow',
+      displayName: 'workflow agent',
+      description: 'Workflow executor (uses same model as easy mode)',
+      model: 'openai/gpt-5-mini',
       role: 'planner',
-      systemPrompt: WISE_RAH_SYSTEM_PROMPT,
+      systemPrompt: WORKFLOW_EXECUTOR_SYSTEM_PROMPT,
       availableTools: getDefaultToolNamesForRole('planner'),
       enabled: true,
       createdAt: new Date().toISOString(),
@@ -97,11 +97,7 @@ export class AgentRegistry {
     return this.AGENTS['ra-h-easy'];
   }
 
-  static async executor(): Promise<AgentDefinition> {
-    return this.AGENTS['mini-rah'];
-  }
-
   static async planner(): Promise<AgentDefinition> {
-    return this.AGENTS['wise-rah'];
+    return this.AGENTS['workflow'];
   }
 }

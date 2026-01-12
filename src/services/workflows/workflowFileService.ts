@@ -9,6 +9,8 @@ export interface UserWorkflow {
   instructions: string;
   enabled: boolean;
   requiresFocusedNode: boolean;
+  tools?: string[];
+  maxIterations?: number;
 }
 
 function resolveBaseConfigDir(): string {
@@ -66,6 +68,8 @@ export function listUserWorkflows(): UserWorkflow[] {
           instructions: parsed.instructions,
           enabled: parsed.enabled !== false,
           requiresFocusedNode: parsed.requiresFocusedNode !== false,
+          tools: Array.isArray(parsed.tools) ? parsed.tools : undefined,
+          maxIterations: typeof parsed.maxIterations === 'number' ? parsed.maxIterations : undefined,
         });
       }
     } catch (error) {
@@ -99,6 +103,8 @@ export function loadUserWorkflow(key: string): UserWorkflow | null {
       instructions: parsed.instructions,
       enabled: parsed.enabled !== false,
       requiresFocusedNode: parsed.requiresFocusedNode !== false,
+      tools: Array.isArray(parsed.tools) ? parsed.tools : undefined,
+      maxIterations: typeof parsed.maxIterations === 'number' ? parsed.maxIterations : undefined,
     };
   } catch (error) {
     console.warn(`Failed to load workflow ${key}:`, error);
@@ -110,7 +116,7 @@ export function saveWorkflow(workflow: UserWorkflow): void {
   ensureWorkflowsDirExists();
 
   const filePath = path.join(getWorkflowsDir(), `${workflow.key}.json`);
-  const data = {
+  const data: Record<string, unknown> = {
     key: workflow.key,
     displayName: workflow.displayName,
     description: workflow.description,
@@ -118,6 +124,10 @@ export function saveWorkflow(workflow: UserWorkflow): void {
     enabled: workflow.enabled,
     requiresFocusedNode: workflow.requiresFocusedNode,
   };
+
+  // Only include tools/maxIterations if defined
+  if (workflow.tools) data.tools = workflow.tools;
+  if (workflow.maxIterations) data.maxIterations = workflow.maxIterations;
 
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }

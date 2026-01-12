@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { WorkflowRegistry } from '@/services/workflows/registry';
 import { getSQLiteClient } from '@/services/database/sqlite-client';
 import { AgentDelegationService } from '@/services/agents/delegation';
-import { WiseRAHExecutor } from '@/services/agents/wiseRAHExecutor';
+import { WorkflowExecutor } from '@/services/agents/workflowExecutor';
 import { getAutoContextSummaries } from '@/services/context/autoContext';
 
 export async function POST(request: NextRequest) {
@@ -112,12 +112,12 @@ ${nodeId ? `Target Node ID: ${nodeId}` : 'No specific node targeted (general wor
       task,
       context: contextLines,
       expectedOutcome: workflow.expectedOutcome,
-      agentType: 'wise-rah',
+      agentType: 'workflow',
       supabaseToken: null,
     });
 
     // Fire-and-forget execution
-    void WiseRAHExecutor.execute({
+    void WorkflowExecutor.execute({
       sessionId: delegation.sessionId,
       task,
       context: contextLines,

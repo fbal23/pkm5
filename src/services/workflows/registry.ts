@@ -18,6 +18,8 @@ const BUNDLED_WORKFLOWS: Record<string, WorkflowDefinition> = {
     requiresFocusedNode: true,
     primaryActor: 'oracle',
     expectedOutcome: 'Brief section appended with what/gist/why it matters',
+    tools: ['getNodesById', 'updateNode'],
+    maxIterations: 3,
   },
   'research': {
     id: 2,
@@ -29,6 +31,8 @@ const BUNDLED_WORKFLOWS: Record<string, WorkflowDefinition> = {
     requiresFocusedNode: true,
     primaryActor: 'oracle',
     expectedOutcome: 'Research notes appended with background and key findings',
+    tools: ['getNodesById', 'webSearch', 'updateNode'],
+    maxIterations: 5,
   },
   'connect': {
     id: 3,
@@ -40,6 +44,8 @@ const BUNDLED_WORKFLOWS: Record<string, WorkflowDefinition> = {
     requiresFocusedNode: true,
     primaryActor: 'oracle',
     expectedOutcome: '3-5 edges created to related nodes',
+    tools: ['getNodesById', 'queryNodes', 'createEdge'],
+    maxIterations: 6,
   },
   'integrate': {
     id: 4,
@@ -51,6 +57,8 @@ const BUNDLED_WORKFLOWS: Record<string, WorkflowDefinition> = {
     requiresFocusedNode: true,
     primaryActor: 'oracle',
     expectedOutcome: 'Integration analysis appended; 3-5 edges created',
+    tools: ['getNodesById', 'queryNodes', 'searchContentEmbeddings', 'createEdge', 'updateNode'],
+    maxIterations: 12,
   },
   'survey': {
     id: 5,
@@ -62,6 +70,8 @@ const BUNDLED_WORKFLOWS: Record<string, WorkflowDefinition> = {
     requiresFocusedNode: false, // Requires active dimension, not focused node
     primaryActor: 'oracle',
     expectedOutcome: 'Dimension description updated with survey findings',
+    tools: ['queryDimensionNodes', 'searchContentEmbeddings', 'updateDimension'],
+    maxIterations: 5,
   },
 };
 
@@ -80,6 +90,8 @@ function userWorkflowToDefinition(uw: ReturnType<typeof loadUserWorkflow>, id: n
     requiresFocusedNode: uw.requiresFocusedNode,
     primaryActor: 'oracle',
     expectedOutcome: undefined,
+    tools: uw.tools,
+    maxIterations: uw.maxIterations,
   };
 }
 
