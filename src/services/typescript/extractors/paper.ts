@@ -28,6 +28,13 @@ interface ExtractionResult {
   url: string;
 }
 
+interface BufferExtractionResult {
+  content: string;
+  chunk: string;
+  metadata: PaperMetadata;
+  filename: string;
+}
+
 type PdfJsTextItem = {
   str?: string;
 };
@@ -339,6 +346,41 @@ export class PaperExtractor {
         }
       }
     }
+  }
+
+  /**
+   * Extract text from a PDF buffer (for file uploads)
+   * @param buffer - The PDF file contents as a Buffer
+   * @param filename - Optional original filename for metadata
+   */
+  async extractFromBuffer(buffer: Buffer, filename?: string): Promise<BufferExtractionResult> {
+    // Validate PDF header
+    if (!this.isLikelyPdf(buffer)) {
+      const preview = buffer.slice(0, 64).toString('utf8');
+      throw new Error(`File does not appear to be a valid PDF (header: ${preview.substring(0, 20)}...)`);
+    }
+
+    // Extract text and metadata using existing private method
+    const { text, metadata } = await this.extractFromPDF(buffer);
+
+    // Clean the text
+    const cleanedText = this.cleanAcademicContent(text);
+
+    // Add filename to metadata
+    metadata.filename = filename || 'uploaded.pdf';
+    if (!metadata.extraction_method) {
+      metadata.extraction_method = 'typescript_pdf-parse';
+    }
+
+    // Format content for display
+    const content = this.formatContent(metadata, cleanedText);
+
+    return {
+      content,
+      chunk: cleanedText,
+      metadata,
+      filename: metadata.filename,
+    };
   }
 
   private formatErrorMessage(error: unknown): string {
