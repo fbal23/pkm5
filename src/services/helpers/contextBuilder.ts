@@ -111,13 +111,18 @@ function parseMetadata(metadata: unknown): Record<string, any> {
   if (!metadata) return {};
   if (typeof metadata === 'string') {
     try {
-      return JSON.parse(metadata);
+      const parsed = JSON.parse(metadata);
+      if (parsed && typeof parsed === 'object') {
+        return parsed as Record<string, any>;
+      }
+      return {};
     } catch (error) {
       console.warn('Failed to parse node metadata JSON:', error);
       return {};
     }
   }
   if (typeof metadata === 'object') {
+    if (metadata === null) return {};
     return metadata as Record<string, any>;
   }
   return {};

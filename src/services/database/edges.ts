@@ -1,6 +1,120 @@
 import { getSQLiteClient } from './sqlite-client';
-import { Edge, EdgeData, NodeConnection, Node } from '@/types/database';
+import { Edge, EdgeContext, EdgeData, EdgeCreatedVia, NodeConnection, Node } from '@/types/database';
 import { eventBroadcaster } from '../events';
+import { nodeService } from './nodes';
+import { apiKeyService } from '../storage/apiKeys';
+import { generateText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
+import { z } from 'zod';
+
+const inferredEdgeContextSchema = z.object({
+  category: z.enum(['attribution', 'intellectual']),
+  type: z.enum([
+    'created_by',
+    'features',
+    'part_of',
+    'source_of',
+    'extends',
+    'supports',
+    'contradicts',
+    'related_to'
+  ]),
+  confidence: z.number().min(0).max(1),
+});
+
+async function inferEdgeContext(params: {
+  explanation: string;
+  fromNode: Node;
+  toNode: Node;
+}): Promise<Pick<EdgeContext, 'category' | 'type' | 'confidence'>> {
+  const { explanation, fromNode, toNode } = params;
+
+  // Heuristic fast-paths for the 4 core UI chips.
+  // This makes classification robust and reduces reliance on the model.
+  const norm = explanation.trim().toLowerCase();
+  const startsWithAny = (prefixes: string[]) => prefixes.some((p) => norm.startsWith(p));
+  if (startsWithAny(['created by', 'made by', 'authored by', 'written by', 'founded by'])) {
+    return { category: 'attribution', type: 'created_by', confidence: 1.0 };
+  }
+  if (startsWithAny(['part of', 'episode of', 'belongs to', 'in the series', 'in this series'])) {
+    return { category: 'attribution', type: 'part_of', confidence: 1.0 };
+  }
+  if (startsWithAny(['features', 'mentions', 'hosted by', 'guest:', 'host:'])) {
+    return { category: 'attribution', type: 'features', confidence: 0.95 };
+  }
+  if (startsWithAny(['came from', 'inspired by', 'derived from', 'from'])) {
+    return { category: 'intellectual', type: 'source_of', confidence: 0.9 };
+  }
+  if (startsWithAny(['related to', 'related'])) {
+    return { category: 'intellectual', type: 'related_to', confidence: 0.8 };
+  }
+
+  // If no API key is configured, degrade gracefully.
+  // We still enforce explanation, but fall back to "related_to" classification.
+  const apiKey = apiKeyService.getOpenAiKey();
+  if (!apiKey) {
+    return { category: 'intellectual', type: 'related_to', confidence: 0.0 };
+  }
+
+  const provider = createOpenAI({ apiKey });
+  const prompt = [
+    `Given this edge explanation: "${explanation}"`,
+    ``,
+    `From node:`,
+    `- Title: "${fromNode.title}"`,
+    `- Description: ${fromNode.description || 'No description available'}`,
+    `- Dimensions: ${fromNode.dimensions?.join(', ') || 'none'}`,
+    ``,
+    `To node:`,
+    `- Title: "${toNode.title}"`,
+    `- Description: ${toNode.description || 'No description available'}`,
+    `- Dimensions: ${toNode.dimensions?.join(', ') || 'none'}`,
+    ``,
+    `Classify the relationship:`,
+    `- category: "attribution" (factual: author, creator, host, guest) or "intellectual" (idea relationship)`,
+    `- type: one of [created_by, features, part_of, source_of, extends, supports, contradicts, related_to]`,
+    `- confidence: 0-1`,
+    ``,
+    `IMPORTANT: Interpret the direction as "FROM node → TO node". Pick a type that reads correctly in that direction:`,
+    `- created_by: FROM was created/founded/authored by TO`,
+    `- features: FROM features TO (host/guest/subject appearing in FROM)`,
+    `- part_of: FROM is part of TO (episode→podcast, chapter→book, note→project)`,
+    `- source_of: FROM came from TO / was inspired by TO`,
+    `- extends/supports/contradicts: FROM extends/supports/contradicts TO`,
+    ``,
+    `Return JSON only: {"category": "...", "type": "...", "confidence": 0.X}`
+  ].join('\n');
+
+  try {
+    const { text } = await generateText({
+      model: provider('gpt-4o-mini'),
+      prompt,
+      temperature: 0.0,
+      maxOutputTokens: 120,
+    });
+
+    const parsedJson = (() => {
+      try {
+        return JSON.parse(text);
+      } catch {
+        // Sometimes models wrap JSON in prose; try to recover.
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) return JSON.parse(match[0]);
+        throw new Error('AI did not return valid JSON');
+      }
+    })();
+
+    const parsed = inferredEdgeContextSchema.safeParse(parsedJson);
+    if (!parsed.success) {
+      return { category: 'intellectual', type: 'related_to', confidence: 0.2 };
+    }
+
+    return parsed.data;
+  } catch (error) {
+    console.warn('[edges] inferEdgeContext failed; falling back to related_to', error);
+    return { category: 'intellectual', type: 'related_to', confidence: 0.2 };
+  }
+}
 
 export class EdgeService {
   async getEdges(): Promise<Edge[]> {
@@ -24,14 +138,41 @@ export class EdgeService {
   private async createEdgeSQLite(edgeData: EdgeData): Promise<Edge> {
     const now = new Date().toISOString();
     const sqlite = getSQLiteClient();
-    
+
+    const explanation = (edgeData.explanation || '').trim();
+    if (!explanation) {
+      throw new Error('Edge explanation is required');
+    }
+
+    const createdVia: EdgeCreatedVia = edgeData.created_via;
+
+    // Fetch nodes for inference context
+    const [fromNode, toNode] = await Promise.all([
+      nodeService.getNodeById(edgeData.from_node_id),
+      nodeService.getNodeById(edgeData.to_node_id),
+    ]);
+
+    if (!fromNode) throw new Error(`Source node ${edgeData.from_node_id} not found`);
+    if (!toNode) throw new Error(`Target node ${edgeData.to_node_id} not found`);
+
+    const inferred = edgeData.skip_inference
+      ? { category: 'intellectual' as const, type: 'related_to' as const, confidence: 0.0 }
+      : await inferEdgeContext({ explanation, fromNode, toNode });
+
+    const context: EdgeContext = {
+      ...inferred,
+      inferred_at: now,
+      explanation,
+      created_via: createdVia,
+    };
+
     const result = sqlite.prepare(`
       INSERT INTO edges (from_node_id, to_node_id, context, source, created_at)
       VALUES (?, ?, ?, ?, ?)
     `).run(
       edgeData.from_node_id,
       edgeData.to_node_id,
-      JSON.stringify(edgeData.context || {}),
+      JSON.stringify(context),
       edgeData.source,
       now
     );
@@ -66,6 +207,51 @@ export class EdgeService {
     const sqlite = getSQLiteClient();
     const updateFields: string[] = [];
     const params: any[] = [];
+
+    // If explanation changes, re-infer classification and write full EdgeContext
+    if (Object.prototype.hasOwnProperty.call(updates, 'context') && updates.context && typeof updates.context === 'object') {
+      const incomingContext = updates.context as Partial<EdgeContext> & { explanation?: unknown };
+      if (typeof incomingContext.explanation === 'string') {
+        const explanation = incomingContext.explanation.trim();
+        if (!explanation) {
+          throw new Error('Edge explanation is required');
+        }
+
+        const existingEdge = await this.getEdgeById(id);
+        if (!existingEdge) {
+          throw new Error(`Edge with ID ${id} not found`);
+        }
+
+        const [fromNode, toNode] = await Promise.all([
+          nodeService.getNodeById(existingEdge.from_node_id),
+          nodeService.getNodeById(existingEdge.to_node_id),
+        ]);
+
+        if (!fromNode) throw new Error(`Source node ${existingEdge.from_node_id} not found`);
+        if (!toNode) throw new Error(`Target node ${existingEdge.to_node_id} not found`);
+
+        const inferred = await inferEdgeContext({ explanation, fromNode, toNode });
+        const now = new Date().toISOString();
+
+        const existingContext = (existingEdge.context && typeof existingEdge.context === 'object')
+          ? (existingEdge.context as Partial<EdgeContext>)
+          : undefined;
+
+        const created_via: EdgeCreatedVia =
+          (incomingContext.created_via as EdgeCreatedVia) ||
+          (existingContext?.created_via as EdgeCreatedVia) ||
+          'ui';
+
+        updates.context = {
+          ...existingContext,
+          ...incomingContext,
+          ...inferred,
+          inferred_at: now,
+          explanation,
+          created_via,
+        } satisfies EdgeContext;
+      }
+    }
 
     // Build dynamic update query
     Object.entries(updates).forEach(([key, value]) => {
@@ -309,17 +495,23 @@ export class EdgeService {
   }
 
   async createBidirectionalEdge(fromId: number, toId: number, options?: {
-    context?: any;
+    explanation?: string;
+    created_via?: EdgeCreatedVia;
     source?: 'user' | 'ai_similarity' | 'helper_name';
+    skip_inference?: boolean;
   }): Promise<Edge[]> {
     const edges: Edge[] = [];
+    const explanation = (options?.explanation || 'Similarity-based connection').trim();
+    const created_via: EdgeCreatedVia = options?.created_via || 'workflow';
 
     // Create edge from A to B
     const forwardEdge = await this.createEdge({
       from_node_id: fromId,
       to_node_id: toId,
-      context: options?.context,
-      source: options?.source || 'ai_similarity'
+      explanation,
+      created_via,
+      source: options?.source || 'ai_similarity',
+      skip_inference: options?.skip_inference,
     });
     edges.push(forwardEdge);
 
@@ -327,8 +519,10 @@ export class EdgeService {
     const backwardEdge = await this.createEdge({
       from_node_id: toId,
       to_node_id: fromId,
-      context: options?.context,
-      source: options?.source || 'ai_similarity'
+      explanation,
+      created_via,
+      source: options?.source || 'ai_similarity',
+      skip_inference: options?.skip_inference,
     });
     edges.push(backwardEdge);
 

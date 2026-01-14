@@ -58,18 +58,78 @@ Primary knowledge storage. Each row is a discrete knowledge item.
 ### edges
 Directed relationships between nodes (knowledge graph).
 
-**Columns:**
+**Important behavior:**
+- **Storage is directed** (`from_node_id → to_node_id`)
+- **UI treats connections as bidirectional** (a node shows edges where it is either `from` or `to`)
+- **Every new edge requires an explanation** (enforced in service layer)
+- **Every new edge is classified** into a structured `EdgeContext` (stored as JSON)
+
+**Columns (SQLite):**
 - `id` (INTEGER PK)
-- `from_node_id` (INTEGER FK → nodes.id)
-- `to_node_id` (INTEGER FK → nodes.id)
-- `source` (TEXT) - How edge was created (e.g., "user", "agent")
-- `context` (TEXT) - Relationship context/description
-- `user_feedback` (INTEGER) - User rating
+- `from_node_id` (INTEGER FK → nodes.id) — directed “from”
+- `to_node_id` (INTEGER FK → nodes.id) — directed “to”
+- `source` (TEXT) — creation source (`user`, `helper_name`, `ai_similarity`)
 - `created_at` (TEXT)
+- `context` (TEXT) — JSON blob (canonical; see `EdgeContext` below)
+- `explanation` (TEXT) — legacy column (currently not the canonical source of truth)
+- `user_feedback` (INTEGER) — user rating (not currently used in core flows)
 
 **Indexes:**
-- `idx_edges_from` - Fast "outgoing edges" queries
-- `idx_edges_to` - Fast "incoming edges" queries
+- `idx_edges_from` — fast “outgoing edges” queries
+- `idx_edges_to` — fast “incoming edges” queries
+
+#### EdgeContext (canonical relationship metadata)
+Stored as JSON in `edges.context`. This is the “Idea Genealogy” layer.
+
+```typescript
+interface EdgeContext {
+  // SYSTEM-INFERRED (AI + heuristics classify from explanation + node context)
+  category: 'attribution' | 'intellectual';
+  type:
+    | 'created_by'   // attribution: authorship/creation/founding
+    | 'features'     // attribution: appears in / host / guest / explicitly mentioned
+    | 'part_of'      // attribution: membership/container (episode→podcast, chapter→book, video→channel)
+    | 'source_of'    // intellectual: idea/insight came from source
+    | 'extends'      // intellectual: builds on
+    | 'supports'     // intellectual: evidence for
+    | 'contradicts'  // intellectual: in tension
+    | 'related_to';  // intellectual: fallback
+  confidence: number;   // 0–1
+  inferred_at: string;  // ISO timestamp
+
+  // PROVIDED BY USER/AGENT
+  explanation: string;  // required; free-form text (user can edit)
+
+  // SYSTEM-MANAGED
+  created_via: 'ui' | 'agent' | 'mcp' | 'workflow' | 'quicklink';
+}
+```
+
+#### Direction rule (how to write explanations)
+Explanations must read correctly **FROM → TO**:
+- `created_by`: **FROM** was created/authored/founded by **TO**
+- `features`: **FROM** features/mentions **TO**
+- `part_of`: **FROM** is part of **TO**
+- `source_of`: **FROM** came from / was inspired by **TO**
+
+#### Inference + guardrails
+On edge create and on explanation edits, RA-H:
+- runs lightweight **heuristics** for common phrases (e.g., “Created by …”, “Part of …”, “Came from …”, “Features …”)
+- otherwise runs an AI classification step to populate `category/type/confidence`
+
+The UI also provides 4 quick chips to reduce user cognitive load:
+- **Made by** → “Created by …”
+- **Part of** → “Part of …”
+- **Came from** → “Came from …”
+- **Related** → “Related to …”
+
+#### Where edges get created/updated
+All edge creation funnels through the service layer enforcement:
+- UI (`FocusPanel`) — requires explanation; allows editing explanation (re-infers)
+- REST API `POST /api/edges` — requires `explanation`
+- Tooling (`createEdge` tool) — requires `explanation`
+- MCP (`rah_create_edge`) — requires `explanation`
+- Workflows (e.g. `connect`, `integrate`) — call `createEdge` with `explanation`
 
 ### chunks
 Long-form content split into searchable pieces.

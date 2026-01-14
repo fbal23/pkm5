@@ -58,8 +58,38 @@ export interface Edge {
   from_node_id: number;
   to_node_id: number;
   context?: any;
-  source: 'user' | 'ai_similarity' | 'helper_name';
+  source: EdgeSource;
   created_at: string;
+}
+
+export type EdgeSource = 'user' | 'ai_similarity' | 'helper_name';
+
+export type EdgeContextCategory = 'attribution' | 'intellectual';
+
+export type EdgeContextType =
+  | 'created_by'
+  | 'features'
+  | 'part_of'
+  | 'source_of'
+  | 'extends'
+  | 'supports'
+  | 'contradicts'
+  | 'related_to';
+
+export type EdgeCreatedVia = 'ui' | 'agent' | 'mcp' | 'workflow' | 'quicklink' | 'quick_capture_auto';
+
+export interface EdgeContext {
+  // SYSTEM-INFERRED (AI classifies from explanation + nodes)
+  category: EdgeContextCategory;
+  type: EdgeContextType;
+  confidence: number;   // 0-1
+  inferred_at: string;  // ISO timestamp
+
+  // PROVIDED AT CREATION / EDIT
+  explanation: string;
+
+  // SYSTEM-MANAGED
+  created_via: EdgeCreatedVia;
 }
 
 export interface Chat {
@@ -120,8 +150,10 @@ export interface ChunkData {
 export interface EdgeData {
   from_node_id: number;
   to_node_id: number;
-  context?: any;
-  source: 'user' | 'ai_similarity' | 'helper_name';
+  explanation: string;
+  created_via: EdgeCreatedVia;
+  source: EdgeSource;
+  skip_inference?: boolean; // reserved for bulk imports / migrations
 }
 
 export interface ChatData {

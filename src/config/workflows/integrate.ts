@@ -30,7 +30,11 @@ WORKFLOW STEPS
    For each connection found, call createEdge:
    - from_node_id: the focused node ID
    - to_node_id: the connected node ID
-   - context: { explanation: "why this connection matters" }
+   - explanation: "why this connection matters"
+   Direction rule: write the explanation so it reads FROM → TO.
+   Examples:
+   - Insight → Source: "Came from / inspired by"
+   - Episode → Podcast: "Episode of this podcast"
 
    The tool handles duplicates gracefully - if edge exists, it returns an error and you continue.
 

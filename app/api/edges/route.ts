@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validate required fields
-    if (!body.from_node_id || !body.to_node_id) {
+    if (!body.from_node_id || !body.to_node_id || typeof body.explanation !== 'string') {
       return NextResponse.json({
         success: false,
-        error: 'Missing required fields: from_node_id and to_node_id are required'
+        error: 'Missing required fields: from_node_id, to_node_id, and explanation are required'
       }, { status: 400 });
     }
 
@@ -57,6 +57,21 @@ export async function POST(request: NextRequest) {
 
     const fromId = parseInt(body.from_node_id);
     const toId = parseInt(body.to_node_id);
+    const explanation = String(body.explanation || '').trim();
+
+    if (!explanation) {
+      return NextResponse.json({
+        success: false,
+        error: 'explanation is required and cannot be empty'
+      }, { status: 400 });
+    }
+
+    const skipInference = Boolean(body.skip_inference);
+    const createdVia = (() => {
+      const raw = typeof body.created_via === 'string' ? body.created_via : '';
+      if (['ui', 'agent', 'mcp', 'workflow', 'quicklink'].includes(raw)) return raw as any;
+      return 'ui' as const;
+    })();
 
     // Idempotency: prevent duplicate edges between same pair
     try {
@@ -76,8 +91,10 @@ export async function POST(request: NextRequest) {
     const edge = await edgeService.createEdge({
       from_node_id: fromId,
       to_node_id: toId,
-      context: body.context || {},
-      source: body.source
+      explanation,
+      created_via: createdVia,
+      source: body.source,
+      skip_inference: skipInference
     });
 
     return NextResponse.json({

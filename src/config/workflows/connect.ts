@@ -19,7 +19,11 @@ WORKFLOW STEPS
    Call createEdge for each:
    - from_node_id: focused node ID
    - to_node_id: related node ID
-   - context: { explanation: "brief reason" }
+   - explanation: "brief reason for this connection"
+   Direction rule: write the explanation so it reads FROM → TO.
+   Examples:
+   - Episode → Podcast: "Episode of this podcast"
+   - Book → Author: "Written by"
 
 4. DONE
    Reply: "Linked [NODE:id:title] → [list of connected nodes as NODE:id:title]"

@@ -48,6 +48,34 @@ export async function generateDescription(input: DescriptionInput): Promise<stri
 }
 
 function buildDescriptionPrompt(input: DescriptionInput): string {
+  const normalizedSource = (input.metadata?.source || '').toLowerCase();
+  const url = typeof input.link === 'string' ? input.link.trim() : '';
+
+  // Best-effort creator hint from structured metadata (when available),
+  // but never assume a particular extraction source (YouTube vs paper vs website vs note).
+  const creatorHint =
+    input.metadata?.author?.trim() ||
+    input.metadata?.channel_name?.trim() ||
+    '';
+
+  // Best-effort publisher / container hint (less ideal than a true author, but better than nothing).
+  const publisherHint = input.metadata?.site_name?.trim() || '';
+
+  const likelyExternal =
+    Boolean(url) ||
+    normalizedSource.includes('youtube') ||
+    normalizedSource.includes('extract') ||
+    normalizedSource.includes('paper') ||
+    normalizedSource.includes('pdf') ||
+    normalizedSource.includes('website');
+
+  const likelyUserAuthored =
+    !likelyExternal &&
+    (normalizedSource.includes('quick-add-note') ||
+      normalizedSource.includes('quick-add-chat') ||
+      normalizedSource.includes('note') ||
+      normalizedSource.length === 0);
+
   const lines: string[] = [`Title: ${input.title}`];
 
   if (input.link) lines.push(`URL: ${input.link}`);
@@ -55,11 +83,27 @@ function buildDescriptionPrompt(input: DescriptionInput): string {
   if (input.metadata?.channel_name) lines.push(`Channel: ${input.metadata.channel_name}`);
   if (input.metadata?.author) lines.push(`Author: ${input.metadata.author}`);
   if (input.metadata?.site_name) lines.push(`Site: ${input.metadata.site_name}`);
+  if (creatorHint) lines.push(`Creator hint: ${creatorHint}`);
+  if (publisherHint) lines.push(`Publisher hint: ${publisherHint}`);
+  lines.push(`Likely user-authored: ${likelyUserAuthored ? 'yes' : 'no'}`);
 
   const contentPreview = input.content?.slice(0, 800) || '';
   if (contentPreview) lines.push(`Content: ${contentPreview}${input.content && input.content.length > 800 ? '...' : ''}`);
 
-  return `Your job is to do your best to answer 'what is this' - the most simple, high level contextual information of what this thing is. Users will be adding a variety of different nodes (ideas, books, podcasts, people, papers etc). Do your best to take the available information and infer what it is - high level. If unsure, that's fine just give your best guess and say you're unsure. Max 280 characters.
+  return `Your job is to answer: "what is this?" in one short line. Max 280 characters.
+
+GOAL: Include "who created it" when possible.
+
+RULES (in priority order):
+1) ONLY use a creator if you have a creator hint (Author/Channel) or the content explicitly says "by <X>" / "hosted by <X>".
+   - Do NOT treat prominent people in the title/transcript (e.g. a guest) as the creator.
+   - If a creator hint is provided, prefer it.
+2) If you can identify a creator/author/channel/person/org from a creator hint, start with: "By <creator> — ..."
+3) If it's likely user-authored, start with: "Your <thing> — ..." (don't invent a creator name).
+4) If creator is unknown, do NOT guess; omit the byline.
+
+Then, in the remainder, state what it is (video/paper/article/note/idea/etc) + what it's about (high-signal).
+If unsure, say so briefly.
 
 ${lines.join('\n')}`;
 }

@@ -28,6 +28,46 @@ export class WebsiteExtractor {
   };
 
   /**
+   * Extract content using Jina.ai Reader API
+   * Used as fallback when cheerio fails (JS-rendered sites, Twitter, SPAs)
+   * Free tier: 20 requests/minute per IP (no API key needed)
+   */
+  private async extractWithJina(url: string): Promise<ExtractionResult> {
+    const jinaUrl = `https://r.jina.ai/${url}`;
+
+    const response = await fetch(jinaUrl, {
+      headers: { 'User-Agent': 'RA-H/1.0' },
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Jina extraction failed: ${response.status}`);
+    }
+
+    const markdown = await response.text();
+
+    // Parse title from first markdown heading or first line
+    const titleMatch = markdown.match(/^#\s+(.+)$/m) || markdown.match(/^(.+)$/m);
+    const title = titleMatch?.[1]?.trim() || 'Extracted Content';
+
+    // Build metadata
+    const metadata: WebsiteMetadata = {
+      title,
+      extraction_method: 'jina',
+    };
+
+    // Format content consistently with cheerio output
+    const content = this.formatContent(metadata, markdown);
+
+    return {
+      content,
+      chunk: markdown,
+      metadata,
+      url,
+    };
+  }
+
+  /**
    * Clean extracted content for better readability
    */
   private cleanContent(content: string): string {
@@ -190,54 +230,68 @@ export class WebsiteExtractor {
   }
 
   /**
+   * Extract content using cheerio (static HTML parser)
+   * Fast, free, no external calls - but fails on JS-rendered sites
+   */
+  private async extractWithCheerio(url: string): Promise<ExtractionResult> {
+    const response = await fetch(url, {
+      headers: this.headers,
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+
+    const metadata = this.extractMetadata($);
+    metadata.extraction_method = 'cheerio';
+    const mainContent = this.extractMainContent($);
+
+    const content = this.formatContent(metadata, mainContent);
+
+    return {
+      content,
+      chunk: mainContent,
+      metadata,
+      url,
+    };
+  }
+
+  /**
    * Main extraction method
+   * Strategy: Try cheerio first (fast, free), fall back to Jina for JS-rendered sites
    */
   async extract(url: string): Promise<ExtractionResult> {
     // Validate URL
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       throw new Error('Invalid URL format - must start with http:// or https://');
     }
-    
+
+    // Try cheerio first (fast, no external call)
     try {
-      // Fetch the webpage
-      const response = await fetch(url, {
-        headers: this.headers,
-        signal: AbortSignal.timeout(30000), // 30 second timeout
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const result = await this.extractWithCheerio(url);
+
+      // If content is substantial, cheerio worked
+      if (result.chunk.length > 200) {
+        return result;
       }
-      
-      const html = await response.text();
-      
-      // Parse HTML with cheerio
-      const $ = cheerio.load(html);
-      
-      // Extract metadata and content
-      const metadata = this.extractMetadata($);
-      // Mark extraction method for downstream metadata
-      metadata.extraction_method = 'typescript_cheerio';
-      const mainContent = this.extractMainContent($);
-      
-      // Format content for display
-      const content = this.formatContent(metadata, mainContent);
-      
-      // Chunk is the main content text
-      const chunk = mainContent;
-      
-      return {
-        content,
-        chunk,
-        metadata,
-        url,
-      };
-      
+
+      console.log('[WebsiteExtractor] Cheerio extraction too short, trying Jina...');
     } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error('Request timeout - website took too long to respond');
       }
-      throw error;
+      console.log('[WebsiteExtractor] Cheerio failed, trying Jina...', error.message);
+    }
+
+    // Fallback to Jina for JS-rendered sites
+    try {
+      return await this.extractWithJina(url);
+    } catch (jinaError: any) {
+      throw new Error(`Extraction failed: ${jinaError.message}`);
     }
   }
 }

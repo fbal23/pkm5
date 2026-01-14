@@ -1,14 +1,11 @@
 "use client";
 
-import { useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useState } from 'react';
 import type { AgentDelegation } from '@/services/agents/delegation';
-
-type QuickAddIntent = 'link' | 'note' | 'chat';
 
 interface QuickAddSubmitPayload {
   input: string;
-  mode: QuickAddIntent;
+  mode: 'link' | 'note' | 'chat';
   description?: string;
 }
 
@@ -17,63 +14,10 @@ interface QuickAddInputProps {
   onSubmit: (payload: QuickAddSubmitPayload) => Promise<void>;
 }
 
-const MODE_CONFIG: Array<{
-  key: QuickAddIntent;
-  label: string;
-  hint: string;
-  icon: ReactNode;
-}> = [
-  {
-    key: 'link',
-    label: 'Link',
-    hint: 'Drop URLs for auto extraction',
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M10 13a5 5 0 0 0 7.54.35l2.12-2.12a5 5 0 1 0-7.07-7.07l-1.29 1.29" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M14 11a5 5 0 0 0-7.54-.35l-2.12 2.12a5 5 0 1 0 7.07 7.07l1.29-1.29" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    )
-  },
-  {
-    key: 'note',
-    label: 'Note',
-    hint: 'Quick note, no processing',
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M14 2v6h6" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M16 13H8" strokeLinecap="round" />
-        <path d="M16 17H8" strokeLinecap="round" />
-      </svg>
-    )
-  },
-  {
-    key: 'chat',
-    label: 'Chat',
-    hint: 'Paste conversations',
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M21 15a2 2 0 0 1-2 2H9l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    )
-  }
-];
-
 export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddInputProps) {
   const [input, setInput] = useState('');
-  const [description, setDescription] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [manualMode, setManualMode] = useState<QuickAddIntent | null>(null);
-  const [autoMode, setAutoMode] = useState<QuickAddIntent>('link');
-
-  const effectiveMode: QuickAddIntent = manualMode ?? autoMode;
-
-  const currentPlaceholder = useMemo(() => {
-    if (effectiveMode === 'note') return 'Write a quick note...';
-    if (effectiveMode === 'chat') return 'Paste conversation...';
-    return 'Paste a link or write something...';
-  }, [effectiveMode]);
 
   const maxConcurrent = 5;
   const activeCount = activeDelegations.filter(
@@ -81,44 +25,17 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
   ).length;
   const isSoftLimited = activeCount >= maxConcurrent;
 
-  const inferChatIntent = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed || manualMode) return;
-
-    const newlineCount = (trimmed.match(/\n/g)?.length ?? 0);
-    const looksLikeTranscript =
-      newlineCount >= 2 ||
-      /You said:|ChatGPT said:|Claude said:|Assistant:|User:/i.test(trimmed);
-
-    if (looksLikeTranscript && trimmed.length > 280) {
-      setAutoMode('chat');
-    }
-  };
-
-  const handleInputChange = (value: string) => {
-    setInput(value);
-    inferChatIntent(value);
-  };
-
-  const handleModeClick = (mode: QuickAddIntent) => {
-    setManualMode(mode);
-    setAutoMode(mode);
-  };
-
   const handleSubmit = async () => {
     if (!input.trim() || isPosting || isSoftLimited) return;
 
     setIsPosting(true);
     try {
+      // Mode is auto-detected server-side via quickAdd.ts detectInputType()
       await onSubmit({
         input: input.trim(),
-        mode: effectiveMode,
-        description: description.trim() || undefined
+        mode: 'link', // Default; actual type is inferred server-side
       });
       setInput('');
-      setDescription('');
-      setManualMode(null);
-      setAutoMode('link');
       setIsExpanded(false);
     } catch (error) {
       console.error('[QuickAddInput] Submit error:', error);
@@ -138,7 +55,7 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
     }
   };
 
-  // Collapsed state - visible trigger
+  // Collapsed state - prominent "ADD STUFF" button
   if (!isExpanded) {
     return (
       <button
@@ -147,114 +64,105 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '12px',
-          width: '100%',
-          padding: '16px 24px',
-          background: 'transparent',
-          border: '1px solid #333',
-          borderRadius: '12px',
-          color: '#888',
-          fontSize: '12px',
+          gap: '8px',
+          padding: '10px 16px',
+          background: 'rgba(34, 197, 94, 0.1)',
+          border: '1px solid rgba(34, 197, 94, 0.3)',
+          borderRadius: '8px',
+          color: '#22c55e',
+          fontSize: '11px',
           fontWeight: 600,
-          letterSpacing: '0.1em',
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
           cursor: 'pointer',
-          transition: 'all 0.2s ease'
+          transition: 'all 0.2s ease',
+          whiteSpace: 'nowrap',
+          boxShadow: '0 0 12px rgba(34, 197, 94, 0.15)'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = '#444';
-          e.currentTarget.style.color = '#aaa';
-          e.currentTarget.style.background = '#1a1a1a';
+          e.currentTarget.style.background = 'rgba(34, 197, 94, 0.2)';
+          e.currentTarget.style.borderColor = '#22c55e';
+          e.currentTarget.style.boxShadow = '0 0 20px rgba(34, 197, 94, 0.25)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#333';
-          e.currentTarget.style.color = '#888';
-          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.background = 'rgba(34, 197, 94, 0.1)';
+          e.currentTarget.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+          e.currentTarget.style.boxShadow = '0 0 12px rgba(34, 197, 94, 0.15)';
         }}
       >
-        CAPTURE
         <span style={{
-          width: '22px',
-          height: '22px',
+          width: '18px',
+          height: '18px',
           borderRadius: '50%',
           background: '#22c55e',
           color: '#0a0a0a',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '14px',
+          fontSize: '12px',
           fontWeight: 700
         }}>+</span>
+        Add Stuff
       </button>
     );
   }
 
-  // Expanded state
+  // Expanded state - full width overlay
   return (
     <div style={{
+      position: 'absolute',
+      top: '60px',
+      left: '20px',
+      right: '20px',
       display: 'flex',
       flexDirection: 'column',
       gap: '12px',
-      width: '100%',
-      background: 'transparent',
-      padding: '0',
+      background: '#0a0a0a',
+      padding: '16px',
+      borderRadius: '12px',
+      border: '1px solid #2a2a2a',
+      zIndex: 100,
       animation: 'fadeIn 150ms ease-out'
     }}>
-      {/* Mode tabs */}
-      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-        {MODE_CONFIG.map((mode) => {
-          const isActive = effectiveMode === mode.key;
-          return (
-            <button
-              key={mode.key}
-              type="button"
-              onClick={() => handleModeClick(mode.key)}
-              title={mode.hint}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: isActive ? '1px solid #333' : '1px solid transparent',
-                background: isActive ? '#1a1a1a' : 'transparent',
-                color: isActive ? '#fff' : '#666',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em'
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.color = '#999';
-                  e.currentTarget.style.background = '#1a1a1a';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.color = '#666';
-                  e.currentTarget.style.background = 'transparent';
-                }
-              }}
-            >
-              <span style={{ display: 'flex', opacity: isActive ? 1 : 0.7 }}>{mode.icon}</span>
-              {mode.label}
-            </button>
-          );
-        })}
-        
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <span style={{
+          color: '#22c55e',
+          fontSize: '11px',
+          fontWeight: 600,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span style={{
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            background: '#22c55e',
+            color: '#0a0a0a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '12px',
+            fontWeight: 700
+          }}>+</span>
+          Add Stuff
+        </span>
+
         {/* Close button */}
         <button
           onClick={() => {
             setIsExpanded(false);
             setInput('');
-            setDescription('');
           }}
           style={{
-            marginLeft: 'auto',
-            padding: '8px',
+            padding: '6px',
             background: 'transparent',
             border: 'none',
             color: '#666',
@@ -274,28 +182,29 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
         </button>
       </div>
 
-      {/* Input area - consistent height */}
+      {/* Input area - expanded */}
       <div style={{ position: 'relative' }}>
         <textarea
           value={input}
-          onChange={(e) => handleInputChange(e.target.value)}
+          onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={currentPlaceholder}
+          placeholder="Paste a URL, note, or transcript — RA-H will figure out what it is."
           disabled={isPosting || isSoftLimited}
           autoFocus
           style={{
             width: '100%',
-            minHeight: '80px',
-            maxHeight: '200px',
-            padding: '12px 14px',
+            minHeight: '140px',
+            maxHeight: '300px',
+            padding: '14px 16px',
             background: '#0a0a0a',
             border: '1px solid #1f1f1f',
-            borderRadius: '8px',
+            borderRadius: '10px',
             color: '#e5e5e5',
             fontSize: '14px',
             fontFamily: 'inherit',
             outline: 'none',
             resize: 'none',
+            lineHeight: '1.6',
             transition: 'border-color 0.15s ease'
           }}
           onFocus={(e) => {
@@ -305,51 +214,6 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
             e.currentTarget.style.borderColor = '#1f1f1f';
           }}
         />
-      </div>
-
-      {/* Description field - optional */}
-      <div style={{ position: 'relative' }}>
-        <textarea
-          value={description}
-          onChange={(e) => {
-            if (e.target.value.length <= 280) {
-              setDescription(e.target.value);
-            }
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="This is a... (optional)"
-          disabled={isPosting || isSoftLimited}
-          style={{
-            width: '100%',
-            minHeight: '50px',
-            maxHeight: '100px',
-            padding: '10px 14px',
-            background: '#0a0a0a',
-            border: '1px solid #1f1f1f',
-            borderRadius: '8px',
-            color: '#a5a5a5',
-            fontSize: '13px',
-            fontFamily: 'inherit',
-            outline: 'none',
-            resize: 'none',
-            transition: 'border-color 0.15s ease'
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = '#333';
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = '#1f1f1f';
-          }}
-        />
-        <span style={{
-          position: 'absolute',
-          bottom: '8px',
-          right: '10px',
-          fontSize: '10px',
-          color: description.length >= 260 ? '#f59e0b' : '#525252'
-        }}>
-          {description.length}/280
-        </span>
       </div>
 
       {/* Footer */}
@@ -361,8 +225,8 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
           onClick={handleSubmit}
           disabled={!input.trim() || isPosting || isSoftLimited}
           style={{
-            width: '36px',
-            height: '36px',
+            width: '38px',
+            height: '38px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -386,9 +250,9 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
           }}
         >
           {isPosting ? (
-            <span style={{ 
-              width: '14px', 
-              height: '14px', 
+            <span style={{
+              width: '14px',
+              height: '14px',
               border: '2px solid #0a0a0a',
               borderTopColor: 'transparent',
               borderRadius: '50%',

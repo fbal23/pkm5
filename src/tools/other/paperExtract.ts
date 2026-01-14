@@ -15,14 +15,15 @@ Description: "${description}"
 
 Respond with ONLY valid JSON (no markdown, no code blocks):
 {
-  "enhancedDescription": "Improved 2-3 sentence description explaining what this content is about",
+  "enhancedDescription": "A comprehensive summary of what this content is about (can be several paragraphs, up to ~1500 characters)",
   "tags": ["relevant", "semantic", "tags", "like", "ai", "economics", "research"],
   "reasoning": "Brief explanation of why you chose these categories"
 }
 
 Guidelines:
+- enhancedDescription should be thorough - cover key points, arguments, and takeaways
+- Aim for 3-6 paragraphs or 800-1500 characters - don't artificially truncate
 - Include 3-8 relevant semantic tags (not just generic ones)
-- Make description informative and contextual
 - For academic papers, include tags like: research, academic, paper, plus domain-specific tags
 - For AI/ML papers, include: ai, machine-learning, artificial-intelligence, deep-learning
 - For economics papers, include: economics, finance, markets, policy
@@ -32,7 +33,7 @@ Guidelines:
     const response = await generateText({
       model: openai('gpt-5-mini'),
       prompt,
-      maxOutputTokens: 500
+      maxOutputTokens: 800
     });
 
     let content = response.text || '{}';
@@ -122,7 +123,7 @@ export const paperExtractTool = tool({
       // Step 2: AI Analysis for enhanced metadata
       const aiAnalysis = await analyzeContentWithAI(
         result.metadata?.title || `PDF: ${new URL(url).pathname.split('/').pop()?.replace('.pdf', '')}`, 
-        result.content?.substring(0, 1000) || 'PDF document content', 
+        result.content?.substring(0, 2000) || 'PDF document content', 
         'pdf'
       );
 

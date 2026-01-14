@@ -5,12 +5,32 @@ import { nodeService } from '@/services/database/nodes';
 import { formatNodeForChat } from '../infrastructure/nodeFormatter';
 
 export const createEdgeTool = tool({
-  description: 'Create directed relationship between nodes',
+  description:
+    'Create directed relationship between nodes.\n\n' +
+    'Direction rule: FROM node → TO node should read correctly.\n' +
+    'Prefer the 4 core relations unless the user clearly wants an advanced intellectual relation:\n' +
+    '- Made by → created_by (attribution)\n' +
+    '- Part of → part_of (attribution)\n' +
+    '- Came from → source_of (intellectual)\n' +
+    '- Related → related_to (intellectual fallback)\n\n' +
+    'Examples:\n' +
+    '- Episode → Podcast: "Episode of this podcast"\n' +
+    '- Book → Author: "Written by"\n' +
+    '- Company → Founder: "Founded by"\n' +
+    '- Insight → Source: "Came from / inspired by"\n',
   inputSchema: z.object({
     from_node_id: z.number().describe('The ID of the source node (where the connection originates)'),
     to_node_id: z.number().describe('The ID of the target node (where the connection points to)'),
-    context: z.record(z.any()).optional().describe('Additional context about this connection - can include explanation, relationship type, strength, notes, etc.'),
-    source: z.enum(['user', 'ai', 'ai_similarity', 'helper_name']).default('ai').describe('Source of this edge - use "ai" for AI-created connections, "user" for manual connections, "ai_similarity" for similarity-based connections')
+    explanation: z.string().describe(
+      'REQUIRED: Why does this connection exist? Be specific. ' +
+      'Write it as a relationship that reads FROM → TO. ' +
+      'Examples: "Author of this book", "Guest on this podcast", ' +
+      '"Episode of this podcast", "This insight came from this podcast episode", "Extends the concept introduced here"'
+    ),
+    source: z.enum(['user', 'ai', 'ai_similarity', 'helper_name']).default('ai').describe(
+      'Source of this edge. Use "ai" (or "helper_name") for AI-created connections, ' +
+      '"user" for manual connections, "ai_similarity" for similarity-based connections.'
+    )
   }),
   execute: async (params) => {
     console.log('🔗 CreateEdge tool called with params:', JSON.stringify(params, null, 2));
@@ -37,6 +57,15 @@ export const createEdgeTool = tool({
         return {
           success: false,
           error: 'Cannot create edge from a node to itself',
+          data: null
+        };
+      }
+
+      const explanation = (params.explanation || '').trim();
+      if (!explanation) {
+        return {
+          success: false,
+          error: 'explanation is required. Provide a clear reason for why these two nodes should be connected.',
           data: null
         };
       }
@@ -84,7 +113,8 @@ export const createEdgeTool = tool({
       const newEdge = await edgeService.createEdge({
         from_node_id: params.from_node_id,
         to_node_id: params.to_node_id,
-        context: params.context || {},
+        explanation,
+        created_via: 'agent',
         source
       });
 

@@ -15,14 +15,15 @@ Description: "${description}"
 
 Respond with ONLY valid JSON (no markdown, no code blocks):
 {
-  "enhancedDescription": "Improved 2-3 sentence description explaining what this content is about",
+  "enhancedDescription": "A comprehensive summary of what this content is about (can be several paragraphs, up to ~1500 characters)",
   "tags": ["relevant", "semantic", "tags", "like", "ai", "economics", "research"],
   "reasoning": "Brief explanation of why you chose these categories"
 }
 
 Guidelines:
+- enhancedDescription should be thorough - cover key points, arguments, and takeaways
+- Aim for 3-6 paragraphs or 800-1500 characters - don't artificially truncate
 - Include 3-8 relevant semantic tags (not just generic ones)
-- Make description informative and contextual
 - For AI/ML content, include tags like: ai, machine-learning, artificial-intelligence, deep-learning
 - For economics content, include: economics, finance, markets, policy
 - Be specific and insightful
@@ -31,7 +32,7 @@ Guidelines:
     const response = await generateText({
       model: openai('gpt-5-mini'),
       prompt,
-      maxOutputTokens: 500
+      maxOutputTokens: 800
     });
 
     let content = response.text || '{}';
@@ -113,7 +114,7 @@ export const websiteExtractTool = tool({
       // Step 2: AI Analysis for enhanced metadata
       const aiAnalysis = await analyzeContentWithAI(
         result.metadata?.title || `Website: ${new URL(url).hostname}`, 
-        result.content?.substring(0, 500) || 'Website content', 
+        result.content?.substring(0, 2000) || 'Website content', 
         'website'
       );
 

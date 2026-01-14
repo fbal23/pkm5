@@ -22,7 +22,7 @@ Available types: ${AVAILABLE_SEGMENTS.join(', ')}
 
 Respond with ONLY valid JSON (no markdown, no code blocks):
 {
-  "enhancedDescription": "Improved 2-3 sentence description explaining what this content is about",
+  "enhancedDescription": "A comprehensive summary of what this content is about (can be several paragraphs, up to ~1500 characters)",
   "tags": ["relevant", "semantic", "tags", "like", "ai", "economics", "research"],
   "segments": ["research"],
   "reasoning": "Brief explanation of why you chose these categories"
@@ -30,8 +30,9 @@ Respond with ONLY valid JSON (no markdown, no code blocks):
 
 Guidelines:
 - Choose 1 segment that best fits the content type
+- enhancedDescription should be thorough - cover key points, arguments, and takeaways
+- Aim for 3-6 paragraphs or 800-1500 characters - don't artificially truncate
 - Include 3-8 relevant semantic tags (not just generic ones)
-- Make description informative and contextual
 - For AI/ML content, include tags like: ai, machine-learning, artificial-intelligence, deep-learning
 - For economics content, include: economics, finance, markets, policy
 - Be specific and insightful
@@ -40,7 +41,7 @@ Guidelines:
     const response = await generateText({
       model: openai('gpt-5-mini'),
       prompt,
-      maxOutputTokens: 500
+      maxOutputTokens: 800
     });
 
     let content = response.text || '{}';

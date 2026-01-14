@@ -5,6 +5,7 @@ import { autoEmbedQueue } from '@/services/embedding/autoEmbedQueue';
 import { hasSufficientContent } from '@/services/embedding/constants';
 import { DimensionService } from '@/services/database/dimensionService';
 import { generateDescription } from '@/services/database/descriptionService';
+import { scheduleAutoEdgeCreation } from '@/services/agents/autoEdge';
 
 export const runtime = 'nodejs';
 
@@ -124,6 +125,11 @@ export async function POST(request: NextRequest) {
 
     if (chunkStatus === 'not_chunked' && node.id) {
       autoEmbedQueue.enqueue(node.id, { reason: 'node_created' });
+    }
+
+    // Schedule auto-edge creation (fire-and-forget, non-blocking)
+    if (node.id) {
+      scheduleAutoEdgeCreation(node.id);
     }
 
     return NextResponse.json({

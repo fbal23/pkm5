@@ -159,8 +159,7 @@ const getNodesOutputSchema = {
 const createEdgeInputSchema = {
   sourceId: z.number().int().positive().describe('Source node ID'),
   targetId: z.number().int().positive().describe('Target node ID'),
-  type: z.string().optional().describe('Edge type/label'),
-  weight: z.number().min(0).max(1).optional().describe('Edge weight 0-1')
+  explanation: z.string().min(1).describe('REQUIRED: Why does this connection exist? Be specific.')
 };
 
 const createEdgeOutputSchema = {
@@ -191,8 +190,7 @@ const queryEdgesOutputSchema = {
 // rah_update_edge schemas
 const updateEdgeInputSchema = {
   id: z.number().int().positive().describe('Edge ID to update'),
-  type: z.string().optional().describe('New edge type/label'),
-  weight: z.number().min(0).max(1).optional().describe('New edge weight 0-1')
+  explanation: z.string().min(1).optional().describe('New explanation text (will re-infer relationship type)')
 };
 
 const updateEdgeOutputSchema = {
@@ -553,12 +551,13 @@ mcpServer.registerTool(
     inputSchema: createEdgeInputSchema,
     outputSchema: createEdgeOutputSchema
   },
-  async ({ sourceId, targetId, type, weight }) => {
+  async ({ sourceId, targetId, explanation }) => {
     const payload = {
-      source_id: sourceId,
-      target_id: targetId,
-      type: type || 'related',
-      weight: weight ?? 0.5
+      from_node_id: sourceId,
+      to_node_id: targetId,
+      explanation: explanation.trim(),
+      source: 'helper_name',
+      created_via: 'mcp'
     };
 
     const result = await callRaHApi('/api/edges', {
@@ -602,10 +601,10 @@ mcpServer.registerTool(
         count: edges.length,
         edges: edges.map(e => ({
           id: e.id,
-          source_id: e.source_id,
-          target_id: e.target_id,
-          type: e.type ?? null,
-          weight: e.weight ?? null
+          source_id: e.from_node_id,
+          target_id: e.to_node_id,
+          type: e.context?.type ?? null,
+          weight: typeof e.context?.confidence === 'number' ? e.context.confidence : null
         }))
       }
     };
@@ -620,18 +619,16 @@ mcpServer.registerTool(
     inputSchema: updateEdgeInputSchema,
     outputSchema: updateEdgeOutputSchema
   },
-  async ({ id, type, weight }) => {
-    const payload = {};
-    if (type !== undefined) payload.type = type;
-    if (weight !== undefined) payload.weight = weight;
-
-    if (Object.keys(payload).length === 0) {
-      throw new McpError(ErrorCode.InvalidParams, 'At least one field (type or weight) must be provided.');
+  async ({ id, explanation }) => {
+    if (typeof explanation !== 'string' || explanation.trim().length === 0) {
+      throw new McpError(ErrorCode.InvalidParams, 'explanation is required.');
     }
 
     const result = await callRaHApi(`/api/edges/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        context: { explanation: explanation.trim(), created_via: 'mcp' }
+      })
     });
 
     return {

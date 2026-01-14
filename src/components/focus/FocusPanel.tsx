@@ -68,6 +68,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
   const [nodeSearchSuggestions, setNodeSearchSuggestions] = useState<NodeSearchResult[]>([]);
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
   const [edgeExplanation, setEdgeExplanation] = useState('');
+  const [pendingEdgeTarget, setPendingEdgeTarget] = useState<{ id: number; title: string } | null>(null);
   const [deletingEdge, setDeletingEdge] = useState<number | null>(null);
   const [edgeEditingId, setEdgeEditingId] = useState<number | null>(null);
   const [edgeEditingValue, setEdgeEditingValue] = useState<string>('');
@@ -296,7 +297,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                 from_node_id: nodeId,
                 to_node_id: toId,
                 source: 'user',
-                context: { explanation: 'Referenced via @ mention', created_via: 'at_mention' }
+                explanation: 'Referenced via @ mention'
               })
             });
           }));
@@ -345,7 +346,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
               from_node_id: nodeId,
               to_node_id: toId,
               source: 'user',
-              context: { explanation: 'Referenced via @ mention', created_via: 'at_mention' }
+              explanation: 'Referenced via @ mention'
             })
           });
         }));
@@ -540,7 +541,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
             from_node_id: sourceNodeId,
             to_node_id: nodeId,
             source: 'user',
-            context: { explanation: 'Referenced via @ mention', created_via: 'at_mention' }
+              explanation: 'Referenced via @ mention'
           })
         });
       } catch (e) {
@@ -630,7 +631,8 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
   // Edge management functions (following same patterns as node functions)
 
   const handleEdgeNodeSelect = (targetNodeId: number, _targetNodeTitle?: string) => {
-    createEdgeWithExplanation(targetNodeId, '');
+    setPendingEdgeTarget({ id: targetNodeId, title: _targetNodeTitle || `Node ${targetNodeId}` });
+    setEdgeExplanation('');
   };
 
   // Handle node search keyboard navigation
@@ -648,13 +650,18 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
   };
 
   const handleSelectNodeSuggestion = (suggestion: NodeSearchResult) => {
-    createEdgeWithExplanation(suggestion.id, '');
-    setNodeSearchQuery('');
+    setPendingEdgeTarget({ id: suggestion.id, title: suggestion.title });
+    setEdgeExplanation('');
     setNodeSearchSuggestions([]);
   };
 
   const createEdgeWithExplanation = async (targetNodeId: number, explanation: string) => {
     if (activeNodeId === null) return;
+    const trimmed = (explanation || '').trim();
+    if (!trimmed) {
+      alert('Please add a short explanation for why this connection exists.');
+      return;
+    }
     try {
       const response = await fetch('/api/edges', {
         method: 'POST',
@@ -665,10 +672,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
           from_node_id: activeNodeId,
           to_node_id: targetNodeId,
           source: 'user',
-          context: {
-            explanation: explanation,
-            created_via: 'focus_panel'
-          }
+          explanation: trimmed
         }),
       });
 
@@ -682,6 +686,10 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
       // Reset state
       setAddingEdge(null);
       setEdgeExplanation('');
+      setPendingEdgeTarget(null);
+      setNodeSearchQuery('');
+      setNodeSearchSuggestions([]);
+      setShowConnectionsModal(false);
       
     } catch (error) {
       console.error('Error creating edge:', error);
@@ -807,14 +815,14 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                   key={suggestion.id}
                   onClick={() => handleSelectNodeSuggestion(suggestion)}
                   style={{
-                    padding: '14px 16px',
+                    padding: '10px 14px',
                     cursor: 'pointer',
                     borderBottom: index < nodeSearchSuggestions.length - 1 ? '1px solid #1f1f1f' : 'none',
                     background: index === selectedSearchIndex ? '#1a1a1a' : 'transparent',
                     transition: 'background 100ms ease',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px'
+                    gap: '10px'
                   }}
                   onMouseEnter={(e) => {
                     if (index !== selectedSearchIndex) {
@@ -831,13 +839,13 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '10px',
+                    fontSize: '9px',
                     fontWeight: 600,
                     color: '#0a0a0a',
                     background: '#22c55e',
-                    padding: '4px 8px',
+                    padding: '3px 6px',
                     borderRadius: '6px',
-                    minWidth: '28px',
+                    minWidth: '24px',
                     textAlign: 'center',
                     flexShrink: 0,
                     fontFamily: "'SF Mono', 'Fira Code', monospace"
@@ -845,7 +853,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                     {suggestion.id}
                   </span>
                   <span style={{
-                    fontSize: '15px',
+                    fontSize: '13px',
                     color: '#e5e5e5',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -859,6 +867,123 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Explanation (required) */}
+          {pendingEdgeTarget && (
+            <div style={{
+              marginTop: '10px',
+              background: '#0f0f0f',
+              border: '1px solid #262626',
+              borderRadius: '12px',
+              padding: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <div style={{ color: '#e5e5e5', fontSize: '13px', fontWeight: 500 }}>
+                Connecting to: <span style={{ color: '#a3e635' }}>{pendingEdgeTarget.title}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Made by', value: 'Created by ' },
+                  { label: 'Part of', value: 'Part of ' },
+                  { label: 'Came from', value: 'Came from ' },
+                  { label: 'Related', value: 'Related to ' },
+                ].map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => {
+                      setEdgeExplanation((prev) => {
+                        const trimmed = (prev || '').trim();
+                        return trimmed.length > 0 ? prev : chip.value;
+                      });
+                    }}
+                    style={{
+                      padding: '6px 10px',
+                      fontSize: '12px',
+                      borderRadius: '999px',
+                      border: '1px solid #262626',
+                      background: '#141414',
+                      color: '#e5e5e5',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#1a1a1a'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#141414'; }}
+                    title={`Prefill: ${chip.value.trim()}`}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={edgeExplanation}
+                onChange={(e) => setEdgeExplanation(e.target.value)}
+                placeholder="Why does this connect? (e.g., 'Author of this book', 'Inspired this insight')"
+                rows={2}
+                style={{
+                  width: '100%',
+                  resize: 'vertical',
+                  background: '#141414',
+                  border: '1px solid #1f1f1f',
+                  color: '#fafafa',
+                  borderRadius: '10px',
+                  padding: '10px',
+                  fontSize: '13px',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    createEdgeWithExplanation(pendingEdgeTarget.id, edgeExplanation);
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setPendingEdgeTarget(null);
+                    setEdgeExplanation('');
+                  }
+                }}
+              />
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    setPendingEdgeTarget(null);
+                    setEdgeExplanation('');
+                  }}
+                  style={{
+                    padding: '8px 10px',
+                    background: 'transparent',
+                    border: '1px solid #262626',
+                    color: '#a3a3a3',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => createEdgeWithExplanation(pendingEdgeTarget.id, edgeExplanation)}
+                  style={{
+                    padding: '8px 10px',
+                    background: '#22c55e',
+                    border: '1px solid #16a34a',
+                    color: '#0a0a0a',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 600
+                  }}
+                >
+                  Create connection
+                </button>
+              </div>
+              <div style={{ color: '#737373', fontSize: '11px' }}>
+                Tip: press <span style={{ fontFamily: 'monospace' }}>⌘</span>+<span style={{ fontFamily: 'monospace' }}>Enter</span> to create.
+              </div>
             </div>
           )}
         </div>
@@ -877,11 +1002,11 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
             }
             const visible = edgesExpanded[activeTab] ? list : list.slice(0, 5);
             return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {visible.map((connection) => (
-                  <div key={connection.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                  <div key={connection.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{
                           display: 'inline-block',
                           fontSize: '10px',
@@ -896,7 +1021,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                         }}>
                           {connection.connected_node.id}
                         </span>
-                        <span style={{ color: '#f8fafc', fontSize: '14px', fontWeight: 500 }}>{connection.connected_node.title}</span>
+                        <span style={{ color: '#f8fafc', fontSize: '13px', fontWeight: 500 }}>{connection.connected_node.title}</span>
                       </div>
                       {edgeEditingId === connection.edge.id ? (
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -958,8 +1083,33 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                         </div>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {typeof connection.edge.context?.type === 'string' && (
+                            <span style={{
+                              fontSize: '10px',
+                              color: '#a3a3a3',
+                              background: '#1f1f1f',
+                              border: '1px solid #262626',
+                              padding: '2px 6px',
+                              borderRadius: '999px',
+                              textTransform: 'none'
+                            }}>
+                              {String(connection.edge.context.type).replace(/_/g, ' ')}
+                            </span>
+                          )}
                           {connection.edge.context?.explanation ? (
-                            <span style={{ color: '#94a3b8', fontSize: '12px' }}>— {connection.edge.context.explanation}</span>
+                            <span
+                              style={{
+                                color: '#94a3b8',
+                                fontSize: '12px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                minWidth: 0,
+                              }}
+                              title={String(connection.edge.context.explanation)}
+                            >
+                              — {connection.edge.context.explanation}
+                            </span>
                           ) : (
                             <span style={{ color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>No explanation</span>
                           )}
@@ -986,7 +1136,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                       disabled={deletingEdge === connection.edge.id}
                       style={{
                         color: deletingEdge === connection.edge.id ? '#64748b' : '#94a3b8',
-                        fontSize: '14px',
+                        fontSize: '12px',
                         background: 'transparent',
                         border: 'none',
                         cursor: deletingEdge === connection.edge.id ? 'not-allowed' : 'pointer',
@@ -2127,14 +2277,14 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                     setNodeSearchSuggestions([]);
                   }}
                   style={{
-                    padding: '14px 20px',
+                    padding: '10px 16px',
                     cursor: 'pointer',
                     borderBottom: index < nodeSearchSuggestions.length - 1 ? '1px solid #1f1f1f' : 'none',
                     background: index === selectedSearchIndex ? '#1a1a1a' : 'transparent',
                     transition: 'background 100ms ease',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '14px'
+                    gap: '10px'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = '#1a1a1a';
@@ -2149,13 +2299,13 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '10px',
+                    fontSize: '9px',
                     fontWeight: 600,
                     color: '#0a0a0a',
                     background: '#22c55e',
-                    padding: '4px 8px',
+                    padding: '3px 6px',
                     borderRadius: '6px',
-                    minWidth: '28px',
+                    minWidth: '24px',
                     textAlign: 'center',
                     flexShrink: 0,
                     fontFamily: "'SF Mono', 'Fira Code', monospace"
@@ -2163,7 +2313,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                     {suggestion.id}
                   </span>
                   <span style={{
-                    fontSize: '14px',
+                    fontSize: '13px',
                     color: '#e5e5e5',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -2196,6 +2346,126 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
             </div>
           )}
 
+          {/* Explanation prompt (required) */}
+          {pendingEdgeTarget && (
+            <div style={{
+              marginTop: '10px',
+              background: '#141414',
+              border: '1px solid #262626',
+              borderRadius: '16px',
+              padding: '16px 18px',
+              boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.04), 0 24px 48px -12px rgba(0, 0, 0, 0.6)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              <div style={{ color: '#e5e5e5', fontSize: '13px', fontWeight: 600 }}>
+                Create connection to: <span style={{ color: '#a3e635' }}>{pendingEdgeTarget.title}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Made by', value: 'Created by ' },
+                  { label: 'Part of', value: 'Part of ' },
+                  { label: 'Came from', value: 'Came from ' },
+                  { label: 'Related', value: 'Related to ' },
+                ].map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => {
+                      setEdgeExplanation((prev) => {
+                        const trimmed = (prev || '').trim();
+                        return trimmed.length > 0 ? prev : chip.value;
+                      });
+                    }}
+                    style={{
+                      padding: '6px 10px',
+                      fontSize: '12px',
+                      borderRadius: '999px',
+                      border: '1px solid #262626',
+                      background: '#0f0f0f',
+                      color: '#e5e5e5',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#1a1a1a'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#0f0f0f'; }}
+                    title={`Prefill: ${chip.value.trim()}`}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={edgeExplanation}
+                onChange={(e) => setEdgeExplanation(e.target.value)}
+                placeholder="Why does this connect? (e.g., 'Author of this book', 'Inspired this insight')"
+                rows={2}
+                style={{
+                  width: '100%',
+                  resize: 'vertical',
+                  background: '#0f0f0f',
+                  border: '1px solid #333',
+                  color: '#fafafa',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  fontSize: '13px',
+                  outline: 'none',
+                  fontFamily: 'inherit'
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    createEdgeWithExplanation(pendingEdgeTarget.id, edgeExplanation);
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setPendingEdgeTarget(null);
+                    setEdgeExplanation('');
+                  }
+                }}
+                autoFocus
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button
+                  onClick={() => {
+                    setPendingEdgeTarget(null);
+                    setEdgeExplanation('');
+                  }}
+                  style={{
+                    padding: '8px 12px',
+                    background: '#262626',
+                    border: 'none',
+                    borderRadius: '10px',
+                    color: '#a3a3a3',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => createEdgeWithExplanation(pendingEdgeTarget.id, edgeExplanation)}
+                  style={{
+                    padding: '8px 12px',
+                    background: '#22c55e',
+                    border: '1px solid #16a34a',
+                    borderRadius: '10px',
+                    color: '#0a0a0a',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Create
+                </button>
+              </div>
+              <div style={{ color: '#737373', fontSize: '11px' }}>
+                Tip: press <span style={{ fontFamily: 'monospace' }}>⌘</span>+<span style={{ fontFamily: 'monospace' }}>Enter</span> to create.
+              </div>
+            </div>
+          )}
+
           {/* Existing Connections */}
           {!nodeSearchQuery && (
             <div style={{
@@ -2211,7 +2481,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
               minHeight: 0
             }}>
               <div style={{
-                padding: '16px 20px',
+                padding: '12px 16px',
                 borderBottom: '1px solid #1f1f1f',
                 fontSize: '12px',
                 color: '#737373',
@@ -2236,15 +2506,15 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                       <div
                         key={connection.id}
                         style={{
-                          padding: '14px 20px',
+                          padding: '10px 16px',
                           borderBottom: '1px solid #1f1f1f',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '8px'
+                          gap: '6px'
                         }}
                       >
                         {/* Connection header row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <span style={{
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -2253,9 +2523,9 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                             fontWeight: 600,
                             color: '#0a0a0a',
                             background: '#22c55e',
-                            padding: '4px 8px',
+                            padding: '3px 6px',
                             borderRadius: '6px',
-                            minWidth: '28px',
+                            minWidth: '24px',
                             textAlign: 'center',
                             flexShrink: 0,
                             fontFamily: "'SF Mono', 'Fira Code', monospace"
@@ -2266,7 +2536,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                             onClick={() => onNodeClick?.(connection.connected_node.id)}
                             style={{
                               flex: 1,
-                              fontSize: '14px',
+                              fontSize: '13px',
                               color: '#e5e5e5',
                               cursor: 'pointer',
                               overflow: 'hidden',
@@ -2302,7 +2572,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                         </div>
                         {/* Description row */}
                         {edgeEditingId === connection.edge.id ? (
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                             <input
                               value={edgeEditingValue}
                               onChange={(e) => setEdgeEditingValue(e.target.value)}
@@ -2319,12 +2589,12 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                               placeholder="Add explanation..."
                               style={{
                                 flex: 1,
-                                fontSize: '12px',
+                                fontSize: '11px',
                                 color: '#e5e5e5',
                                 background: '#0a0a0a',
                                 border: '1px solid #333',
                                 borderRadius: '6px',
-                                padding: '8px 10px',
+                                padding: '6px 8px',
                                 outline: 'none',
                                 fontFamily: 'inherit'
                               }}
@@ -2332,7 +2602,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                             <button
                               onClick={() => saveEdgeExplanation(connection.edge.id, connection.edge.context)}
                               style={{
-                                padding: '6px 12px',
+                                padding: '5px 10px',
                                 background: '#22c55e',
                                 border: 'none',
                                 borderRadius: '6px',
@@ -2347,7 +2617,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                             <button
                               onClick={cancelEditEdgeExplanation}
                               style={{
-                                padding: '6px 12px',
+                                padding: '5px 10px',
                                 background: '#262626',
                                 border: 'none',
                                 borderRadius: '6px',
@@ -2368,12 +2638,39 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                               color: connection.edge.context?.explanation ? '#888' : '#525252',
                               cursor: 'pointer',
                               padding: '4px 0',
-                              fontStyle: connection.edge.context?.explanation ? 'normal' : 'italic'
+                              fontStyle: connection.edge.context?.explanation ? 'normal' : 'italic',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
                             }}
                             onMouseEnter={(e) => { e.currentTarget.style.color = '#aaa'; }}
                             onMouseLeave={(e) => { e.currentTarget.style.color = connection.edge.context?.explanation ? '#888' : '#525252'; }}
                           >
-                            {(connection.edge.context?.explanation as string) || 'Click to add explanation...'}
+                            {typeof connection.edge.context?.type === 'string' && (
+                              <span style={{
+                                fontSize: '10px',
+                                color: '#a3a3a3',
+                                background: '#0f0f0f',
+                                border: '1px solid #262626',
+                                padding: '2px 6px',
+                                borderRadius: '999px',
+                                flexShrink: 0
+                              }}>
+                                {String(connection.edge.context.type).replace(/_/g, ' ')}
+                              </span>
+                            )}
+                            <span
+                              style={{
+                                flex: 1,
+                                minWidth: 0,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                              title={String(connection.edge.context?.explanation || '')}
+                            >
+                              {(connection.edge.context?.explanation as string) || 'Click to add explanation...'}
+                            </span>
                           </div>
                         )}
                       </div>

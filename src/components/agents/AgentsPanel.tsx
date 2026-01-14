@@ -202,11 +202,11 @@ export default function AgentsPanel({ openTabsData, activeTabId, activeDimension
           height: '100%',
           position: 'relative'
         }}>
-          {/* Top Bar - just collapse button */}
+          {/* Top Bar - collapse button + Add Stuff */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-start',
+            justifyContent: 'space-between',
             marginBottom: '24px'
           }}>
             {onCollapse && (
@@ -238,6 +238,13 @@ export default function AgentsPanel({ openTabsData, activeTabId, activeDimension
                 <Minimize2 size={14} />
               </button>
             )}
+            {/* Add Stuff - top right */}
+            <div style={{ maxWidth: '200px' }}>
+              <QuickAddInput
+                activeDelegations={orderedDelegations}
+                onSubmit={handleQuickAddSubmit}
+              />
+            </div>
           </div>
 
           {/* Center Section - Start button centered */}
@@ -280,7 +287,7 @@ export default function AgentsPanel({ openTabsData, activeTabId, activeDimension
                 }
               }}
             >
-              <span 
+              <span
                 className="start-text"
                 style={{
                   color: '#737373',
@@ -293,7 +300,7 @@ export default function AgentsPanel({ openTabsData, activeTabId, activeDimension
               >
                 Start
               </span>
-              <div 
+              <div
                 className="start-icon"
                 style={{
                   width: '44px',
@@ -313,14 +320,6 @@ export default function AgentsPanel({ openTabsData, activeTabId, activeDimension
                 </svg>
               </div>
             </button>
-          </div>
-
-          {/* Quick Add - at bottom, full width with padding */}
-          <div style={{ width: '100%', padding: '0 16px 16px 16px' }}>
-            <QuickAddInput
-              activeDelegations={orderedDelegations}
-              onSubmit={handleQuickAddSubmit}
-            />
           </div>
         </div>
       ) : null}
@@ -399,7 +398,7 @@ export default function AgentsPanel({ openTabsData, activeTabId, activeDimension
               e.currentTarget.style.borderColor = '#1f1f1f';
             }}
           >
-            <span style={{ 
+            <span style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -413,7 +412,7 @@ export default function AgentsPanel({ openTabsData, activeTabId, activeDimension
               fontWeight: 600,
               flexShrink: 0
             }}>+</span>
-            Capture
+            Add Stuff
           </button>
         </div>
         
