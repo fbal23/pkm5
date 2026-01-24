@@ -41,11 +41,12 @@ interface FolderViewOverlayProps {
   onNodeOpen: (nodeId: number) => void;
   refreshToken: number;
   onDataChanged?: () => void;
+  onDimensionSelect?: (dimensionName: string | null) => void;
 }
 
 const PAGE_SIZE = 100;
 
-export default function FolderViewOverlay({ onClose, onNodeOpen, refreshToken, onDataChanged }: FolderViewOverlayProps) {
+export default function FolderViewOverlay({ onClose, onNodeOpen, refreshToken, onDataChanged, onDimensionSelect: _onDimensionSelect }: FolderViewOverlayProps) {
   const [view, setView] = useState<'dimensions' | 'nodes'>('dimensions');
   const [dimensions, setDimensions] = useState<DimensionSummary[]>([]);
   const [dimensionsLoading, setDimensionsLoading] = useState(true);

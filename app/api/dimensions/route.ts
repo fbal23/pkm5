@@ -5,6 +5,45 @@ import { DimensionService } from '@/services/database/dimensionService';
 
 export const runtime = 'nodejs';
 
+export async function GET() {
+  try {
+    const sqlite = getSQLiteClient();
+
+    // Get all dimensions with their counts
+    const result = sqlite.query(`
+      WITH dimension_counts AS (
+        SELECT nd.dimension, COUNT(*) AS count
+        FROM node_dimensions nd
+        GROUP BY nd.dimension
+      )
+      SELECT
+        d.name AS dimension,
+        d.description,
+        d.is_priority AS isPriority,
+        COALESCE(dc.count, 0) AS count
+      FROM dimensions d
+      LEFT JOIN dimension_counts dc ON dc.dimension = d.name
+      ORDER BY d.is_priority DESC, d.name ASC
+    `);
+
+    return NextResponse.json({
+      success: true,
+      data: result.rows.map((row: any) => ({
+        dimension: row.dimension,
+        description: row.description,
+        isPriority: Boolean(row.isPriority),
+        count: Number(row.count)
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching dimensions:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch dimensions'
+    }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

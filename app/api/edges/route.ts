@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validate required fields
-    if (!body.from_node_id || !body.to_node_id || typeof body.explanation !== 'string') {
+    if (!body.from_node_id || !body.to_node_id) {
       return NextResponse.json({
         success: false,
-        error: 'Missing required fields: from_node_id, to_node_id, and explanation are required'
+        error: 'Missing required fields: from_node_id and to_node_id are required'
       }, { status: 400 });
     }
 
@@ -57,14 +57,8 @@ export async function POST(request: NextRequest) {
 
     const fromId = parseInt(body.from_node_id);
     const toId = parseInt(body.to_node_id);
+    // Explanation can be empty - service will auto-generate
     const explanation = String(body.explanation || '').trim();
-
-    if (!explanation) {
-      return NextResponse.json({
-        success: false,
-        error: 'explanation is required and cannot be empty'
-      }, { status: 400 });
-    }
 
     const skipInference = Boolean(body.skip_inference);
     const createdVia = (() => {

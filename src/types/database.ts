@@ -64,23 +64,16 @@ export interface Edge {
 
 export type EdgeSource = 'user' | 'ai_similarity' | 'helper_name';
 
-export type EdgeContextCategory = 'attribution' | 'intellectual';
-
 export type EdgeContextType =
-  | 'created_by'
-  | 'features'
-  | 'part_of'
-  | 'source_of'
-  | 'extends'
-  | 'supports'
-  | 'contradicts'
-  | 'related_to';
+  | 'created_by'   // Content → Creator (book by author, podcast by host)
+  | 'part_of'      // Part → Whole (episode of podcast, person discussed in book)
+  | 'source_of'    // Derivative → Source (insight from article)
+  | 'related_to';  // Default — anything else or when unsure
 
 export type EdgeCreatedVia = 'ui' | 'agent' | 'mcp' | 'workflow' | 'quicklink' | 'quick_capture_auto';
 
 export interface EdgeContext {
   // SYSTEM-INFERRED (AI classifies from explanation + nodes)
-  category: EdgeContextCategory;
   type: EdgeContextType;
   confidence: number;   // 0-1
   inferred_at: string;  // ISO timestamp

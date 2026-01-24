@@ -90,14 +90,31 @@ export default function DimensionTags({
     }
   };
 
-  const addDimension = async (dimension: string) => {
+  const addDimension = async (dimension: string, description?: string) => {
     if (!dimension.trim() || dimensions.includes(dimension.trim())) {
       return;
     }
 
+    // If description is provided, create/update the dimension in the database first
+    if (description) {
+      try {
+        await fetch('/api/dimensions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: dimension.trim(),
+            description: description.trim(),
+            isPriority: false
+          })
+        });
+      } catch (error) {
+        console.error('Error creating dimension with description:', error);
+      }
+    }
+
     const newDimensions = [...dimensions, dimension.trim()];
     await onUpdate(newDimensions);
-    
+
     setSearchQuery('');
     setSuggestions([]);
     setIsAdding(false);
@@ -387,8 +404,8 @@ export default function DimensionTags({
       <DimensionSearchModal
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
-        onDimensionSelect={(dim) => {
-          addDimension(dim);
+        onDimensionSelect={(dim, description) => {
+          addDimension(dim, description);
         }}
         existingDimensions={dimensions}
       />

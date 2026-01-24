@@ -22,10 +22,17 @@ const createVoiceRequestId = () =>
     ? crypto.randomUUID()
     : `voice_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
+interface HighlightedPassage {
+  selectedText: string;
+  nodeId: number;
+  nodeTitle: string;
+}
+
 interface RAHChatProps {
   openTabsData: Node[];
   activeTabId: number | null;
   activeDimension?: string | null;
+  onClearDimension?: () => void;
   onNodeClick?: (nodeId: number) => void;
   delegations?: AgentDelegation[];
   messages?: ChatMessage[];
@@ -33,12 +40,16 @@ interface RAHChatProps {
   mode?: 'easy' | 'hard';
   delegationMode?: boolean;
   delegationSessionId?: string;
+  onQuickAdd?: () => void;
+  highlightedPassage?: HighlightedPassage | null;
+  onClearPassage?: () => void;
 }
 
 export default function RAHChat({
   openTabsData,
   activeTabId,
   activeDimension,
+  onClearDimension: _onClearDimension,
   onNodeClick,
   delegations = [],
   messages: externalMessages,
@@ -46,6 +57,9 @@ export default function RAHChat({
   mode = 'easy',
   delegationMode = false,
   delegationSessionId,
+  onQuickAdd: _onQuickAdd,
+  highlightedPassage: _highlightedPassage,
+  onClearPassage: _onClearPassage,
 }: RAHChatProps) {
   // Use external state if provided (lifted state), otherwise use local state
   const [internalMessages, internalSetMessages] = useState<ChatMessage[]>([]);

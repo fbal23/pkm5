@@ -1,0 +1,45 @@
+"use client";
+
+import PaneHeader from './PaneHeader';
+import ViewsOverlay from '../views/ViewsOverlay';
+import type { BasePaneProps, PaneAction, PaneType } from './types';
+
+export interface ViewsPaneProps extends BasePaneProps {
+  onNodeClick: (nodeId: number) => void;
+  onNodeOpenInOtherPane?: (nodeId: number) => void;
+  refreshToken?: number;
+}
+
+export default function ViewsPane({
+  slot,
+  isActive,
+  onPaneAction,
+  onCollapse,
+  onSwapPanes,
+  onNodeClick,
+  onNodeOpenInOtherPane,
+  refreshToken
+}: ViewsPaneProps) {
+  const handleTypeChange = (type: PaneType) => {
+    onPaneAction?.({ type: 'switch-pane-type', paneType: type });
+  };
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      background: 'transparent',
+      overflow: 'hidden'
+    }}>
+      <PaneHeader slot={slot} onCollapse={onCollapse} onSwapPanes={onSwapPanes} />
+      <div style={{ flex: 1, overflow: 'hidden' }}>
+        <ViewsOverlay
+          onNodeClick={onNodeClick}
+          onNodeOpenInOtherPane={onNodeOpenInOtherPane}
+          refreshToken={refreshToken}
+        />
+      </div>
+    </div>
+  );
+}

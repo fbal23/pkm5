@@ -12,15 +12,25 @@ interface QuickAddSubmitPayload {
 interface QuickAddInputProps {
   activeDelegations: AgentDelegation[];
   onSubmit: (payload: QuickAddSubmitPayload) => Promise<void>;
+  // External control (optional - if provided, component is controlled)
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddInputProps) {
+export default function QuickAddInput({ activeDelegations, onSubmit, isOpen, onClose }: QuickAddInputProps) {
   const [input, setInput] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpandedInternal, setIsExpandedInternal] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Support both controlled (isOpen/onClose) and uncontrolled (internal state) modes
+  const isControlled = isOpen !== undefined;
+  const isExpanded = isControlled ? isOpen : isExpandedInternal;
+  const setIsExpanded = isControlled
+    ? (value: boolean) => { if (!value && onClose) onClose(); }
+    : setIsExpandedInternal;
 
   const maxConcurrent = 5;
   const activeCount = activeDelegations.filter(
@@ -149,8 +159,12 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
 
   const hasContent = input.trim() || uploadedFile;
 
-  // Collapsed state - prominent "ADD STUFF" button
+  // Collapsed state - only show button if NOT controlled externally
   if (!isExpanded) {
+    // In controlled mode, don't render anything when closed
+    if (isControlled) return null;
+
+    // Uncontrolled mode - show the "ADD STUFF" button
     return (
       <button
         onClick={() => setIsExpanded(true)}
@@ -201,14 +215,10 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
     );
   }
 
-  // Expanded state - full width overlay
-  return (
+  // Expanded state - modal overlay (centered if controlled, absolute if uncontrolled)
+  const modalContent = (
     <div
       style={{
-        position: 'absolute',
-        top: '60px',
-        left: '20px',
-        right: '20px',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
@@ -216,13 +226,15 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
         padding: '16px',
         borderRadius: '12px',
         border: dragOver ? '1px solid #22c55e' : '1px solid #2a2a2a',
-        zIndex: 100,
         animation: 'fadeIn 150ms ease-out',
-        transition: 'border-color 0.15s ease'
+        transition: 'border-color 0.15s ease',
+        width: isControlled ? '500px' : 'auto',
+        maxWidth: isControlled ? '90vw' : 'none',
       }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onClick={(e) => e.stopPropagation()}
     >
       {/* Header */}
       <div style={{
@@ -532,6 +544,39 @@ export default function QuickAddInput({ activeDelegations, onSubmit }: QuickAddI
           to { transform: rotate(360deg); }
         }
       `}</style>
+    </div>
+  );
+
+  // In controlled mode, wrap with backdrop
+  if (isControlled) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}
+        onClick={() => setIsExpanded(false)}
+      >
+        {modalContent}
+      </div>
+    );
+  }
+
+  // Uncontrolled mode - render with absolute positioning
+  return (
+    <div style={{
+      position: 'absolute',
+      top: '60px',
+      left: '20px',
+      right: '20px',
+      zIndex: 100,
+    }}>
+      {modalContent}
     </div>
   );
 }

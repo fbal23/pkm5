@@ -8,81 +8,77 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 
 const inferredEdgeContextSchema = z.object({
-  category: z.enum(['attribution', 'intellectual']),
-  type: z.enum([
-    'created_by',
-    'features',
-    'part_of',
-    'source_of',
-    'extends',
-    'supports',
-    'contradicts',
-    'related_to'
-  ]),
+  type: z.enum(['created_by', 'part_of', 'source_of', 'related_to']),
   confidence: z.number().min(0).max(1),
+  swap_direction: z.boolean(),
 });
 
 async function inferEdgeContext(params: {
   explanation: string;
   fromNode: Node;
   toNode: Node;
-}): Promise<Pick<EdgeContext, 'category' | 'type' | 'confidence'>> {
+}): Promise<{ type: EdgeContext['type']; confidence: number; swap_direction: boolean }> {
   const { explanation, fromNode, toNode } = params;
 
-  // Heuristic fast-paths for the 4 core UI chips.
+  // Heuristic fast-paths for common patterns.
   // This makes classification robust and reduces reliance on the model.
   const norm = explanation.trim().toLowerCase();
   const startsWithAny = (prefixes: string[]) => prefixes.some((p) => norm.startsWith(p));
+
+  // "Created by X" → FROM was created by TO (no swap needed)
   if (startsWithAny(['created by', 'made by', 'authored by', 'written by', 'founded by'])) {
-    return { category: 'attribution', type: 'created_by', confidence: 1.0 };
+    return { type: 'created_by', confidence: 1.0, swap_direction: false };
+  }
+  // "Author of X" → FROM is the author, so we need TO→FROM for created_by (swap needed)
+  if (startsWithAny(['author of', 'creator of', 'wrote', 'made', 'founded', 'created'])) {
+    return { type: 'created_by', confidence: 1.0, swap_direction: true };
   }
   if (startsWithAny(['part of', 'episode of', 'belongs to', 'in the series', 'in this series'])) {
-    return { category: 'attribution', type: 'part_of', confidence: 1.0 };
+    return { type: 'part_of', confidence: 1.0, swap_direction: false };
   }
-  if (startsWithAny(['features', 'mentions', 'hosted by', 'guest:', 'host:'])) {
-    return { category: 'attribution', type: 'features', confidence: 0.95 };
+  if (startsWithAny(['contains', 'includes', 'features', 'mentions', 'hosted by', 'guest:', 'host:'])) {
+    // FROM contains/features TO → TO is part of FROM (swap needed)
+    return { type: 'part_of', confidence: 0.95, swap_direction: true };
   }
-  if (startsWithAny(['came from', 'inspired by', 'derived from', 'from'])) {
-    return { category: 'intellectual', type: 'source_of', confidence: 0.9 };
+  if (startsWithAny(['came from', 'inspired by', 'derived from', 'based on', 'from', 'ideas from', 'insights from', 'ideas or insights from'])) {
+    // "FROM came from TO" / "FROM has ideas from TO" → no swap needed
+    return { type: 'source_of', confidence: 0.9, swap_direction: false };
+  }
+  if (startsWithAny(['inspired', 'source for', 'source of', 'led to'])) {
+    // "FROM inspired TO" / "FROM is source of TO" → swap needed (TO came from FROM)
+    return { type: 'source_of', confidence: 0.9, swap_direction: true };
   }
   if (startsWithAny(['related to', 'related'])) {
-    return { category: 'intellectual', type: 'related_to', confidence: 0.8 };
+    return { type: 'related_to', confidence: 0.8, swap_direction: false };
   }
 
   // If no API key is configured, degrade gracefully.
   // We still enforce explanation, but fall back to "related_to" classification.
   const apiKey = apiKeyService.getOpenAiKey();
   if (!apiKey) {
-    return { category: 'intellectual', type: 'related_to', confidence: 0.0 };
+    return { type: 'related_to', confidence: 0.0, swap_direction: false };
   }
 
   const provider = createOpenAI({ apiKey });
   const prompt = [
-    `Given this edge explanation: "${explanation}"`,
+    `Given two nodes and an explanation, determine the relationship type and direction.`,
     ``,
-    `From node:`,
-    `- Title: "${fromNode.title}"`,
-    `- Description: ${fromNode.description || 'No description available'}`,
-    `- Dimensions: ${fromNode.dimensions?.join(', ') || 'none'}`,
+    `FROM: "${fromNode.title}" — ${fromNode.description || 'No description'}`,
+    `TO: "${toNode.title}" — ${toNode.description || 'No description'}`,
+    `Explanation: "${explanation}"`,
     ``,
-    `To node:`,
-    `- Title: "${toNode.title}"`,
-    `- Description: ${toNode.description || 'No description available'}`,
-    `- Dimensions: ${toNode.dimensions?.join(', ') || 'none'}`,
+    `Edge types (the arrow shows required direction):`,
+    `- created_by: Content → Creator (e.g., "Book" → "Author", "Article" → "Writer")`,
+    `- part_of: Part → Whole (e.g., "Episode" → "Podcast", "Chapter" → "Book")`,
+    `- source_of: Derivative → Source (e.g., "Insight" → "Article it came from")`,
+    `- related_to: General relationship (bidirectional, no swap needed)`,
     ``,
-    `Classify the relationship:`,
-    `- category: "attribution" (factual: author, creator, host, guest) or "intellectual" (idea relationship)`,
-    `- type: one of [created_by, features, part_of, source_of, extends, supports, contradicts, related_to]`,
-    `- confidence: 0-1`,
+    `IMPORTANT: Check if FROM and TO match the required direction for the type.`,
+    `- If FROM is a Person/Creator and TO is Content, and type is created_by → swap_direction: true`,
+    `- If FROM is a Whole and TO is a Part, and type is part_of → swap_direction: true`,
+    `- If FROM is a Source and TO is Derivative, and type is source_of → swap_direction: true`,
     ``,
-    `IMPORTANT: Interpret the direction as "FROM node → TO node". Pick a type that reads correctly in that direction:`,
-    `- created_by: FROM was created/founded/authored by TO`,
-    `- features: FROM features TO (host/guest/subject appearing in FROM)`,
-    `- part_of: FROM is part of TO (episode→podcast, chapter→book, note→project)`,
-    `- source_of: FROM came from TO / was inspired by TO`,
-    `- extends/supports/contradicts: FROM extends/supports/contradicts TO`,
-    ``,
-    `Return JSON only: {"category": "...", "type": "...", "confidence": 0.X}`
+    `Return JSON: {"type": "...", "swap_direction": bool, "confidence": 0.X}`
   ].join('\n');
 
   try {
@@ -106,13 +102,103 @@ async function inferEdgeContext(params: {
 
     const parsed = inferredEdgeContextSchema.safeParse(parsedJson);
     if (!parsed.success) {
-      return { category: 'intellectual', type: 'related_to', confidence: 0.2 };
+      return { type: 'related_to', confidence: 0.2, swap_direction: false };
     }
 
     return parsed.data;
   } catch (error) {
     console.warn('[edges] inferEdgeContext failed; falling back to related_to', error);
-    return { category: 'intellectual', type: 'related_to', confidence: 0.2 };
+    return { type: 'related_to', confidence: 0.2, swap_direction: false };
+  }
+}
+
+// Auto-generate explanation and infer type when user doesn't provide an explanation
+async function autoInferEdge(params: {
+  fromNode: Node;
+  toNode: Node;
+}): Promise<{ explanation: string; type: EdgeContext['type']; confidence: number; swap_direction: boolean }> {
+  const { fromNode, toNode } = params;
+
+  const apiKey = apiKeyService.getOpenAiKey();
+  if (!apiKey) {
+    // Fallback without AI
+    return {
+      explanation: `Related to ${toNode.title}`,
+      type: 'related_to',
+      confidence: 0.0,
+      swap_direction: false,
+    };
+  }
+
+  const provider = createOpenAI({ apiKey });
+  const prompt = [
+    `Given two knowledge base nodes, determine how they are related.`,
+    ``,
+    `FROM: "${fromNode.title}"`,
+    `Description: ${fromNode.description || 'No description'}`,
+    ``,
+    `TO: "${toNode.title}"`,
+    `Description: ${toNode.description || 'No description'}`,
+    ``,
+    `Edge types (Content→Creator means the arrow goes FROM content TO creator):`,
+    `- created_by: Content → Person/Creator. The content node points to its creator.`,
+    `- part_of: Part → Whole (episode→podcast, chapter→book)`,
+    `- source_of: Derivative → Source (summary→original, insight→article)`,
+    `- related_to: DEFAULT. Similar topics, related concepts, or when unsure.`,
+    ``,
+    `CRITICAL RULES:`,
+    `1. If BOTH are documents/articles/content → use "related_to" or "source_of", NEVER "created_by"`,
+    `2. If FROM is a Person and TO is Content they created → use "created_by" with swap_direction: TRUE`,
+    `3. If FROM is Content and TO is the Person who created it → use "created_by" with swap_direction: FALSE`,
+    `4. When unsure → use "related_to"`,
+    ``,
+    `Return JSON: {"explanation": "...", "type": "...", "swap_direction": bool, "confidence": 0.X}`,
+  ].join('\n');
+
+  try {
+    const { text } = await generateText({
+      model: provider('gpt-4o-mini'),
+      prompt,
+      temperature: 0.0,
+      maxOutputTokens: 150,
+    });
+
+    const parsedJson = (() => {
+      try {
+        return JSON.parse(text);
+      } catch {
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) return JSON.parse(match[0]);
+        throw new Error('AI did not return valid JSON');
+      }
+    })();
+
+    const schema = z.object({
+      explanation: z.string(),
+      type: z.enum(['created_by', 'part_of', 'source_of', 'related_to']),
+      confidence: z.number().min(0).max(1),
+      swap_direction: z.boolean(),
+    });
+
+    const parsed = schema.safeParse(parsedJson);
+    if (!parsed.success) {
+      return {
+        explanation: `Related to ${toNode.title}`,
+        type: 'related_to',
+        confidence: 0.2,
+        swap_direction: false,
+      };
+    }
+
+    return parsed.data;
+  } catch (error) {
+    console.warn('[edges] autoInferEdge failed; falling back', error);
+    return {
+      explanation: `Related to ${toNode.title}`,
+      type: 'related_to',
+      confidence: 0.2,
+      swap_direction: false,
+    };
   }
 }
 
@@ -139,11 +225,6 @@ export class EdgeService {
     const now = new Date().toISOString();
     const sqlite = getSQLiteClient();
 
-    const explanation = (edgeData.explanation || '').trim();
-    if (!explanation) {
-      throw new Error('Edge explanation is required');
-    }
-
     const createdVia: EdgeCreatedVia = edgeData.created_via;
 
     // Fetch nodes for inference context
@@ -155,12 +236,32 @@ export class EdgeService {
     if (!fromNode) throw new Error(`Source node ${edgeData.from_node_id} not found`);
     if (!toNode) throw new Error(`Target node ${edgeData.to_node_id} not found`);
 
-    const inferred = edgeData.skip_inference
-      ? { category: 'intellectual' as const, type: 'related_to' as const, confidence: 0.0 }
-      : await inferEdgeContext({ explanation, fromNode, toNode });
+    let explanation = (edgeData.explanation || '').trim();
+    let inferred: { type: EdgeContext['type']; confidence: number; swap_direction: boolean };
+
+    if (!explanation && !edgeData.skip_inference) {
+      // Auto-generate explanation and infer type
+      const autoResult = await autoInferEdge({ fromNode, toNode });
+      explanation = autoResult.explanation;
+      inferred = {
+        type: autoResult.type,
+        confidence: autoResult.confidence,
+        swap_direction: autoResult.swap_direction,
+      };
+    } else if (edgeData.skip_inference) {
+      inferred = { type: 'related_to' as const, confidence: 0.0, swap_direction: false };
+      if (!explanation) explanation = `Related to ${toNode.title}`;
+    } else {
+      inferred = await inferEdgeContext({ explanation, fromNode, toNode });
+    }
+
+    // Apply swap_direction: flip from/to if inference determined direction should be reversed
+    const finalFromId = inferred.swap_direction ? edgeData.to_node_id : edgeData.from_node_id;
+    const finalToId = inferred.swap_direction ? edgeData.from_node_id : edgeData.to_node_id;
 
     const context: EdgeContext = {
-      ...inferred,
+      type: inferred.type,
+      confidence: inferred.confidence,
       inferred_at: now,
       explanation,
       created_via: createdVia,
@@ -170,8 +271,8 @@ export class EdgeService {
       INSERT INTO edges (from_node_id, to_node_id, context, source, created_at)
       VALUES (?, ?, ?, ?, ?)
     `).run(
-      edgeData.from_node_id,
-      edgeData.to_node_id,
+      finalFromId,
+      finalToId,
       JSON.stringify(context),
       edgeData.source,
       now
@@ -184,13 +285,13 @@ export class EdgeService {
       throw new Error('Failed to create edge');
     }
 
-    // Broadcast edge creation event
+    // Broadcast edge creation event (use final IDs from the saved edge)
     eventBroadcaster.broadcast({
       type: 'EDGE_CREATED',
-      data: { 
-        fromNodeId: newEdge.from_node_id, 
-        toNodeId: newEdge.to_node_id,
-        edge: newEdge 
+      data: {
+        fromNodeId: finalFromId,
+        toNodeId: finalToId,
+        edge: newEdge
       }
     });
 
@@ -242,10 +343,13 @@ export class EdgeService {
           (existingContext?.created_via as EdgeCreatedVia) ||
           'ui';
 
+        // Note: On update, we don't swap direction - the edge already exists with its direction.
+        // We only update the type and confidence based on the new explanation.
         updates.context = {
           ...existingContext,
           ...incomingContext,
-          ...inferred,
+          type: inferred.type,
+          confidence: inferred.confidence,
           inferred_at: now,
           explanation,
           created_via,

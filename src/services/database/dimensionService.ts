@@ -143,7 +143,7 @@ export class DimensionService {
   }
 
   /**
-   * Build AI prompt for dimension assignment (locked + keyword dimensions)
+   * Build AI prompt for dimension assignment (locked dimensions only)
    */
   private static buildAssignmentPrompt(
     nodeData: { title: string; content?: string; link?: string; description?: string },
@@ -171,56 +171,39 @@ CONTENT PREVIEW: ${contentPreview}${nodeData.content && nodeData.content.length 
       })
       .join('\n---\n');
 
-    return `You are categorizing a knowledge node. You will:
-1. Assign LOCKED dimensions (from a provided list)
-2. Suggest KEYWORD dimensions (to aid searchability)
+    return `You are categorizing a knowledge node into locked dimensions.
 
 === NODE TO CATEGORIZE ===
 Title: ${nodeData.title}
 ${nodeContextSection}
 URL: ${nodeData.link || 'none'}
 
-=== PART 1: LOCKED DIMENSIONS ===
+=== LOCKED DIMENSIONS ===
 CRITICAL: Read each dimension's DESCRIPTION carefully.
 The description defines what belongs in that dimension.
 Only assign if the content CLEARLY matches the description.
 If unsure, skip it — better to miss than assign incorrectly.
 
-AVAILABLE LOCKED DIMENSIONS:
+AVAILABLE DIMENSIONS:
 ${dimensionsList}
-
-=== PART 2: KEYWORD DIMENSIONS ===
-Suggest 1-3 simple, lowercase keywords that:
-- Capture the ESSENCE of this content
-- Make it easily SEARCHABLE
-- Are thoughtful and aid organization
-
-Good keywords: ai, podcast, paper, productivity, machine-learning, book, video, interview, tutorial, framework
-If unsure what keywords fit, respond with "none" — no noise is better than bad tags.
 
 === RESPONSE FORMAT ===
 LOCKED:
-[dimension names from the list above, one per line, or "none"]
-
-KEYWORDS:
-[lowercase keyword suggestions, one per line, or "none"]`;
+[dimension names from the list above, one per line, or "none"]`;
   }
 
   /**
-   * Parse AI response and extract locked + keyword dimensions
+   * Parse AI response and extract locked dimensions
    */
   private static parseAssignmentResponse(
     response: string,
     availableDimensions: LockedDimension[]
   ): { locked: string[]; keywords: string[] } {
     const lockedDimensions: string[] = [];
-    const keywordDimensions: string[] = [];
 
-    // Split response into LOCKED and KEYWORDS sections
-    const lockedMatch = response.match(/LOCKED:\s*([\s\S]*?)(?=KEYWORDS:|$)/i);
-    const keywordsMatch = response.match(/KEYWORDS:\s*([\s\S]*?)$/i);
+    // Extract LOCKED section
+    const lockedMatch = response.match(/LOCKED:\s*([\s\S]*?)$/i);
 
-    // Parse LOCKED section
     if (lockedMatch) {
       const lockedLines = lockedMatch[1].trim().split('\n');
       for (const line of lockedLines) {
@@ -241,31 +224,7 @@ KEYWORDS:
       }
     }
 
-    // Parse KEYWORDS section
-    if (keywordsMatch) {
-      const keywordLines = keywordsMatch[1].trim().split('\n');
-      for (const line of keywordLines) {
-        // Clean and normalize keyword
-        const keyword = line.trim().toLowerCase()
-          .replace(/[^a-z0-9-]/g, '') // Only allow lowercase letters, numbers, hyphens
-          .slice(0, 30); // Max 30 chars per keyword
-
-        if (keyword === 'none' || keyword === '' || keyword.length < 2) {
-          continue;
-        }
-
-        if (!keywordDimensions.includes(keyword)) {
-          keywordDimensions.push(keyword);
-
-          // Limit to 3 keywords
-          if (keywordDimensions.length >= 3) {
-            break;
-          }
-        }
-      }
-    }
-
-    return { locked: lockedDimensions, keywords: keywordDimensions };
+    return { locked: lockedDimensions, keywords: [] };
   }
 
   /**

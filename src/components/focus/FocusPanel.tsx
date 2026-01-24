@@ -10,6 +10,7 @@ import { Node, NodeConnection, Chunk } from '@/types/database';
 import DimensionTags from './dimensions/DimensionTags';
 import { getNodeIcon } from '@/utils/nodeIcons';
 import ConfirmDialog from '../common/ConfirmDialog';
+import { SourceReader } from './source';
 
 interface PopularDimension {
   dimension: string;
@@ -36,10 +37,17 @@ interface FocusPanelProps {
   onTabClose: (nodeId: number) => void;
   refreshTrigger?: number;
   onReorderTabs?: (fromIndex: number, toIndex: number) => void;
+  onOpenInOtherSlot?: (nodeId: number) => void;
+  hideTabBar?: boolean;
+  onTextSelect?: (nodeId: number, nodeTitle: string, text: string) => void;
+  highlightedPassage?: { nodeId: number; selectedText: string } | null;
 }
 
-export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeClick, onTabClose, refreshTrigger }: FocusPanelProps) {
-  const [nodesData, setNodesData] = useState<Record<number, Node>>({}); 
+export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeClick, onTabClose, refreshTrigger, onOpenInOtherSlot, hideTabBar, onTextSelect, highlightedPassage }: FocusPanelProps) {
+  const [nodesData, setNodesData] = useState<Record<number, Node>>({});
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: number } | null>(null); 
   const [loadingNodes, setLoadingNodes] = useState<Set<number>>(new Set());
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
@@ -61,6 +69,21 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
       return () => clearTimeout(timeout);
     }
   }, [showReembedPrompt]);
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleClick = () => setContextMenu(null);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setContextMenu(null);
+    };
+    document.addEventListener('click', handleClick);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('click', handleClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [contextMenu]);
 
   // Edges state management (following same patterns as nodes)
   const [edgesData, setEdgesData] = useState<{ [key: number]: NodeConnection[] }>({});
@@ -112,10 +135,39 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
   const [sourceEditValue, setSourceEditValue] = useState('');
   const [sourceSaving, setSourceSaving] = useState(false);
 
+  // Source reader mode: 'raw' (monospace) or 'reader' (formatted typography)
+  const [sourceReaderMode, setSourceReaderMode] = useState<'raw' | 'reader'>('reader');
+
   // Embedded chunks state (actual chunks from chunks table)
   const [chunksData, setChunksData] = useState<Record<number, Chunk[]>>({});
   const [loadingChunks, setLoadingChunks] = useState<Set<number>>(new Set());
   const [chunksExpanded, setChunksExpanded] = useState<Record<number, boolean>>({});
+
+  // Helper: preview edge type based on heuristics (mirrors backend logic)
+  const previewEdgeType = (explanation: string): { type: string; label: string } | null => {
+    const norm = (explanation || '').trim().toLowerCase();
+    if (!norm) return null;
+
+    const startsWithAny = (prefixes: string[]) => prefixes.some((p) => norm.startsWith(p));
+
+    if (startsWithAny(['created by', 'made by', 'authored by', 'written by', 'founded by'])) {
+      return { type: 'created_by', label: 'created by' };
+    }
+    if (startsWithAny(['part of', 'episode of', 'belongs to', 'in the series', 'in this series'])) {
+      return { type: 'part_of', label: 'part of' };
+    }
+    if (startsWithAny(['features', 'mentions', 'hosted by', 'guest:', 'host:'])) {
+      return { type: 'part_of', label: 'part of' };
+    }
+    if (startsWithAny(['came from', 'inspired by', 'derived from', 'from'])) {
+      return { type: 'source_of', label: 'source of' };
+    }
+    if (startsWithAny(['related to', 'related'])) {
+      return { type: 'related_to', label: 'related to' };
+    }
+    // No heuristic match - will be AI-inferred
+    return { type: 'inferred', label: 'will be inferred' };
+  };
 
   // Fetch priority dimensions on mount
   useEffect(() => {
@@ -184,6 +236,20 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
     }
   }, [refreshTrigger, activeTab]);
 
+  // Clear editing state when switching nodes
+  useEffect(() => {
+    // Clear all edit modes when switching to a different node
+    setEditingField(null);
+    setEditingValue('');
+    setEditingNodeId(null);
+    // Also clear notes/desc/source edit modes
+    setNotesEditMode(false);
+    setNotesEditValue('');
+    setDescEditMode(false);
+    setDescEditValue('');
+    setSourceEditMode(false);
+    setSourceEditValue('');
+  }, [activeTab]);
 
   const fetchPriorityDimensions = async () => {
     try {
@@ -1024,9 +1090,9 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
 
   // Edge management functions (following same patterns as node functions)
 
-  const handleEdgeNodeSelect = (targetNodeId: number, _targetNodeTitle?: string) => {
-    setPendingEdgeTarget({ id: targetNodeId, title: _targetNodeTitle || `Node ${targetNodeId}` });
-    setEdgeExplanation('');
+  const handleEdgeNodeSelect = async (targetNodeId: number, _targetNodeTitle?: string) => {
+    // Immediately create edge - backend auto-infers explanation and type
+    await createEdgeAuto(targetNodeId);
   };
 
   // Handle node search keyboard navigation
@@ -1043,19 +1109,16 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
     }
   };
 
-  const handleSelectNodeSuggestion = (suggestion: NodeSearchResult) => {
-    setPendingEdgeTarget({ id: suggestion.id, title: suggestion.title });
-    setEdgeExplanation('');
+  const handleSelectNodeSuggestion = async (suggestion: NodeSearchResult) => {
+    // Immediately create edge - backend auto-infers explanation and type
+    await createEdgeAuto(suggestion.id);
     setNodeSearchSuggestions([]);
+    setNodeSearchQuery('');
   };
 
-  const createEdgeWithExplanation = async (targetNodeId: number, explanation: string) => {
+  // Auto-create edge - backend handles explanation generation and type inference
+  const createEdgeAuto = async (targetNodeId: number) => {
     if (activeNodeId === null) return;
-    const trimmed = (explanation || '').trim();
-    if (!trimmed) {
-      alert('Please add a short explanation for why this connection exists.');
-      return;
-    }
     try {
       const response = await fetch('/api/edges', {
         method: 'POST',
@@ -1066,7 +1129,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
           from_node_id: activeNodeId,
           to_node_id: targetNodeId,
           source: 'user',
-          explanation: trimmed
+          explanation: '' // Empty - backend will auto-generate
         }),
       });
 
@@ -1076,7 +1139,43 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
 
       // Refresh edges data
       await fetchEdgesData(activeNodeId);
-      
+
+      // Reset state
+      setAddingEdge(null);
+      setEdgeExplanation('');
+      setPendingEdgeTarget(null);
+      setShowConnectionsModal(false);
+
+    } catch (error) {
+      console.error('Error creating edge:', error);
+      alert('Failed to create edge. Please try again.');
+    }
+  };
+
+  // Legacy function for manual explanation (kept for compatibility)
+  const createEdgeWithExplanation = async (targetNodeId: number, explanation: string) => {
+    if (activeNodeId === null) return;
+    try {
+      const response = await fetch('/api/edges', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from_node_id: activeNodeId,
+          to_node_id: targetNodeId,
+          source: 'user',
+          explanation: explanation || '' // Backend handles empty
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create edge');
+      }
+
+      // Refresh edges data
+      await fetchEdgesData(activeNodeId);
+
       // Reset state
       setAddingEdge(null);
       setEdgeExplanation('');
@@ -1084,7 +1183,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
       setNodeSearchQuery('');
       setNodeSearchSuggestions([]);
       setShowConnectionsModal(false);
-      
+
     } catch (error) {
       console.error('Error creating edge:', error);
       alert('Failed to create edge. Please try again.');
@@ -1264,122 +1363,6 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
             </div>
           )}
 
-          {/* Explanation (required) */}
-          {pendingEdgeTarget && (
-            <div style={{
-              marginTop: '10px',
-              background: '#0f0f0f',
-              border: '1px solid #262626',
-              borderRadius: '12px',
-              padding: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px'
-            }}>
-              <div style={{ color: '#e5e5e5', fontSize: '13px', fontWeight: 500 }}>
-                Connecting to: <span style={{ color: '#a3e635' }}>{pendingEdgeTarget.title}</span>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[
-                  { label: 'Made by', value: 'Created by ' },
-                  { label: 'Part of', value: 'Part of ' },
-                  { label: 'Came from', value: 'Came from ' },
-                  { label: 'Related', value: 'Related to ' },
-                ].map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    onClick={() => {
-                      setEdgeExplanation((prev) => {
-                        const trimmed = (prev || '').trim();
-                        return trimmed.length > 0 ? prev : chip.value;
-                      });
-                    }}
-                    style={{
-                      padding: '6px 10px',
-                      fontSize: '12px',
-                      borderRadius: '999px',
-                      border: '1px solid #262626',
-                      background: '#141414',
-                      color: '#e5e5e5',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#1a1a1a'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = '#141414'; }}
-                    title={`Prefill: ${chip.value.trim()}`}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-              <textarea
-                value={edgeExplanation}
-                onChange={(e) => setEdgeExplanation(e.target.value)}
-                placeholder="Why does this connect? (e.g., 'Author of this book', 'Inspired this insight')"
-                rows={2}
-                style={{
-                  width: '100%',
-                  resize: 'vertical',
-                  background: '#141414',
-                  border: '1px solid #1f1f1f',
-                  color: '#fafafa',
-                  borderRadius: '10px',
-                  padding: '10px',
-                  fontSize: '13px',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault();
-                    createEdgeWithExplanation(pendingEdgeTarget.id, edgeExplanation);
-                  }
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setPendingEdgeTarget(null);
-                    setEdgeExplanation('');
-                  }
-                }}
-              />
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => {
-                    setPendingEdgeTarget(null);
-                    setEdgeExplanation('');
-                  }}
-                  style={{
-                    padding: '8px 10px',
-                    background: 'transparent',
-                    border: '1px solid #262626',
-                    color: '#a3a3a3',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => createEdgeWithExplanation(pendingEdgeTarget.id, edgeExplanation)}
-                  style={{
-                    padding: '8px 10px',
-                    background: '#22c55e',
-                    border: '1px solid #16a34a',
-                    color: '#0a0a0a',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: 600
-                  }}
-                >
-                  Create connection
-                </button>
-              </div>
-              <div style={{ color: '#737373', fontSize: '11px' }}>
-                Tip: press <span style={{ fontFamily: 'monospace' }}>⌘</span>+<span style={{ fontFamily: 'monospace' }}>Enter</span> to create.
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Existing Connections */}
@@ -1401,6 +1384,16 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                   <div key={connection.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {/* Direction arrow: → if current node is FROM (outgoing), ← if current node is TO (incoming) */}
+                        <span style={{
+                          fontSize: '12px',
+                          color: connection.edge.from_node_id === activeTab ? '#22c55e' : '#f59e0b',
+                          fontWeight: 600,
+                          width: '16px',
+                          textAlign: 'center'
+                        }}>
+                          {connection.edge.from_node_id === activeTab ? '→' : '←'}
+                        </span>
                         <span style={{
                           display: 'inline-block',
                           fontSize: '10px',
@@ -1622,86 +1615,100 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
   return (
     <>
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
-      {/* Tab Bar */}
-      <div style={{
-        display: 'flex',
-        borderBottom: '1px solid #1a1a1a',
-        background: '#0f0f0f',
-        flexShrink: 0,
-        overflowX: 'auto',
-        overflowY: 'hidden'
-      }}>
-        {openTabs.length === 0 ? (
-          <div style={{
-            padding: '10px 16px',
-            fontSize: '12px',
-            color: '#666'
-          }}>
-            No tabs open
-          </div>
-        ) : (
-          openTabs.map((tabId) => {
-            const node = nodesData[tabId];
-            const isActive = activeTab === tabId;
-            const label = node ? truncateTitle(node.title || 'Untitled') : 'Loading...';
+      {/* Tab Bar - hidden when rendered from NodePane which has its own tab bar */}
+      {!hideTabBar && (
+        <div style={{
+          display: 'flex',
+          borderBottom: '1px solid #1a1a1a',
+          background: '#0f0f0f',
+          flexShrink: 0,
+          overflowX: 'auto',
+          overflowY: 'hidden'
+        }}>
+          {openTabs.length === 0 ? (
+            <div style={{
+              padding: '10px 16px',
+              fontSize: '12px',
+              color: '#666'
+            }}>
+              No tabs open
+            </div>
+          ) : (
+            openTabs.map((tabId) => {
+              const node = nodesData[tabId];
+              const isActive = activeTab === tabId;
+              const label = node ? truncateTitle(node.title || 'Untitled') : 'Loading...';
 
-            return (
-              <div
-                key={tabId}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  borderRight: '1px solid #1a1a1a',
-                  background: isActive ? '#121212' : '#0f0f0f',
-                  borderBottom: isActive ? '2px solid #666' : 'none',
-                  paddingBottom: isActive ? '0' : '2px',
-                  minWidth: '120px',
-                  maxWidth: '200px'
-                }}
-              >
-                <button
-                  onClick={() => onTabSelect(tabId)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    fontSize: '12px',
-                    fontFamily: 'inherit',
-                    color: isActive ? '#fff' : '#999',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
+              return (
+                <div
+                  key={tabId}
+                  draggable
+                  onDragStart={(e) => {
+                    const title = node?.title || 'Untitled';
+                    e.dataTransfer.effectAllowed = 'copyMove';
+                    e.dataTransfer.setData('application/x-rah-tab', JSON.stringify({ id: tabId, title }));
+                    e.dataTransfer.setData('text/plain', `[NODE:${tabId}:"${title}"]`);
                   }}
-                >
-                  {label}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTabClose(tabId);
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setContextMenu({ x: e.clientX, y: e.clientY, tabId });
                   }}
                   style={{
-                    padding: '4px 8px',
-                    fontSize: '14px',
-                    color: '#666',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'color 0.2s'
+                    display: 'flex',
+                    alignItems: 'center',
+                    borderRight: '1px solid #1a1a1a',
+                    background: isActive ? '#121212' : '#0f0f0f',
+                    borderBottom: isActive ? '2px solid #666' : 'none',
+                    paddingBottom: isActive ? '0' : '2px',
+                    minWidth: '120px',
+                    maxWidth: '200px',
+                    cursor: 'grab'
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = '#666'; }}
                 >
-                  ×
-                </button>
-              </div>
-            );
-          })
-        )}
-      </div>
+                  <button
+                    onClick={() => onTabSelect(tabId)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      fontSize: '12px',
+                      fontFamily: 'inherit',
+                      color: isActive ? '#fff' : '#999',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {label}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTabClose(tabId);
+                    }}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '14px',
+                      color: '#666',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'color 0.2s'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = '#666'; }}
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
 
       {/* Content Area */}
       <div style={{ 
@@ -2235,30 +2242,6 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                       onChange={setNotesEditValue}
                       inline
                     />
-                  </div>
-                )}
-                {/* Action buttons for Source tab */}
-                {activeContentTab === 'source' && !sourceEditMode && (
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-                    <button
-                      onClick={startSourceEdit}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: '4px 8px',
-                        fontSize: '10px',
-                        color: '#888',
-                        background: 'transparent',
-                        border: '1px solid #2a2a2a',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                      title="Edit source"
-                    >
-                      <Pencil size={12} />
-                      Edit
-                    </button>
                   </div>
                 )}
               </div>
@@ -2820,46 +2803,133 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                       </div>
                     </div>
                   ) : (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-                      {nodesData[activeTab]?.chunk ? (
-                        <div
-                          style={{
-                            color: '#ccc',
-                            fontSize: '12px',
-                            lineHeight: '1.5',
-                            padding: '12px',
-                            background: '#0a0a0a',
-                            border: '1px solid #1a1a1a',
-                            borderRadius: '4px',
-                            fontFamily: 'monospace',
-                            whiteSpace: 'pre-wrap',
-                            flex: 1,
-                            overflow: 'auto'
-                          }}
-                        >
-                          {nodesData[activeTab].chunk}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      {/* Mode toggle and edit button */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '8px',
+                        flexShrink: 0,
+                      }}>
+                        {/* Raw / Reader toggle */}
+                        <div style={{
+                          display: 'flex',
+                          background: '#111',
+                          borderRadius: '4px',
+                          border: '1px solid #222',
+                          overflow: 'hidden',
+                        }}>
+                          <button
+                            onClick={() => setSourceReaderMode('raw')}
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '10px',
+                              fontWeight: 500,
+                              color: sourceReaderMode === 'raw' ? '#fff' : '#666',
+                              background: sourceReaderMode === 'raw' ? '#2a2a2a' : 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            Raw
+                          </button>
+                          <button
+                            onClick={() => setSourceReaderMode('reader')}
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '10px',
+                              fontWeight: 500,
+                              color: sourceReaderMode === 'reader' ? '#fff' : '#666',
+                              background: sourceReaderMode === 'reader' ? '#2a2a2a' : 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            Reader
+                          </button>
                         </div>
-                      ) : (
-                        <div
+
+                        {/* Edit button */}
+                        <button
                           onClick={startSourceEdit}
                           style={{
-                            color: '#555',
-                            fontSize: '12px',
-                            fontStyle: 'italic',
-                            cursor: 'pointer',
-                            padding: '12px',
-                            border: '1px dashed #1a1a1a',
-                            borderRadius: '4px',
-                            textAlign: 'center',
-                            flex: 1,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            gap: '4px',
+                            padding: '4px 8px',
+                            fontSize: '10px',
+                            color: '#666',
+                            background: 'transparent',
+                            border: '1px solid #222',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#888';
+                            e.currentTarget.style.borderColor = '#333';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#666';
+                            e.currentTarget.style.borderColor = '#222';
                           }}
                         >
-                          No source content. Click to add.
-                        </div>
-                      )}
+                          <Pencil size={10} />
+                          Edit
+                        </button>
+                      </div>
+
+                      {/* Content display */}
+                      <div style={{ flex: 1, overflow: 'auto' }}>
+                        {nodesData[activeTab]?.chunk ? (
+                          sourceReaderMode === 'reader' ? (
+                            <SourceReader 
+                              content={nodesData[activeTab].chunk} 
+                              onTextSelect={onTextSelect ? (text) => onTextSelect(activeTab, nodesData[activeTab]?.title || 'Untitled', text) : undefined}
+                              highlightedText={highlightedPassage?.nodeId === activeTab ? highlightedPassage.selectedText : null}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                color: '#ccc',
+                                fontSize: '12px',
+                                lineHeight: '1.5',
+                                padding: '12px',
+                                background: '#0a0a0a',
+                                border: '1px solid #1a1a1a',
+                                borderRadius: '4px',
+                                fontFamily: 'monospace',
+                                whiteSpace: 'pre-wrap',
+                                minHeight: '100%',
+                              }}
+                            >
+                              {nodesData[activeTab].chunk}
+                            </div>
+                          )
+                        ) : (
+                          <div
+                            onClick={startSourceEdit}
+                            style={{
+                              color: '#555',
+                              fontSize: '12px',
+                              fontStyle: 'italic',
+                              cursor: 'pointer',
+                              padding: '12px',
+                              border: '1px dashed #1a1a1a',
+                              borderRadius: '4px',
+                              textAlign: 'center',
+                              height: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            No source content. Click to add.
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -3062,126 +3132,6 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
             </div>
           )}
 
-          {/* Explanation prompt (required) */}
-          {pendingEdgeTarget && (
-            <div style={{
-              marginTop: '10px',
-              background: '#141414',
-              border: '1px solid #262626',
-              borderRadius: '16px',
-              padding: '16px 18px',
-              boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.04), 0 24px 48px -12px rgba(0, 0, 0, 0.6)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}>
-              <div style={{ color: '#e5e5e5', fontSize: '13px', fontWeight: 600 }}>
-                Create connection to: <span style={{ color: '#a3e635' }}>{pendingEdgeTarget.title}</span>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[
-                  { label: 'Made by', value: 'Created by ' },
-                  { label: 'Part of', value: 'Part of ' },
-                  { label: 'Came from', value: 'Came from ' },
-                  { label: 'Related', value: 'Related to ' },
-                ].map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    onClick={() => {
-                      setEdgeExplanation((prev) => {
-                        const trimmed = (prev || '').trim();
-                        return trimmed.length > 0 ? prev : chip.value;
-                      });
-                    }}
-                    style={{
-                      padding: '6px 10px',
-                      fontSize: '12px',
-                      borderRadius: '999px',
-                      border: '1px solid #262626',
-                      background: '#0f0f0f',
-                      color: '#e5e5e5',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#1a1a1a'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = '#0f0f0f'; }}
-                    title={`Prefill: ${chip.value.trim()}`}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-              <textarea
-                value={edgeExplanation}
-                onChange={(e) => setEdgeExplanation(e.target.value)}
-                placeholder="Why does this connect? (e.g., 'Author of this book', 'Inspired this insight')"
-                rows={2}
-                style={{
-                  width: '100%',
-                  resize: 'vertical',
-                  background: '#0f0f0f',
-                  border: '1px solid #333',
-                  color: '#fafafa',
-                  borderRadius: '12px',
-                  padding: '10px 12px',
-                  fontSize: '13px',
-                  outline: 'none',
-                  fontFamily: 'inherit'
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault();
-                    createEdgeWithExplanation(pendingEdgeTarget.id, edgeExplanation);
-                  }
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setPendingEdgeTarget(null);
-                    setEdgeExplanation('');
-                  }
-                }}
-                autoFocus
-              />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                <button
-                  onClick={() => {
-                    setPendingEdgeTarget(null);
-                    setEdgeExplanation('');
-                  }}
-                  style={{
-                    padding: '8px 12px',
-                    background: '#262626',
-                    border: 'none',
-                    borderRadius: '10px',
-                    color: '#a3a3a3',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => createEdgeWithExplanation(pendingEdgeTarget.id, edgeExplanation)}
-                  style={{
-                    padding: '8px 12px',
-                    background: '#22c55e',
-                    border: '1px solid #16a34a',
-                    borderRadius: '10px',
-                    color: '#0a0a0a',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Create
-                </button>
-              </div>
-              <div style={{ color: '#737373', fontSize: '11px' }}>
-                Tip: press <span style={{ fontFamily: 'monospace' }}>⌘</span>+<span style={{ fontFamily: 'monospace' }}>Enter</span> to create.
-              </div>
-            </div>
-          )}
-
           {/* Existing Connections */}
           {!nodeSearchQuery && (
             <div style={{
@@ -3231,6 +3181,17 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                       >
                         {/* Connection header row */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          {/* Direction arrow: → if current node is FROM (outgoing), ← if current node is TO (incoming) */}
+                          <span style={{
+                            fontSize: '14px',
+                            color: connection.edge.from_node_id === activeTab ? '#22c55e' : '#f59e0b',
+                            fontWeight: 600,
+                            width: '18px',
+                            textAlign: 'center',
+                            flexShrink: 0
+                          }}>
+                            {connection.edge.from_node_id === activeTab ? '→' : '←'}
+                          </span>
                           <span style={{
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -3423,6 +3384,90 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
             }
           }
         `}</style>
+      </div>
+    )}
+
+    {/* Tab Context Menu */}
+    {contextMenu && (
+      <div
+        style={{
+          position: 'fixed',
+          top: contextMenu.y,
+          left: contextMenu.x,
+          background: '#1a1a1a',
+          border: '1px solid #2a2a2a',
+          borderRadius: '6px',
+          padding: '4px',
+          zIndex: 9999,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          minWidth: '160px',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {onOpenInOtherSlot && (
+          <button
+            onClick={() => {
+              onOpenInOtherSlot(contextMenu.tabId);
+              setContextMenu(null);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              width: '100%',
+              padding: '8px 12px',
+              background: 'transparent',
+              border: 'none',
+              borderRadius: '4px',
+              color: '#ccc',
+              fontSize: '12px',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#2a2a2a';
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#ccc';
+            }}
+          >
+            <span style={{ fontSize: '14px' }}>↗</span>
+            Open in other panel
+          </button>
+        )}
+        <button
+          onClick={() => {
+            onTabClose(contextMenu.tabId);
+            setContextMenu(null);
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            width: '100%',
+            padding: '8px 12px',
+            background: 'transparent',
+            border: 'none',
+            borderRadius: '4px',
+            color: '#ccc',
+            fontSize: '12px',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#2a2a2a';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = '#ccc';
+          }}
+        >
+          <span style={{ fontSize: '14px' }}>×</span>
+          Close tab
+        </button>
       </div>
     )}
 

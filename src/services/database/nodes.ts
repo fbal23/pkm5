@@ -78,10 +78,11 @@ export class NodeService {
 
     const result = sqlite.query<Node & { dimensions_json: string }>(query, params);
     
-    // Parse dimensions_json back to array for compatibility
+    // Parse dimensions_json and metadata back for compatibility
     return result.rows.map(row => ({
       ...row,
-      dimensions: JSON.parse(row.dimensions_json || '[]')
+      dimensions: JSON.parse(row.dimensions_json || '[]'),
+      metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : null,
     }));
   }
 
@@ -109,7 +110,8 @@ export class NodeService {
     const row = result.rows[0];
     return {
       ...row,
-      dimensions: JSON.parse(row.dimensions_json || '[]')
+      dimensions: JSON.parse(row.dimensions_json || '[]'),
+      metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : null,
     };
   }
 
