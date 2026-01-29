@@ -45,7 +45,6 @@ export const TOOL_GROUP_ASSIGNMENTS: Record<string, string> = {
   // Orchestration: Workflows and reasoning (orchestrator only)
   webSearch: 'orchestration',
   think: 'orchestration',
-  delegateToWiseRAH: 'orchestration',
   executeWorkflow: 'orchestration',
   listWorkflows: 'orchestration',
   getWorkflow: 'orchestration',

@@ -16,7 +16,6 @@ import { queryDimensionNodesTool } from '../database/queryDimensionNodes';
 import { searchContentEmbeddingsTool } from '../other/searchContentEmbeddings';
 import { webSearchTool } from '../other/webSearch';
 import { thinkTool } from '../other/think';
-import { delegateToWiseRAHTool } from '../orchestration/delegateToWiseRAH';
 import { executeWorkflowTool } from '../orchestration/executeWorkflow';
 import { listWorkflowsTool } from '../orchestration/listWorkflows';
 import { getWorkflowTool } from '../orchestration/getWorkflow';
@@ -42,7 +41,6 @@ const CORE_TOOLS: Record<string, any> = {
 const ORCHESTRATION_TOOLS: Record<string, any> = {
   webSearch: webSearchTool,
   think: thinkTool,
-  delegateToWiseRAH: delegateToWiseRAHTool,
   executeWorkflow: executeWorkflowTool,
   listWorkflows: listWorkflowsTool,
   getWorkflow: getWorkflowTool,
@@ -98,7 +96,6 @@ const ORCHESTRATOR_TOOL_NAMES = Array.from(new Set([
 const EXECUTOR_TOOL_NAMES = [
   ...Object.keys(CORE_TOOLS),
   ...Object.keys(ORCHESTRATION_TOOLS).filter(name =>
-    name !== 'delegateToWiseRAH' &&
     name !== 'executeWorkflow'
   ),
   ...Object.keys(EXECUTION_TOOLS),

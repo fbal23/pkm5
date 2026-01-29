@@ -8,8 +8,6 @@ import { scenario as createEdge } from './create-edge';
 import { scenario as queryDimensions } from './query-dimensions';
 import { scenario as getDimension } from './get-dimension';
 import { scenario as dimensionLifecycle } from './dimension-lifecycle';
-import { scenario as delegateMini } from './delegate-mini';
-import { scenario as delegateWise } from './delegate-wise';
 import { scenario as youtubeExtract } from './youtube-extract';
 import { scenario as websiteExtract } from './website-extract';
 import { scenario as paperExtract } from './paper-extract';
@@ -25,8 +23,6 @@ export const scenarios = [
   dimensionLifecycle,
   hardModeQuery,
   workflowIntegrate,
-  delegateMini,
-  delegateWise,
   youtubeExtract,
   websiteExtract,
   paperExtract,
