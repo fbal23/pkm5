@@ -158,3 +158,15 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - requestContext provides API key passing and trace IDs through the request lifecycle
   - autoContext provides "top 10 most connected nodes" context for workflows
 
+## Story 10: Simplify settings panel
+- Completed: Thu 29 Jan 2026
+- Files modified:
+  - src/components/settings/ContextViewer.tsx (updated description to remove chat reference)
+- Analysis:
+  - SettingsModal.tsx tabs: Logs, Tools, Workflows, API Keys, Database, Context, External Agents
+  - No voice-specific or agent-configuration tabs existed - panel was already clean
+  - All tabs are useful for MCP/workflow functionality
+- Learnings:
+  - The settings panel was designed well from the start - no chat/voice-specific tabs to remove
+  - Only text update needed: "chats and workflows" → "workflow execution" in ContextViewer
+
