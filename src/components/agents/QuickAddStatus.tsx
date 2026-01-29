@@ -1,6 +1,15 @@
 "use client";
 
-import type { AgentDelegation } from '@/services/agents/delegation';
+// Stub type for delegation (delegation system removed in rah-light)
+type AgentDelegation = {
+  id: number;
+  sessionId: string;
+  task: string;
+  status: 'queued' | 'in_progress' | 'completed' | 'failed';
+  summary?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
 
 interface QuickAddStatusProps {
   delegations: AgentDelegation[];

@@ -1,5 +1,17 @@
 import { Fragment, ReactNode, useMemo } from 'react';
-import type { AgentDelegation } from '@/services/agents/delegation';
+
+// Stub type for delegation (delegation system removed in rah-light)
+type AgentDelegation = {
+  id: number;
+  sessionId: string;
+  task: string;
+  context: string[];
+  status: 'queued' | 'in_progress' | 'completed' | 'failed';
+  summary?: string | null;
+  agentType: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 const statusPalette: Record<string, { border: string; badge: string }> = {
   queued: { border: '#3a2f5f', badge: '#a78bfa' },

@@ -1,7 +1,6 @@
 import { streamText, ModelMessage } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import type { LanguageModelV2ToolResultOutput } from '@ai-sdk/provider';
-import { AgentDelegationService } from '@/services/agents/delegation';
 import { WORKFLOW_EXECUTOR_SYSTEM_PROMPT } from '@/config/prompts/workflow-executor';
 import { getToolsByNames } from '@/tools/infrastructure/registry';
 import { WorkflowRegistry } from '@/services/workflows/registry';
@@ -10,7 +9,6 @@ import { calculateCost } from '@/services/analytics/pricing';
 import { UsageData } from '@/types/analytics';
 import { summarizeToolExecution } from '@/services/agents/toolResultUtils';
 import { edgeService } from '@/services/database/edges';
-import { delegationStreamBroadcaster } from '@/app/api/rah/delegations/stream/route';
 import { RequestContext } from '@/services/context/requestContext';
 
 export interface WorkflowExecutionInput {
@@ -38,8 +36,7 @@ export class WorkflowExecutor {
         throw new Error('OPENAI_API_KEY is not set for workflow execution.');
       }
 
-      AgentDelegationService.markInProgress(sessionId);
-      console.log('✅ [WorkflowExecutor] Delegation marked in progress');
+      console.log('✅ [WorkflowExecutor] Starting workflow execution');
 
       // Get workflow definition if available
       const workflow = workflowKey ? await WorkflowRegistry.getWorkflowByKey(workflowKey) : null;
@@ -165,28 +162,9 @@ export class WorkflowExecutor {
 
       const ensureString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
-      const sanitizeForBroadcast = (value: unknown) => {
-        if (value === undefined) return undefined;
-        try {
-          return JSON.parse(JSON.stringify(value));
-        } catch (error) {
-          console.warn('[WorkflowExecutor] Failed to serialize delegation payload', error);
-          if (typeof value === 'string') return value;
-          return undefined;
-        }
-      };
-
-      const emitDelegationEvent = (payload: Record<string, unknown>) => {
-        delegationStreamBroadcaster.broadcast(sessionId, payload);
-      };
-
+      // Logging helpers (no-op for lite version without delegation streaming)
       const emitToolStart = (toolCallId: string, toolName: string, input: unknown) => {
-        emitDelegationEvent({
-          type: 'tool-input-start',
-          toolCallId,
-          toolName,
-          input: sanitizeForBroadcast(input),
-        });
+        console.log(`🔧 [WorkflowExecutor] Tool start: ${toolName}`);
       };
 
       const emitToolCompletion = (
@@ -197,15 +175,7 @@ export class WorkflowExecutor {
         status: 'complete' | 'error' = 'complete',
         errorMessage?: string
       ) => {
-        emitDelegationEvent({
-          type: 'tool-output-available',
-          toolCallId,
-          toolName,
-          result: sanitizeForBroadcast(rawResult),
-          summary,
-          status,
-          error: errorMessage,
-        });
+        console.log(`✅ [WorkflowExecutor] Tool complete: ${toolName} - ${status}`);
       };
 
       const buildToolOutput = (toolName: string, summary: string, rawResult: any): LanguageModelV2ToolResultOutput => {
@@ -280,9 +250,6 @@ export class WorkflowExecutor {
       for (let i = 0; i < maxIterations; i++) {
         console.log(`🔄 [WorkflowExecutor] Iteration ${i + 1}/${maxIterations}`);
 
-        // Touch delegation every iteration to prevent cleanup from killing it
-        AgentDelegationService.touchDelegation(sessionId);
-
         const streamResult = await streamText({
           model: openaiProvider('gpt-5-mini'),
           messages,
@@ -308,12 +275,9 @@ export class WorkflowExecutor {
 
         console.log(`📊 [WorkflowExecutor] Step ${i + 1} finishReason:`, response.finishReason);
 
-        // Stream text response to delegation chat
+        // Log text response
         if (response.text && response.text.trim()) {
-          emitDelegationEvent({
-            type: 'text-delta',
-            delta: response.text,
-          });
+          console.log(`📝 [WorkflowExecutor] Response text: ${response.text.substring(0, 100)}...`);
         }
 
         if (response.finishReason !== 'tool-calls') {
@@ -325,9 +289,9 @@ export class WorkflowExecutor {
         const toolCalls = response.toolCalls || [];
         console.log(`🔧 [WorkflowExecutor] Executing ${toolCalls.length} tool calls`);
 
-        // Broadcast new assistant message for next iteration
+        // Log tool calls
         if (toolCalls.length > 0) {
-          emitDelegationEvent({ type: 'assistant-message' });
+          console.log(`🔧 [WorkflowExecutor] Processing ${toolCalls.length} tool calls`);
         }
 
         messages.push({
@@ -441,24 +405,11 @@ export class WorkflowExecutor {
       console.log('📏 [WorkflowExecutor] Summary length:', summary.length);
 
       if (!summary) {
-        emitDelegationEvent({
-          type: 'assistant-message',
-        });
-        emitDelegationEvent({
-          type: 'text-delta',
-          delta: 'Workflow executor attempted to summarise but the response was empty. Check tool logs above for context.',
-        });
+        console.warn('[WorkflowExecutor] Empty summary received');
         throw new Error('Workflow executor returned empty summary');
       }
 
       console.log('[WorkflowExecutor] summary:', summary);
-
-      // Emit final summary to the stream so it appears in the UI
-      emitDelegationEvent({ type: 'assistant-message' });
-      emitDelegationEvent({
-        type: 'text-delta',
-        delta: summary,
-      });
 
       // Calculate cost and log to chats table
       if (usage) {
@@ -487,16 +438,13 @@ export class WorkflowExecutor {
           workflowNodeId,
         };
 
-        const delegation = AgentDelegationService.getDelegation(sessionId);
-        const delegationId = delegation?.id;
-
         await ChatLoggingMiddleware.logChatInteraction(
           task,
           summary,
           {
             helperName: 'workflow-agent',
             agentType: 'planner',
-            delegationId: delegationId ?? null,
+            delegationId: null,
             sessionId,
             usageData,
             traceId,
@@ -511,23 +459,12 @@ export class WorkflowExecutor {
         console.log(`💰 [WorkflowExecutor] Cost: $${costResult.totalCostUsd.toFixed(6)} (${totalTokens} tokens)`);
       }
 
-      console.log('✅ [WorkflowExecutor] Completing delegation with summary');
-      return AgentDelegationService.completeDelegation(sessionId, summary);
+      console.log('✅ [WorkflowExecutor] Workflow execution complete');
+      return { sessionId, summary, status: 'completed' as const };
     } catch (error) {
       console.error('❌ [WorkflowExecutor] Error during execution:', error);
       console.error('❌ [WorkflowExecutor] Error stack:', error instanceof Error ? error.stack : 'No stack');
-      const message = error instanceof Error ? error.message : 'Unknown delegation error';
-
-      // Broadcast error to delegation stream
-      delegationStreamBroadcaster.broadcast(sessionId, {
-        type: 'assistant-message',
-      });
-      delegationStreamBroadcaster.broadcast(sessionId, {
-        type: 'text-delta',
-        delta: `Workflow executor failed: ${message}`,
-      });
-
-      AgentDelegationService.completeDelegation(sessionId, `Workflow executor failed: ${message}`, 'failed');
+      const message = error instanceof Error ? error.message : 'Unknown workflow error';
       throw error;
     }
   }

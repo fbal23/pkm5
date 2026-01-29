@@ -1,6 +1,18 @@
 import React from 'react';
 import { Node } from '@/types/database';
-import type { AgentDelegation } from '@/services/agents/delegation';
+
+// Stub type for delegation (delegation system removed in rah-light)
+export type AgentDelegation = {
+  id: number;
+  sessionId: string;
+  task: string;
+  context: string[];
+  status: 'queued' | 'in_progress' | 'completed' | 'failed';
+  summary?: string | null;
+  agentType: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 // The six pane types
 export type PaneType = 'node' | 'chat' | 'workflows' | 'dimensions' | 'map' | 'views';

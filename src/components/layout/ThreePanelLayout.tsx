@@ -6,8 +6,20 @@ import SearchModal from '../nodes/SearchModal';
 import { Node } from '@/types/database';
 import { DatabaseEvent } from '@/services/events';
 import { usePersistentState } from '@/hooks/usePersistentState';
-import type { AgentDelegation } from '@/services/agents/delegation';
 import type { ChatMessage } from '@/components/agents/hooks/useSSEChat';
+
+// Stub type for delegation (delegation system removed in rah-light)
+type AgentDelegation = {
+  id: number;
+  sessionId: string;
+  task: string;
+  context: string[];
+  status: 'queued' | 'in_progress' | 'completed' | 'failed';
+  summary?: string | null;
+  agentType: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 // Layout components
 import LeftToolbar from './LeftToolbar';
@@ -66,8 +78,8 @@ export default function ThreePanelLayout() {
   // Active dimension tracking (for chat context)
   const [activeDimension, setActiveDimension] = usePersistentState<string | null>('ui.focus.activeDimension', null);
 
-  // Delegations state (shared between chat and workflows panes)
-  const [delegationsMap, setDelegationsMap] = useState<Record<string, AgentDelegation>>({});
+  // Delegations state (deprecated - kept for component compatibility)
+  const [delegationsMap] = useState<Record<string, AgentDelegation>>({});
   const delegations = useMemo(() => Object.values(delegationsMap), [delegationsMap]);
 
   // Chat state (lifted to persist across pane type changes)
@@ -161,32 +173,7 @@ export default function ThreePanelLayout() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openTabsKey]);
 
-  // Load delegations on mount
-  useEffect(() => {
-    let cancelled = false;
-    const loadExisting = async () => {
-      try {
-        const response = await fetch('/api/rah/delegations?status=active&includeCompleted=true');
-        if (!response.ok) return;
-        const data = await response.json();
-        if (!Array.isArray(data.delegations)) return;
-
-        setDelegationsMap((prev) => {
-          if (cancelled) return prev;
-          const next = { ...prev };
-          for (const delegation of data.delegations as AgentDelegation[]) {
-            next[delegation.sessionId] = delegation;
-          }
-          return next;
-        });
-      } catch (error) {
-        console.error('[ThreePanelLayout] Failed to load delegations:', error);
-      }
-    };
-
-    loadExisting();
-    return () => { cancelled = true; };
-  }, []);
+  // Delegations loading removed (delegation system removed in rah-light)
 
   // Keyboard shortcut handler
   useEffect(() => {
@@ -278,27 +265,8 @@ export default function ThreePanelLayout() {
               break;
 
             case 'AGENT_DELEGATION_CREATED':
-              if (data.data?.delegation) {
-                setDelegationsMap(prev => ({
-                  ...prev,
-                  [data.data.delegation.sessionId]: data.data.delegation
-                }));
-              }
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('delegations:created', { detail: data.data }));
-              }
-              break;
-
             case 'AGENT_DELEGATION_UPDATED':
-              if (data.data?.delegation) {
-                setDelegationsMap(prev => ({
-                  ...prev,
-                  [data.data.delegation.sessionId]: data.data.delegation
-                }));
-              }
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('delegations:updated', { detail: data.data }));
-              }
+              // Delegation events ignored (delegation system removed in rah-light)
               break;
 
             case 'WORKFLOW_PROGRESS':

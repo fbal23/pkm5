@@ -3,8 +3,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import RAHChat from '@/components/agents/RAHChat';
 import PaneHeader from './PaneHeader';
-import { WorkflowsPaneProps, PaneType } from './types';
-import type { AgentDelegation } from '@/services/agents/delegation';
+import { WorkflowsPaneProps, PaneType, AgentDelegation } from './types';
 import { parseAndRenderContent } from '@/components/helpers/NodeLabelRenderer';
 import type { ChatMessage } from '@/components/agents/hooks/useSSEChat';
 

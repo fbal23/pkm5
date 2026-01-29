@@ -2,7 +2,6 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { WorkflowRegistry } from '@/services/workflows/registry';
 import { getSQLiteClient } from '@/services/database/sqlite-client';
-import { AgentDelegationService } from '@/services/agents/delegation';
 import { WorkflowExecutor } from '@/services/agents/workflowExecutor';
 import { RequestContext } from '@/services/context/requestContext';
 import { getAutoContextSummaries } from '@/services/context/autoContext';
@@ -92,39 +91,37 @@ ${workflow.instructions}
 
 ${nodeId ? `Target Node ID: ${nodeId}` : 'No specific node targeted (general workflow)'}`;
 
-    // 5. Delegate to wise ra-h oracle with workflow metadata
+    // 5. Execute workflow directly
     const requestContext = RequestContext.get();
     console.log('[executeWorkflowTool] Current traceId:', requestContext.traceId);
 
-    const delegation = AgentDelegationService.createDelegation({
-      task,
-      context: contextLines,
-      expectedOutcome: workflow.expectedOutcome,
-      agentType: 'wise-rah',
-      supabaseToken: null,
-    });
+    const sessionId = `workflow_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-    // Fire-and-forget execution so main ra-h stays responsive while workflow runs
-    void WorkflowExecutor.execute({
-      sessionId: delegation.sessionId,
-      task,
-      context: contextLines,
-      expectedOutcome: workflow.expectedOutcome,
-      traceId: requestContext.traceId,
-      parentChatId: requestContext.parentChatId,
-      workflowKey,
-      workflowNodeId: nodeId,
-    }).catch((error) => {
-      console.error('[executeWorkflowTool] Wise ra-h delegation failed', error);
-    });
+    try {
+      const result = await WorkflowExecutor.execute({
+        sessionId,
+        task,
+        context: contextLines,
+        expectedOutcome: workflow.expectedOutcome,
+        traceId: requestContext.traceId,
+        parentChatId: requestContext.parentChatId,
+        workflowKey,
+        workflowNodeId: nodeId,
+      });
 
-    RequestContext.set({ workflowKey: undefined, workflowNodeId: undefined });
+      RequestContext.set({ workflowKey: undefined, workflowNodeId: undefined });
 
-    const shortSessionId = delegation.sessionId.split('_').pop();
-    const workflowLabel = workflow.displayName || workflowKey;
-    return [
-      `Delegated **${workflowLabel}** to wise ra-h (session ${shortSessionId}).`,
-      'Keep working here—wise ra-h will stream every step inside its tab and post the final summary when complete.',
-    ].join('\n');
+      const workflowLabel = workflow.displayName || workflowKey;
+      return {
+        success: true,
+        message: `Workflow **${workflowLabel}** completed.`,
+        summary: result.summary,
+      };
+    } catch (error) {
+      console.error('[executeWorkflowTool] Workflow execution failed', error);
+      RequestContext.set({ workflowKey: undefined, workflowNodeId: undefined });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: `Workflow execution failed: ${errorMessage}` };
+    }
   },
 });

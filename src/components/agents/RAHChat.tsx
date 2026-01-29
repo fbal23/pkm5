@@ -6,15 +6,60 @@ import AsciiBanner from './AsciiBanner';
 import TerminalMessage from './TerminalMessage';
 import TerminalInput from './TerminalInput';
 import { Zap, Flame } from 'lucide-react';
-import DelegationIndicator from './DelegationIndicator';
-import type { AgentDelegation } from '@/services/agents/delegation';
 import { useSSEChat, ChatMessage, MessageRole } from './hooks/useSSEChat';
 import { useQuotaHandler } from '@/hooks/useQuotaHandler';
 import { apiKeyService } from '@/services/storage/apiKeys';
-import { useVoiceSession } from './hooks/useVoiceSession';
-import { useAssistantTTS } from './hooks/useAssistantTTS';
-import { useRealtimeVoiceClient } from './hooks/useRealtimeVoiceClient';
-import { useVoiceInterruption } from './hooks/useVoiceInterruption';
+
+// Stub type for delegation (delegation system removed in rah-light)
+type AgentDelegation = {
+  id: number;
+  sessionId: string;
+  task: string;
+  status: 'queued' | 'in_progress' | 'completed' | 'failed';
+  summary?: string | null;
+  agentType: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Stub DelegationIndicator component (delegation system removed)
+function DelegationIndicator({ delegations }: { delegations: AgentDelegation[] }) {
+  return null;
+}
+
+// Stub voice hooks (voice system will be removed in story 2)
+function useVoiceSession() {
+  return {
+    isActive: false,
+    amplitude: 0,
+    startSession: () => {},
+    stopSession: () => {},
+    resetTranscript: () => {},
+    setStatus: (_status: string) => {},
+    setAmplitude: (_amp: number) => {},
+    setInterimTranscript: (_text: string) => {},
+    appendFinalTranscript: (_text: string) => {},
+  };
+}
+
+function useAssistantTTS(_options: { onSpeechStart?: () => void; onSpeechComplete?: () => void; onError?: (e: Error) => void }) {
+  return {
+    speak: (_text: string, _options?: { flush?: boolean; metadata?: Record<string, string> }) => {},
+    stop: () => {},
+    status: 'idle' as const,
+  };
+}
+
+function useVoiceInterruption(_options: { amplitude: number; isVoiceActive: boolean; ttsStatus: string; onInterruption: () => void }) {}
+
+function useRealtimeVoiceClient(_handlers: { onStatusChange?: (status: string) => void; onInterimTranscript?: (text: string) => void; onFinalTranscript?: (text: string) => void; onAmplitude?: (amp: number) => void; onError?: (e: Error) => void }, _options: { getAuthToken: () => string | null }) {
+  return {
+    connect: () => {},
+    disconnect: () => {},
+    start: () => {},
+    stop: () => {},
+  };
+}
 
 const createSessionId = () => `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 const createVoiceRequestId = () =>

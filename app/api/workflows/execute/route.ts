@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WorkflowRegistry } from '@/services/workflows/registry';
 import { getSQLiteClient } from '@/services/database/sqlite-client';
-import { AgentDelegationService } from '@/services/agents/delegation';
 import { WorkflowExecutor } from '@/services/agents/workflowExecutor';
 import { getAutoContextSummaries } from '@/services/context/autoContext';
 
@@ -107,35 +106,36 @@ ${workflow.instructions}
 
 ${nodeId ? `Target Node ID: ${nodeId}` : 'No specific node targeted (general workflow)'}`;
 
-    // Create delegation
-    const delegation = AgentDelegationService.createDelegation({
-      task,
-      context: contextLines,
-      expectedOutcome: workflow.expectedOutcome,
-      agentType: 'workflow',
-      supabaseToken: null,
-    });
+    const sessionId = `workflow_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-    // Fire-and-forget execution
-    void WorkflowExecutor.execute({
-      sessionId: delegation.sessionId,
-      task,
-      context: contextLines,
-      expectedOutcome: workflow.expectedOutcome,
-      workflowKey,
-      workflowNodeId: nodeId,
-    }).catch((error) => {
+    try {
+      // Execute workflow synchronously
+      const result = await WorkflowExecutor.execute({
+        sessionId,
+        task,
+        context: contextLines,
+        expectedOutcome: workflow.expectedOutcome,
+        workflowKey,
+        workflowNodeId: nodeId,
+      });
+
+      return NextResponse.json({
+        success: true,
+        sessionId,
+        workflowKey,
+        nodeId: nodeId || null,
+        status: 'completed',
+        summary: result.summary,
+        message: `Workflow '${workflow.displayName}' completed`,
+      });
+    } catch (error) {
       console.error('[/api/workflows/execute] Execution failed:', error);
-    });
-
-    return NextResponse.json({
-      success: true,
-      delegationId: delegation.sessionId,
-      workflowKey,
-      nodeId: nodeId || null,
-      status: 'executing',
-      message: `Workflow '${workflow.displayName}' started`,
-    });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return NextResponse.json(
+        { success: false, error: `Workflow execution failed: ${errorMessage}` },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Error executing workflow:', error);
     return NextResponse.json(

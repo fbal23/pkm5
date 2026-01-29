@@ -1,11 +1,10 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { AgentDelegationService } from '@/services/agents/delegation';
 import { WorkflowExecutor } from '@/services/agents/workflowExecutor';
 import { RequestContext } from '@/services/context/requestContext';
 
 export const delegateToWiseRAHTool = tool({
-  description: 'Delegate complex workflows to wise ra-h (GPT-5)',
+  description: 'Delegate complex workflows to workflow executor',
   inputSchema: z.object({
     task: z.string().describe('Complex workflow description: what needs to be planned and executed'),
     context: z.array(z.string()).max(8).default([]).describe('Optional context: node IDs, URLs, or key information the planner needs'),
@@ -17,16 +16,10 @@ export const delegateToWiseRAHTool = tool({
     const requestContext = RequestContext.get();
     console.log('[delegateToWiseRAH] Current traceId:', requestContext.traceId);
 
-    const delegation = AgentDelegationService.createDelegation({
-      task,
-      context,
-      expectedOutcome,
-      agentType: 'wise-rah',
-      supabaseToken: null,
-    });
+    const sessionId = `workflow_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const execution = await WorkflowExecutor.execute({
-      sessionId: delegation.sessionId,
+      sessionId,
       task,
       context,
       expectedOutcome,
@@ -37,7 +30,7 @@ export const delegateToWiseRAHTool = tool({
     });
 
     // Return a simple string that Claude can directly use in conversation
-    const summary = execution?.summary || 'Wise ra-h delegated but no summary returned.';
-    return `Wise ra-h (session ${delegation.sessionId.split('_').pop()}) completed the workflow:\n\n${summary}`;
+    const summary = execution?.summary || 'Workflow completed but no summary returned.';
+    return `Workflow (session ${sessionId.split('_').pop()}) completed:\n\n${summary}`;
   },
 });

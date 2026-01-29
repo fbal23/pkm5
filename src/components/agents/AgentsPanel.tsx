@@ -5,9 +5,20 @@ import RAHChat from './RAHChat';
 import QuickAddInput from './QuickAddInput';
 import QuickAddStatus from './QuickAddStatus';
 import { Zap, Flame, Minimize2 } from 'lucide-react';
-import type { AgentDelegation } from '@/services/agents/delegation';
 import { Node } from '@/types/database';
 import { parseAndRenderContent } from '@/components/helpers/NodeLabelRenderer';
+
+// Stub type for delegation (delegation system removed in rah-light)
+type AgentDelegation = {
+  id: number;
+  sessionId: string;
+  task: string;
+  status: 'queued' | 'in_progress' | 'completed' | 'failed';
+  summary?: string | null;
+  agentType: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 interface AgentsPanelProps {
   openTabsData: Node[];
