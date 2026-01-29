@@ -146,3 +146,15 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - 776 lines of code removed
   - The remaining agent services are all used by MCP-accessible functionality
 
+## Story 9: Clean up context services
+- Completed: Thu 29 Jan 2026
+- Files deleted:
+  - src/services/context/supabaseTokenRegistry.ts (stub for private version, not imported)
+- Files kept:
+  - src/services/context/requestContext.ts (used by workflowExecutor, chat middleware, executeWorkflow tool, evalsLogger)
+  - src/services/context/autoContext.ts (used by /api/workflows/execute route and executeWorkflow tool)
+- Learnings:
+  - supabaseTokenRegistry was a stub placeholder for the private version's auth system
+  - requestContext provides API key passing and trace IDs through the request lifecycle
+  - autoContext provides "top 10 most connected nodes" context for workflows
+

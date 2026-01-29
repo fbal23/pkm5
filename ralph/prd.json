@@ -122,8 +122,8 @@
         "Keep services that support MCP or remaining features",
         "npm run type-check passes"
       ],
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Deleted supabaseTokenRegistry.ts (stub for private version, not imported anywhere). Kept requestContext.ts (used by workflowExecutor, middleware, executeWorkflow, evalsLogger) and autoContext.ts (used by workflow API route and executeWorkflow tool)."
     },
     {
       "id": "10",
