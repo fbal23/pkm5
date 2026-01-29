@@ -1,0 +1,211 @@
+{
+  "project": "rah-light",
+  "context": "Stripping ra-h_os to a lightweight 2-panel knowledge graph UI with MCP server. Remove chat agents, voice, delegation system, memory pipeline. Keep: nodes/edges/dimensions CRUD, MCP server, workflows, extraction tools. The goal is a simple UI that technical users can run and connect their own agents to via MCP. Auth/subscription already removed from ra-h_os.",
+  "userStories": [
+    {
+      "id": "1",
+      "title": "Remove agent delegation system",
+      "description": "Delete the agent delegation infrastructure: src/services/agents/delegation.ts, all /api/rah/delegations/ routes, DelegationIndicator.tsx component, and any imports of these in other files. Update any files that import from deleted modules.",
+      "acceptanceCriteria": [
+        "src/services/agents/delegation.ts is deleted",
+        "app/api/rah/delegations/ directory is deleted (all routes inside)",
+        "src/components/agents/DelegationIndicator.tsx is deleted",
+        "No remaining imports of 'delegation' from services/agents",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "2",
+      "title": "Remove voice features",
+      "description": "Delete all voice-related code: hooks (useVoiceSession, useRealtimeVoiceClient, useAssistantTTS, useVoiceInterruption), voice API routes (/api/voice/, /api/realtime/), voice service (src/services/voice/), and remove voice-related UI/props from RAHChat.tsx. Update imports in components that use these.",
+      "acceptanceCriteria": [
+        "src/components/agents/hooks/useVoiceSession.ts deleted",
+        "src/components/agents/hooks/useRealtimeVoiceClient.ts deleted",
+        "src/components/agents/hooks/useAssistantTTS.ts deleted",
+        "src/components/agents/hooks/useVoiceInterruption.ts deleted",
+        "app/api/voice/ directory deleted",
+        "app/api/realtime/ directory deleted",
+        "src/services/voice/ directory deleted",
+        "RAHChat.tsx no longer imports or uses voice hooks",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "3",
+      "title": "Remove orchestration tools (delegateToWiseRAH)",
+      "description": "Delete agent orchestration tools that depend on internal agents: src/tools/orchestration/delegateToWiseRAH.ts. Keep workflow tools (getWorkflow, executeWorkflow, editWorkflow, listWorkflows). Update registry.ts to remove references to deleted tools.",
+      "acceptanceCriteria": [
+        "src/tools/orchestration/delegateToWiseRAH.ts deleted",
+        "src/tools/infrastructure/registry.ts no longer imports delegateToWiseRAH",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "4",
+      "title": "Remove chat agent components",
+      "description": "Delete internal chat agent UI components: WiseRAHPanel.tsx, MiniRAHPanel.tsx, AgentsPanel.tsx. These are agent-specific panels. Keep RAHChat.tsx (will be modified later), TerminalInput.tsx, TerminalMessage.tsx (may be reused or deleted later). Update any imports.",
+      "acceptanceCriteria": [
+        "src/components/agents/WiseRAHPanel.tsx deleted",
+        "src/components/agents/MiniRAHPanel.tsx deleted",
+        "src/components/agents/AgentsPanel.tsx deleted",
+        "No remaining imports of these components",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "5",
+      "title": "Remove chat API route",
+      "description": "Delete the main chat API route /api/rah/chat/route.ts and /api/rah/usage/route.ts since there's no internal chat agent. Keep /api/quick-add/route.ts if it's useful for MCP or simple ingestion.",
+      "acceptanceCriteria": [
+        "app/api/rah/chat/route.ts deleted",
+        "app/api/rah/usage/route.ts deleted",
+        "app/api/rah/ directory can be deleted if empty after this",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "6",
+      "title": "Simplify to two-panel layout",
+      "description": "Modify ThreePanelLayout.tsx to become a two-panel layout: Nodes (left) + Focus (right). Remove chat panel slot, ChatPane references, chat toggle (Cmd+J), floating chat bubble. Remove ChatPane.tsx. The layout should be: LeftToolbar | NodePanel/ViewsPane | FocusPanel.",
+      "acceptanceCriteria": [
+        "src/components/panes/ChatPane.tsx deleted",
+        "ThreePanelLayout.tsx no longer references ChatPane or chat toggle",
+        "Layout is 2 panels: nodes/views + focus",
+        "Chat-related keyboard shortcuts removed (Cmd+J)",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "7",
+      "title": "Remove RAHChat component",
+      "description": "Delete the main chat interface RAHChat.tsx and its supporting components (TerminalInput.tsx, TerminalMessage.tsx) since there's no chat. Also delete useSSEChat.ts hook. Remove the ReasoningTrace.tsx and ToolDisplay.tsx if they're only used by chat.",
+      "acceptanceCriteria": [
+        "src/components/agents/RAHChat.tsx deleted",
+        "src/components/agents/TerminalInput.tsx deleted",
+        "src/components/agents/TerminalMessage.tsx deleted",
+        "src/components/agents/hooks/useSSEChat.ts deleted",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": "Check if ToolDisplay.tsx is used elsewhere before deleting"
+    },
+    {
+      "id": "8",
+      "title": "Clean up agent services",
+      "description": "Delete or simplify agent services that are no longer needed: src/services/agents/registry.ts (if only used for chat), workflowExecutor.ts (keep if workflows still work via MCP), autoEdge.ts, transcriptSummarizer.ts, toolResultUtils.ts. Keep quickAdd.ts if it's still useful.",
+      "acceptanceCriteria": [
+        "Review each file in src/services/agents/ - delete if only used by chat agents",
+        "Keep files that support MCP tools or standalone functionality",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": "Be conservative - some services may be used by MCP tools"
+    },
+    {
+      "id": "9",
+      "title": "Clean up context services",
+      "description": "Review and clean up src/services/context/. Remove supabaseTokenRegistry.ts if present. Keep requestContext.ts and autoContext.ts if they're used by remaining functionality.",
+      "acceptanceCriteria": [
+        "Remove unused context services",
+        "Keep services that support MCP or remaining features",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "10",
+      "title": "Simplify settings panel",
+      "description": "Modify SettingsModal.tsx to remove tabs/sections for: agent configuration, voice settings, context viewer (if chat-specific). Keep: API keys, database viewer, external agents panel (MCP), theme toggle if present.",
+      "acceptanceCriteria": [
+        "SettingsModal.tsx simplified to essential settings only",
+        "No voice or agent-specific settings",
+        "API key management preserved",
+        "Database viewer preserved",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "11",
+      "title": "Remove unused npm packages",
+      "description": "After code cleanup, audit package.json and remove packages only needed by deleted features. Candidates: anything voice-related (@openai/realtime-api-beta if present), websocket packages only used by voice.",
+      "acceptanceCriteria": [
+        "package.json reviewed and unused packages removed",
+        "npm install succeeds",
+        "npm run type-check passes",
+        "npm run dev starts without errors"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "12",
+      "title": "Remove dead types",
+      "description": "Clean up src/types/ - remove type definitions for deleted features (delegation types, voice types, chat-specific types). Keep database types, view types, prompt types.",
+      "acceptanceCriteria": [
+        "No dead type definitions remaining",
+        "All remaining types are used",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "13",
+      "title": "Audit and clean MCP server",
+      "description": "Review apps/mcp-server/server.js and stdio-server.js. Remove any tools that depend on deleted functionality. Ensure all remaining tools work standalone (node CRUD, edge CRUD, dimension CRUD, search, extraction, workflows).",
+      "acceptanceCriteria": [
+        "MCP servers only expose working tools",
+        "No tools depend on deleted chat/agent code",
+        "Both server.js and stdio-server.js updated consistently",
+        "npm run type-check passes"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "14",
+      "title": "Update README for lite version",
+      "description": "Rewrite README.md to reflect the lite version: explain what it is (local knowledge graph UI + MCP server), how to run it, how to connect coding agents via MCP. Remove references to chat agents, voice features.",
+      "acceptanceCriteria": [
+        "README.md describes lite version accurately",
+        "Quick start: clone, npm install, npm run dev",
+        "MCP integration instructions included",
+        "No references to removed features"
+      ],
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "15",
+      "title": "Final verification",
+      "description": "Run full verification: npm install, npm run type-check, npm run dev. Open localhost:3000 and verify: nodes list works, can create a node, focus panel shows node, dimensions sidebar works, settings modal opens with API keys.",
+      "acceptanceCriteria": [
+        "npm install succeeds",
+        "npm run type-check passes",
+        "npm run dev starts",
+        "UI loads at localhost:3000",
+        "Can create and view nodes",
+        "Dimensions sidebar works",
+        "Settings modal opens",
+        "No console errors for missing modules"
+      ],
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

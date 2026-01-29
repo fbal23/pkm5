@@ -1,0 +1,11 @@
+# Ralph Progress Log - RA-H Light Strip-Down
+Started: Thu 29 Jan 2026 15:00:36 AEDT
+Branch: feature/rah-light
+Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
+
+## Context
+- Auth/subscription already removed
+- Target: remove chat agents, voice, delegations, simplify to 2-panel
+- Keep: nodes/edges/dimensions, MCP server, workflows, extraction
+
+
