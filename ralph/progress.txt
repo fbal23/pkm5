@@ -223,3 +223,23 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - Extraction tools were dead code - the API routes never existed in the open source version
   - The MCP architecture is clean - just HTTP calls to local API
 
+## Story 14: Update README for lite version
+- Completed: Thu 29 Jan 2026
+- Files modified:
+  - README.md (complete rewrite)
+- Changes:
+  - Renamed from "RA-H Open Source" to "RA-H Light"
+  - Added "What is RA-H Light?" section explaining the stripped-down purpose
+  - Explicitly list what's removed: chat agents, voice, delegation
+  - Added comprehensive MCP integration section:
+    - Claude Code setup with JSON config example
+    - Table of all 11 available MCP tools
+    - HTTP MCP server instructions
+  - Simplified project layout (removed agents references)
+  - Removed references to 3-panel interface, chat, voice, content extraction
+  - Kept: quick start, platform support, commands, docs links, Linux/Windows setup
+- Learnings:
+  - The README is the primary entry point - important to set expectations clearly
+  - MCP integration is now the main selling point of RA-H Light
+  - Users need clear setup instructions for Claude Code integration
+
