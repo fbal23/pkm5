@@ -200,3 +200,26 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - These were only used by contextBuilder.ts which was deleted in Story 8
   - Type files are well-organized - each file has a clear purpose
 
+## Story 13: Audit and clean MCP server
+- Completed: Thu 29 Jan 2026
+- Files modified:
+  - apps/mcp-server/server.js (removed extraction tools)
+  - apps/mcp-server/stdio-server.js (removed extraction tools)
+- Tools removed (called non-existent API routes):
+  - rah_extract_url (called /api/extract/url - doesn't exist)
+  - rah_extract_youtube (called /api/extract/youtube - doesn't exist)
+  - rah_extract_pdf (called /api/extract/pdf - doesn't exist)
+- Remaining 11 tools (all verified working):
+  - Node CRUD: rah_add_node, rah_search_nodes, rah_update_node, rah_get_nodes
+  - Edge CRUD: rah_create_edge, rah_query_edges, rah_update_edge
+  - Dimension CRUD: rah_create_dimension, rah_update_dimension, rah_delete_dimension
+  - Semantic search: rah_search_embeddings
+- Analysis:
+  - MCP servers are pure API clients - no direct code dependencies
+  - All tools use callRaHApi() to call Next.js API routes
+  - No chat/agent/delegation dependencies
+  - Both servers were kept in sync
+- Learnings:
+  - Extraction tools were dead code - the API routes never existed in the open source version
+  - The MCP architecture is clean - just HTTP calls to local API
+

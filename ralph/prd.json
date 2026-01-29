@@ -174,8 +174,8 @@
         "Both server.js and stdio-server.js updated consistently",
         "npm run type-check passes"
       ],
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Removed 3 extraction tools (rah_extract_url, rah_extract_youtube, rah_extract_pdf) that called non-existent API endpoints. MCP servers now expose 11 working tools: node CRUD (add, search, update, get), edge CRUD (create, query, update), dimension CRUD (create, update, delete), semantic search. Both servers updated consistently."
     },
     {
       "id": "14",
