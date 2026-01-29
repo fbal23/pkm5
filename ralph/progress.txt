@@ -125,3 +125,24 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - ReasoningTrace and ToolDisplay were only used by RAHChat - safe to delete
   - ~2000 lines of chat UI code removed
 
+## Story 8: Clean up agent services
+- Completed: Thu 29 Jan 2026
+- Files deleted:
+  - src/services/agents/registry.ts (only used by contextBuilder.ts which was deleted)
+  - src/services/ai.ts (not imported anywhere)
+  - src/services/helpers/contextBuilder.ts (not imported anywhere - was for chat agent context)
+  - src/services/helpers/logger.ts (not imported anywhere)
+- Files kept (still used by MCP tools/API):
+  - src/services/agents/workflowExecutor.ts (executeWorkflow tool, /api/workflows/execute)
+  - src/services/agents/quickAdd.ts (/api/quick-add endpoint)
+  - src/services/agents/toolResultUtils.ts (used by workflowExecutor and quickAdd)
+  - src/services/agents/transcriptSummarizer.ts (used by quickAdd for chat transcript import)
+  - src/services/agents/autoEdge.ts (used by /api/nodes endpoint for auto-edge creation)
+  - src/services/agents/types.ts (AgentDefinition types - still referenced)
+- Learnings:
+  - contextBuilder.ts was the bridge between agents and the chat system - with chat gone, it's unused
+  - registry.ts defined agent configurations (ra-h, ra-h-easy, workflow) used only by contextBuilder
+  - ai.ts was a standalone AIService class that was never imported anywhere
+  - 776 lines of code removed
+  - The remaining agent services are all used by MCP-accessible functionality
+

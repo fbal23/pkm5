@@ -110,8 +110,8 @@
         "Keep files that support MCP tools or standalone functionality",
         "npm run type-check passes"
       ],
-      "passes": false,
-      "notes": "Be conservative - some services may be used by MCP tools"
+      "passes": true,
+      "notes": "Deleted registry.ts (only used by deleted contextBuilder). Also deleted unused src/services/ai.ts and entire src/services/helpers/ directory (contextBuilder.ts, logger.ts). Kept: workflowExecutor.ts (MCP), quickAdd.ts (API), toolResultUtils.ts (used by both), transcriptSummarizer.ts (used by quickAdd), autoEdge.ts (API nodes endpoint), types.ts."
     },
     {
       "id": "9",
