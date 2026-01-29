@@ -1,33 +1,40 @@
-# RA-H Open Source
+# RA-H Light
 
-**Full docs:** [ra-h.app/docs](https://ra-h.app/docs)
+This is **RA-H Light** — a minimal, local-first knowledge graph UI with MCP server integration.
 
-This is the open source, BYO-key version of RA-H.
+## What is RA-H Light?
 
-## What's Included
+RA-H Light is a stripped-down version of [RA-H](https://ra-h.app) focused on:
 
-- Full three-panel UI (Nodes | Focus | Helpers)
-- Local SQLite storage with vector search
-- Complete agent system (ra-h, mini-rah, wise-rah)
-- All tools and workflows
-- MCP server for external AI assistants
-- Settings panel with API key management
+- **2-panel UI** for browsing and editing your knowledge graph
+- **MCP server** so external AI agents (like Claude Code) can access your notes
+- **Local SQLite** database with vector search
+- **BYO API keys** — no cloud dependencies
 
-## What's Not Included
+## What's NOT Included
 
-- Mac app packaging (Tauri)
-- Supabase authentication
-- Subscription/payment system
-- Auto-updates
+RA-H Light intentionally excludes:
 
-## Relationship to Main Repo
+- Chat interface (use external agents via MCP)
+- Voice features
+- Built-in AI agents
+- Auth/subscription system
+- Desktop packaging (Tauri)
 
-This repo is a mirror of the private `ra-h` repository. Features are developed privately and synced here.
+## Relationship to RA-H
 
-- **Contributions welcome** - See [CONTRIBUTING.md](../CONTRIBUTING.md)
-- **Bug reports** - Open an issue
-- **Feature requests** - Open an issue; major features typically built privately first
+This repo (`ra-h_os`) is derived from the private `ra-h` repository. Shared features (database, UI components, MCP server) are synced from private to public.
 
-## Setup
+## Getting Started
 
 See [README.md](../README.md) for installation.
+
+## Contributing
+
+- **Bug reports** — Open an issue
+- **Feature requests** — Open an issue
+- **Pull requests** — Welcome for bug fixes and improvements
+
+## License
+
+MIT — See [LICENSE](../LICENSE)

@@ -1,66 +1,82 @@
-# RA-H Overview
+# RA-H Light Overview
 
-## What is RA-H?
+## What is RA-H Light?
 
-RA-H is an AI-powered knowledge management system designed for researchers, thinkers, and anyone who works with ideas. It learns how you think and helps connect ideas across your knowledge base.
+RA-H Light is a minimal knowledge graph UI with MCP server integration. It provides a local-first knowledge management system designed to be extended by external AI agents via the Model Context Protocol.
 
-**Website:** [ra-h.app](https://ra-h.app)
 **Open Source:** [github.com/bradwmorris/ra-h_os](https://github.com/bradwmorris/ra-h_os)
 
 ## Design Philosophy
 
-**Non-prescriptive & emergent** — The system doesn't force you into folders or predefined categories. Organization emerges naturally from your actual content. The structure adapts to how you think, not the other way around.
+**Local-first** — Your knowledge network belongs to you. Everything runs locally in a SQLite database you control.
 
-**Everything is connected** — Every piece of knowledge can potentially connect to any other. Connections aren't just links — they carry context, explanation, and meaning.
+**Agent-agnostic** — No built-in AI chat. Instead, RA-H Light exposes an MCP server that any AI agent (Claude Code, custom agents) can connect to.
 
-**Local-first** — Your knowledge network belongs to you, not a platform. Your thinking, research, and connections all belong to you in a portable format you control.
-
-**Human + AI** — You guide, AI assists. Create custom workflows. Always in control of your knowledge.
+**Simple & focused** — 2-panel UI for browsing and editing your knowledge graph. No bloat.
 
 ## Tech Stack
 
 - **Frontend:** Next.js 15, TypeScript, Tailwind CSS
 - **Database:** SQLite + sqlite-vec (vector search)
-- **AI Models:** Anthropic Claude + OpenAI GPT via Vercel AI SDK
-- **Desktop:** Tauri (Mac app)
+- **Embeddings:** OpenAI (BYO API key)
 - **MCP Server:** Local connector for Claude Code and external agents
 
-## Current Status
+## What's Included
 
-- **Version:** v0.1.21 (January 2026)
-- **Platforms:**
-  - Mac app (download at [ra-h.app/download](https://ra-h.app/download))
-  - Open source self-hosted (BYO API keys)
-- **License:** MIT (open source version)
+- 2-panel UI (nodes list + focus panel)
+- Node/Edge/Dimension CRUD
+- Full-text and semantic search
+- MCP server with 11 tools
+- Workflows system
+- PDF extraction
+- Graph visualization (Map view)
+- BYO API keys
 
-## Two Ways to Use RA-H
+## What's NOT Included
 
-| Version | Best For | Get It |
-|---------|----------|--------|
-| **Mac App** | Most users. One-click install, auto-updates, optional subscription features | [ra-h.app/download](https://ra-h.app/download) |
-| **Open Source** | Developers, self-hosters, contributors. BYO API keys, full control | [GitHub](https://github.com/bradwmorris/ra-h_os) |
+- Chat interface (use external agents via MCP)
+- Voice features
+- Built-in AI agents
+- Auth/subscription system
+- Desktop packaging
 
-Both versions use the same core codebase. The Mac app adds packaging, auth, and subscription features. The open source version is fully functional with your own API keys.
+## Two-Panel Layout
 
-## Key Features
+```
+┌─────────────┬─────────────────────────┐
+│   NODES     │        FOCUS            │
+│   Panel     │        Panel            │
+│             │                         │
+│ • Search    │ • Node content          │
+│ • Filters   │ • Connections           │
+│ • List      │ • Dimensions            │
+│             │                         │
+└─────────────┴─────────────────────────┘
+```
 
-- **3-panel interface:** Nodes list, Focus view, Helpers panel
-- **AI agents:** Orchestrator for chat, workflows for deep analysis
-- **Graph database:** Nodes and edges with semantic search
-- **MCP server:** Connect Claude Code and other external agents
-- **Workflows:** Code-first automation (Integrate, custom workflows)
-- **Extraction tools:** YouTube, websites, PDFs
+## MCP Integration
+
+RA-H Light is designed to be the knowledge backend for your AI workflows:
+
+```json
+{
+  "mcpServers": {
+    "ra-h": {
+      "command": "node",
+      "args": ["/path/to/ra-h_os/apps/mcp-server/stdio-server.js"]
+    }
+  }
+}
+```
+
+Available tools: `rah_add_node`, `rah_search_nodes`, `rah_update_node`, `rah_get_nodes`, `rah_create_edge`, `rah_query_edges`, `rah_update_edge`, `rah_create_dimension`, `rah_update_dimension`, `rah_delete_dimension`, `rah_search_embeddings`
 
 ## Documentation
 
 | Doc | Description |
 |-----|-------------|
-| [Architecture](./1_architecture.md) | Agent hierarchy, system design |
 | [Schema](./2_schema.md) | Database schema, node/edge structure |
-| [Context & Memory](./3_context-and-memory.md) | How context flows through the system |
-| [Tools & Workflows](./4_tools-and-workflows.md) | Available tools, workflow system |
-| [Logging & Evals](./5_logging-and-evals.md) | Debugging, evaluation framework |
+| [Tools & Workflows](./4_tools-and-workflows.md) | Available MCP tools, workflow system |
 | [UI](./6_ui.md) | Component structure, panels, views |
-| [Voice](./7_voice.md) | Voice interface (STT/TTS) |
 | [MCP](./8_mcp.md) | External agent connector setup |
-| [Open Source](./9_open-source.md) | Sync strategy between repos |
+| [Troubleshooting](./TROUBLESHOOTING.md) | Common issues and fixes |

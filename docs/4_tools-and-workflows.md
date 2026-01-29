@@ -1,217 +1,132 @@
 # Tools & Workflows
 
-> What actions the AI can take and how workflows automate multi-step processes.
+> MCP tools available for external agents and the workflow execution system.
 
-**How it works:** AI agents have access to tools — functions they can call to read data, create nodes, search content, and more. Workflows are pre-written instruction sets that guide the AI through complex multi-step processes like finding connections across your knowledge base.
-
----
-
-## Tools Overview
-
-Tools are organized into three categories:
-
-| Category | Purpose | Examples |
-|----------|---------|----------|
-| **Core** | Read-only graph operations | queryNodes, searchContentEmbeddings |
-| **Orchestration** | Delegation and reasoning | executeWorkflow, think, webSearch |
-| **Execution** | Write operations and extraction | createNode, updateNode, youtubeExtract |
+**How it works:** RA-H Light exposes tools via MCP that external AI agents can call to read, create, and update your knowledge graph. Workflows are pre-written instruction sets that can be executed via the `/api/workflows/execute` endpoint.
 
 ---
 
-## Core Tools (All Agents)
+## MCP Tools
 
-Read-only operations available to all agents:
+RA-H Light provides 11 MCP tools for external agents:
 
-### queryNodes
-Search nodes by title, content, or dimensions.
+### Node Operations
 
-```typescript
-queryNodes({
-  search?: string,      // Full-text search
-  dimensions?: string[],// Filter by dimensions
-  limit?: number        // Max results (default: 20)
-})
-```
+| Tool | Description |
+|------|-------------|
+| `rah_add_node` | Create a new knowledge node |
+| `rah_search_nodes` | Search nodes by title, content, or dimensions |
+| `rah_update_node` | Update an existing node |
+| `rah_get_nodes` | Get nodes by ID array |
 
-### getNodesById
-Retrieve full node data by ID array.
+### Edge Operations
 
-```typescript
-getNodesById({
-  ids: number[]  // Array of node IDs
-})
-```
+| Tool | Description |
+|------|-------------|
+| `rah_create_edge` | Create relationship between nodes |
+| `rah_query_edges` | Query existing edges |
+| `rah_update_edge` | Update edge metadata |
 
-### queryEdge
-Inspect existing edges between nodes.
+### Dimension Operations
 
-```typescript
-queryEdge({
-  from_node_id?: number,
-  to_node_id?: number,
-  limit?: number
-})
-```
+| Tool | Description |
+|------|-------------|
+| `rah_create_dimension` | Create a new dimension tag |
+| `rah_update_dimension` | Update dimension description |
+| `rah_delete_dimension` | Delete a dimension |
 
-### searchContentEmbeddings
-Semantic search across chunk embeddings.
+### Search
 
-```typescript
-searchContentEmbeddings({
-  query: string,        // Search query
-  node_id?: number,     // Scope to specific node
-  limit?: number,       // Max results
-  threshold?: number    // Similarity threshold (0-1)
-})
-```
-
-### queryDimensions
-Query and filter dimensions.
-
-```typescript
-queryDimensions({
-  search?: string,      // Filter by name
-  isPriority?: boolean, // Filter locked dimensions only
-  limit?: number
-})
-```
-
-### getDimension
-Get a single dimension by exact name.
-
-```typescript
-getDimension({
-  name: string  // Exact dimension name
-})
-```
+| Tool | Description |
+|------|-------------|
+| `rah_search_embeddings` | Semantic search across chunk embeddings |
 
 ---
 
-## Orchestration Tools (Orchestrators Only)
+## Tool Schemas
 
-Tools for reasoning and delegation:
-
-### webSearch
-External web search via Tavily.
+### rah_add_node
 
 ```typescript
-webSearch({
-  query: string,
-  max_results?: number
-})
-```
-
-### think
-Internal reasoning/planning (logged to metadata, not shown to user).
-
-```typescript
-think({
-  thought: string  // Reasoning to log
-})
-```
-
-### executeWorkflow
-Delegate to wise-rah for predefined workflows.
-
-```typescript
-executeWorkflow({
-  workflow_key: string  // e.g., "integrate"
-})
-```
-
----
-
-## Execution Tools (Writers)
-
-Write operations and content extraction:
-
-### createNode
-Create a new knowledge node.
-
-```typescript
-createNode({
-  title: string,
+{
+  title: string,        // Required
   content?: string,
   description?: string,
   dimensions?: string[],
   link?: string,
   metadata?: object
-})
+}
 ```
 
-### updateNode
-Append content to existing nodes. **Append-only** — cannot overwrite.
+### rah_search_nodes
 
 ```typescript
-updateNode({
-  id: number,
-  content: string  // Appended to existing content
-})
+{
+  search?: string,      // Full-text search
+  dimensions?: string[],// Filter by dimensions
+  limit?: number        // Max results (default: 20)
+}
 ```
 
-### createEdge
-Create relationship between nodes.
+### rah_update_node
 
 ```typescript
-createEdge({
+{
+  id: number,           // Node ID
+  title?: string,
+  content?: string,     // Replaces existing content
+  description?: string,
+  dimensions?: string[],
+  link?: string,
+  metadata?: object
+}
+```
+
+### rah_create_edge
+
+```typescript
+{
   from_node_id: number,
   to_node_id: number,
-  context?: string  // Relationship description
-})
+  context?: string      // Relationship description
+}
 ```
 
-### updateEdge
-Modify edge metadata.
+### rah_search_embeddings
 
 ```typescript
-updateEdge({
-  id: number,
-  context?: string,
-  user_feedback?: number
-})
-```
-
-### Dimension Tools
-
-```typescript
-createDimension({ name: string, description?: string })
-updateDimension({ name: string, description?: string })
-lockDimension({ name: string })    // Make priority dimension
-unlockDimension({ name: string })  // Remove priority status
-deleteDimension({ name: string })
-```
-
-### Extraction Tools
-
-```typescript
-youtubeExtract({ url: string })  // Extract transcript
-websiteExtract({ url: string })  // Extract page content
-paperExtract({ url: string })    // Extract PDF text
+{
+  query: string,        // Search query
+  node_id?: number,     // Scope to specific node
+  limit?: number,       // Max results
+  threshold?: number    // Similarity threshold (0-1)
+}
 ```
 
 ---
 
-## Tool Access by Agent
+## API Routes
 
-| Agent | Core | Orchestration | Execution |
-|-------|------|---------------|-----------|
-| **ra-h / ra-h-easy** | ✅ All | webSearch, think, executeWorkflow | ✅ All |
-| **wise-rah** | ✅ All | webSearch, think, delegateToMiniRAH | updateNode, createEdge |
-| **mini-rah** | ✅ All | webSearch, think | ✅ All |
+RA-H Light exposes REST APIs that MCP tools call internally:
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/nodes` | GET/POST | List/create nodes |
+| `/api/nodes/[id]` | GET/PUT/DELETE | Node CRUD |
+| `/api/nodes/search` | POST | Search nodes |
+| `/api/edges` | GET/POST | List/create edges |
+| `/api/edges/[id]` | GET/PUT/DELETE | Edge CRUD |
+| `/api/dimensions` | GET/POST | List/create dimensions |
+| `/api/dimensions/search` | GET | Search dimensions |
+| `/api/workflows/execute` | POST | Execute workflow |
 
 ---
 
 ## Workflows
 
-Workflows are multi-step instruction sets executed by wise-rah.
+Workflows are pre-written instruction sets stored in `~/Library/Application Support/RA-H/workflows/`.
 
-### User-Editable Workflows
-
-**Users can create, edit, and delete workflows** from Settings → Workflows tab.
-
-**Storage:** `~/Library/Application Support/RA-H/workflows/`
-
-**Format:** JSON files with this structure:
+### Workflow Format
 
 ```json
 {
@@ -224,93 +139,52 @@ Workflows are multi-step instruction sets executed by wise-rah.
 }
 ```
 
-### How Workflows Work
+### Executing Workflows
 
-1. User says "run integrate workflow" (or similar)
-2. Orchestrator calls `executeWorkflow({ workflow_key: 'integrate' })`
-3. System spawns wise-rah session with workflow instructions
-4. wise-rah executes steps autonomously (30-60+ seconds)
-5. wise-rah returns summary to orchestrator
-6. Orchestrator shows result to user
+Via API:
+```bash
+curl -X POST http://localhost:3000/api/workflows/execute \
+  -H "Content-Type: application/json" \
+  -d '{"workflow_key": "integrate", "focused_node_id": 123}'
+```
 
 ### Built-in Workflows
 
-#### Integrate
-
-**Key:** `integrate`
-**Purpose:** Database-wide connection discovery
-**Cost:** ~$0.18/execution
-
-**5-Step Process:**
-
-1. **Plan** — Call `think` to outline approach
-2. **Ground** — Extract entities (names, projects, concepts) from focused node
-3. **Search** — Database-wide search using extracted entities
-4. **Contextualize** — Brief relevance explanation
-5. **Append** — Call `updateNode` ONCE with Integration Analysis section
-
-**Output Format:**
-
-```markdown
-## Integration Analysis
-
-[2-3 sentences: what this node is, why it matters]
-
-**Database Connections:**
-- [NODE:123:"Title"] — [why relevant]
-- [NODE:456:"Title"] — [why relevant]
-...
-
-**Relevance:** [1-2 sentences connecting to your context]
-```
+**Integrate** — Database-wide connection discovery. Finds related nodes and suggests connections.
 
 ### Creating Custom Workflows
 
-1. Go to Settings → Workflows
-2. Click "New Workflow"
-3. Fill in:
-   - **Key** — unique identifier (lowercase, no spaces)
-   - **Display Name** — shown in UI
-   - **Description** — what it does
-   - **Instructions** — the prompt for wise-rah
-   - **Requires Focused Node** — whether a node must be selected
-4. Save
-
-### Workflow Instructions Tips
-
-- Be explicit about steps and expected output
-- Reference tools by name (wise-rah has: queryNodes, searchContentEmbeddings, updateNode, createEdge, webSearch, think)
-- Specify output format precisely
-- Include guardrails ("call updateNode exactly once")
+1. Create a JSON file in `~/Library/Application Support/RA-H/workflows/`
+2. Define key, displayName, description, instructions
+3. Set `enabled: true`
+4. Execute via API
 
 ---
 
-## Tool Registry
+## Database Tools (Internal)
 
-**Location:** `src/tools/infrastructure/registry.ts`
+These tools are used by the workflow executor and API routes:
 
-**Structure:**
-
-```typescript
-TOOL_SETS = {
-  core: { queryNodes, getNodesById, queryEdge, queryDimensions, getDimension, searchContentEmbeddings },
-  orchestration: { webSearch, think, delegateToMiniRAH, executeWorkflow, ... },
-  execution: { createNode, updateNode, createEdge, updateEdge, youtubeExtract, websiteExtract, paperExtract, ... }
-}
-```
+| Tool | File | Purpose |
+|------|------|---------|
+| `queryNodes` | `src/tools/database/queryNodes.ts` | Search nodes |
+| `createNode` | `src/tools/database/createNode.ts` | Create node |
+| `updateNode` | `src/tools/database/updateNode.ts` | Update node |
+| `deleteNode` | `src/tools/database/deleteNode.ts` | Delete node |
+| `getNodesById` | `src/tools/database/getNodesById.ts` | Get by ID |
+| `createEdge` | `src/tools/database/createEdge.ts` | Create edge |
+| `updateEdge` | `src/tools/database/updateEdge.ts` | Update edge |
+| `queryEdge` | `src/tools/database/queryEdge.ts` | Query edges |
+| `queryDimensions` | `src/tools/database/queryDimensions.ts` | Query dimensions |
+| `searchContentEmbeddings` | `src/tools/other/searchContentEmbeddings.ts` | Semantic search |
 
 ---
 
-## Key Design Decisions
+## Key Files
 
-### Append-Only Updates
-
-`updateNode` is **append-only** — it cannot overwrite existing content. This prevents AI from accidentally destroying knowledge. The tool-level enforcement means workflows can't bypass this restriction.
-
-### No Workflow Delegation Loops
-
-wise-rah cannot call `executeWorkflow` or delegate to other wise-rah instances. This prevents infinite loops and keeps execution bounded.
-
-### Isolated Execution
-
-Workers (wise-rah, mini-rah) execute in isolated sessions. They return structured summaries only — they don't pollute orchestrator context with execution details.
+| File | Purpose |
+|------|---------|
+| `apps/mcp-server/server.js` | HTTP MCP server |
+| `apps/mcp-server/stdio-server.js` | STDIO MCP server |
+| `src/tools/infrastructure/registry.ts` | Tool registry |
+| `src/services/agents/workflowExecutor.ts` | Workflow execution |
