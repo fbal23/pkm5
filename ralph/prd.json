@@ -149,8 +149,8 @@
         "npm run type-check passes",
         "npm run dev starts without errors"
       ],
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Removed @ai-sdk/anthropic (used by deleted Claude chat) and @ai-sdk/react (used by deleted chat UI hooks). No voice-related packages found - they were already absent. All remaining packages verified in use."
     },
     {
       "id": "12",

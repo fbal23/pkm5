@@ -170,3 +170,18 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - The settings panel was designed well from the start - no chat/voice-specific tabs to remove
   - Only text update needed: "chats and workflows" → "workflow execution" in ContextViewer
 
+## Story 11: Remove unused npm packages
+- Completed: Thu 29 Jan 2026
+- Packages removed:
+  - @ai-sdk/anthropic (was used by Claude chat agent - not imported in src/)
+  - @ai-sdk/react (was used by chat UI hooks - not imported in src/)
+- Packages verified in use:
+  - @ai-sdk/openai (used by 9 files: workflowExecutor, extraction tools, etc.)
+  - ai (Vercel AI SDK - used by 30 files)
+  - @langchain/* (used by embed-universal.ts)
+  - All other packages verified with grep
+- Learnings:
+  - No voice-related packages (@openai/realtime-api-beta) were present - already removed
+  - The package.json was relatively clean to begin with
+  - npm install and type-check both pass after removal
+
