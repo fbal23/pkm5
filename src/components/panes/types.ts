@@ -1,9 +1,21 @@
 import React from 'react';
 import { Node } from '@/types/database';
-import type { AgentDelegation } from '@/services/agents/delegation';
 
-// The six pane types
-export type PaneType = 'node' | 'chat' | 'workflows' | 'dimensions' | 'map' | 'views';
+// Stub type for delegation (delegation system removed in rah-light)
+export type AgentDelegation = {
+  id: number;
+  sessionId: string;
+  task: string;
+  context: string[];
+  status: 'queued' | 'in_progress' | 'completed' | 'failed';
+  summary?: string | null;
+  agentType: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// The five pane types (chat removed in rah-light)
+export type PaneType = 'node' | 'guides' | 'dimensions' | 'map' | 'views';
 
 // State for each slot
 export interface SlotState {
@@ -54,30 +66,9 @@ export interface HighlightedPassage {
   selectedText: string;
 }
 
-// ChatPane specific props
-export interface ChatPaneProps extends BasePaneProps {
-  openTabsData: Node[];
-  activeTabId: number | null;
-  activeDimension?: string | null;
-  onClearDimension?: () => void;
-  onNodeClick?: (nodeId: number) => void;
-  delegations: AgentDelegation[];
-  // Lifted state for persistence
-  chatMessages?: unknown[];
-  setChatMessages?: React.Dispatch<React.SetStateAction<unknown[]>>;
-  // Source awareness
-  highlightedPassage?: HighlightedPassage | null;
-  onClearPassage?: () => void;
-}
+// ChatPaneProps removed in rah-light
 
-// WorkflowsPane specific props
-export interface WorkflowsPaneProps extends BasePaneProps {
-  delegations: AgentDelegation[];
-  onNodeClick?: (nodeId: number) => void;
-  openTabsData?: Node[];
-  activeTabId?: number | null;
-  activeDimension?: string | null;
-}
+// GuidesPaneProps - just uses BasePaneProps (guides are self-contained)
 
 // DimensionsPane specific props
 export interface DimensionsPaneProps extends BasePaneProps {
@@ -112,8 +103,7 @@ export interface PaneHeaderProps {
 // Labels for pane types
 export const PANE_LABELS: Record<PaneType, string> = {
   node: 'Nodes',
-  chat: 'Chat',
-  workflows: 'Workflows',
+  guides: 'Guides',
   dimensions: 'Dimensions',
   map: 'Map',
   views: 'Feed',
@@ -127,5 +117,5 @@ export const DEFAULT_SLOT_A: SlotState = {
 };
 
 export const DEFAULT_SLOT_B: SlotState = {
-  type: 'chat',
+  type: 'guides',
 };

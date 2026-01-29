@@ -16,11 +16,6 @@ import { queryDimensionNodesTool } from '../database/queryDimensionNodes';
 import { searchContentEmbeddingsTool } from '../other/searchContentEmbeddings';
 import { webSearchTool } from '../other/webSearch';
 import { thinkTool } from '../other/think';
-import { delegateToWiseRAHTool } from '../orchestration/delegateToWiseRAH';
-import { executeWorkflowTool } from '../orchestration/executeWorkflow';
-import { listWorkflowsTool } from '../orchestration/listWorkflows';
-import { getWorkflowTool } from '../orchestration/getWorkflow';
-import { editWorkflowTool } from '../orchestration/editWorkflow';
 import { youtubeExtractTool } from '../other/youtubeExtract';
 import { websiteExtractTool } from '../other/websiteExtract';
 import { paperExtractTool } from '../other/paperExtract';
@@ -42,11 +37,6 @@ const CORE_TOOLS: Record<string, any> = {
 const ORCHESTRATION_TOOLS: Record<string, any> = {
   webSearch: webSearchTool,
   think: thinkTool,
-  delegateToWiseRAH: delegateToWiseRAHTool,
-  executeWorkflow: executeWorkflowTool,
-  listWorkflows: listWorkflowsTool,
-  getWorkflow: getWorkflowTool,
-  editWorkflow: editWorkflowTool,
 };
 
 // Execution tools for worker agents (includes write operations)
@@ -79,10 +69,6 @@ const ORCHESTRATOR_TOOL_NAMES = Array.from(new Set([
   ...Object.keys(CORE_TOOLS),
   'webSearch',
   'think',
-  'executeWorkflow',
-  'listWorkflows',
-  'getWorkflow',
-  'editWorkflow',
   'createNode',
   'updateNode',
   'createEdge',
@@ -97,10 +83,7 @@ const ORCHESTRATOR_TOOL_NAMES = Array.from(new Set([
 
 const EXECUTOR_TOOL_NAMES = [
   ...Object.keys(CORE_TOOLS),
-  ...Object.keys(ORCHESTRATION_TOOLS).filter(name =>
-    name !== 'delegateToWiseRAH' &&
-    name !== 'executeWorkflow'
-  ),
+  ...Object.keys(ORCHESTRATION_TOOLS),
   ...Object.keys(EXECUTION_TOOLS),
 ];
 

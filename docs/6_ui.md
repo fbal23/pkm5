@@ -1,23 +1,23 @@
 # User Interface
 
-> How to navigate and use RA-H's interface.
+> How to navigate and use RA-H Light's interface.
 
-**How it works:** RA-H uses a 3-panel layout: browse nodes on the left, work with focused content in the middle, and chat with AI on the right. The chat panel is collapsible (Cmd+\\). Settings give you access to workflows, database views, a knowledge map, and more.
+**How it works:** RA-H Light uses a 2-panel layout: browse nodes on the left, work with focused content on the right. Settings give you access to workflows, database views, a knowledge map, and more.
 
 ---
 
-## 3-Panel Layout
+## 2-Panel Layout
 
 ```
-┌─────────────┬─────────────────────────┬─────────────────┐
-│   NODES     │        FOCUS            │    HELPERS      │
-│   Panel     │        Panel            │    Panel        │
-│             │                         │                 │
-│ • Search    │ • Tabbed workspace      │ • AI chat       │
-│ • Filters   │ • Node content          │ • Easy/Hard     │
-│ • Folders   │ • Connections           │ • Delegations   │
-│             │                         │                 │
-└─────────────┴─────────────────────────┴─────────────────┘
+┌─────────────┬─────────────────────────┐
+│   NODES     │        FOCUS            │
+│   Panel     │        Panel            │
+│             │                         │
+│ • Search    │ • Tabbed workspace      │
+│ • Filters   │ • Node content          │
+│ • Folders   │ • Connections           │
+│             │                         │
+└─────────────┴─────────────────────────┘
 ```
 
 ---
@@ -95,14 +95,14 @@ Save filter + view combinations:
 
 ---
 
-## Middle Panel: Focus
+## Right Panel: Focus
 
 Active workspace for the node(s) you're working with.
 
 ### Tabbed Interface
 
 - **Primary tab** — Main focused node
-- **Additional tabs** — Related nodes opened from chat
+- **Additional tabs** — Related nodes opened from links
 - **Tab controls** — Close (×), reorder, switch
 
 ### Node Detail View
@@ -124,54 +124,6 @@ Active workspace for the node(s) you're working with.
 
 ---
 
-## Right Panel: Helpers
-
-AI conversation interface.
-
-### Chat Interface
-
-- **Message history** — User + assistant messages
-- **Tool call visibility** — Collapsed by default, expandable
-- **Token/cost tracking** — Per-message usage
-- **Node references** — Auto-linked `[NODE:id:"title"]`
-
-### Mode Toggle
-
-```
-┌──────────────────┐
-│ ⚡ Easy │ 🔥 Hard │
-└──────────────────┘
-```
-
-| Mode | Model | Use Case |
-|------|-------|----------|
-| **Easy** | GPT-5 Mini | Fast, everyday tasks |
-| **Hard** | Claude Sonnet 4.5 | Deep reasoning, complex analysis |
-
-Mode persists in localStorage. Switch mid-conversation seamlessly.
-
-### Collapsible Panel
-
-- **Toggle:** Cmd+\\ (Mac) / Ctrl+\\ (Windows)
-- **Collapsed state:** 48px rail with expand button
-- **State persists:** Remembers your preference
-
----
-
-## Quick Add
-
-Bottom of the Helpers panel. Three modes:
-
-| Mode | Icon | Purpose |
-|------|------|---------|
-| **Link** | 🔗 | Paste URLs for auto-extraction |
-| **Note** | 📄 | Quick note, no AI processing |
-| **Chat** | 💬 | Paste conversations |
-
-Auto-detects mode based on input (URLs trigger Link mode).
-
----
-
 ## Search (Cmd+K)
 
 Global search modal with 4-tier relevance:
@@ -190,19 +142,15 @@ Global search modal with 4-tier relevance:
 
 ## Settings Panel
 
-**Access:** Settings cog icon (top-right, green ring)
+**Access:** Settings cog icon (top-right)
 
-**Size:** 88vw × 90vh with glass effect
-
-### Tabs (in order)
+### Tabs
 
 | Tab | Purpose |
 |-----|---------|
-| **Subscription** | Account status, usage, upgrade options |
-| **API Keys** | Configure Anthropic/OpenAI/Tavily keys |
-| **Workflows** | View, edit, create, delete workflows |
-| **Tools** | View available agent tools |
-| **Context** | Auto-context toggle, view hub nodes |
+| **API Keys** | Configure OpenAI/Tavily keys |
+| **Workflows** | View, edit, create workflows |
+| **Tools** | View available tools |
 | **Map** | Knowledge graph visualization |
 | **Database** | Full node table with filters/sorting |
 | **Logs** | Activity feed (last 100 entries) |
@@ -221,11 +169,6 @@ Visual graph of your knowledge network.
 - Click node to highlight connections
 - Selection shows connected nodes in green
 
-**Styling:**
-- Cluster layout with golden angle spiral
-- Transparent flat circles
-- Green rings for selected/connected nodes
-
 ---
 
 ## Database View
@@ -236,7 +179,6 @@ Full table view of all nodes.
 - Node (title + ID)
 - Dimensions (folder badges)
 - Edges (count)
-- Status (context hub indicator)
 - Updated (timestamp)
 
 **Features:**
@@ -254,7 +196,7 @@ Each dimension can have a custom Lucide icon.
 **To set:**
 1. Open Folder View → hover over dimension
 2. Click edit (pencil) icon
-3. Choose icon from 115 curated options
+3. Choose icon from curated options
 4. Icons persist in localStorage
 
 ---
@@ -264,12 +206,9 @@ Each dimension can have a custom Lucide icon.
 **Format:** `[NODE:id:"title"]`
 
 **Rendering:**
-- Clickable labels in chat messages
 - Clickable labels in node content
 - Hover shows preview tooltip
 - Click opens in Focus panel
-
-AI agents automatically use this format for all node mentions.
 
 ---
 
@@ -278,7 +217,6 @@ AI agents automatically use this format for all node mentions.
 | Shortcut | Action |
 |----------|--------|
 | `Cmd+K` | Open search |
-| `Cmd+\\` | Toggle chat panel |
 | `Escape` | Close modals/overlays |
 
 ---
@@ -288,7 +226,6 @@ AI agents automatically use this format for all node mentions.
 ### Colors
 
 - **Background:** `#0a0a0a` (near black)
-- **Panels:** Subtle gradients distinguishing left/middle/right
 - **Accent:** Green (`#22c55e`) for actions, selections
 - **Text:** White (primary), neutral-400 (secondary)
 

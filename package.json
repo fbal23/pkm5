@@ -21,15 +21,14 @@
     "evals": "RAH_EVALS_LOG=1 tsx tests/evals/runner.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.9",
     "@ai-sdk/openai": "^3.0.7",
-    "@ai-sdk/react": "^3.0.29",
     "@langchain/core": "^1.0.1",
     "@langchain/textsplitters": "^1.0.1",
     "@xyflow/react": "^12.10.0",
     "ai": "^6.0.27",
     "better-sqlite3": "^12.2.0",
     "cheerio": "^1.1.2",
+    "gray-matter": "^4.0.3",
     "lucide-react": "^0.468.0",
     "next": "15.1.3",
     "openai": "^4.103.0",

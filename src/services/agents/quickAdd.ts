@@ -1,10 +1,10 @@
-import { AgentDelegationService } from './delegation';
 import { summarizeToolExecution } from './toolResultUtils';
 import { youtubeExtractTool } from '@/tools/other/youtubeExtract';
 import { websiteExtractTool } from '@/tools/other/websiteExtract';
 import { paperExtractTool } from '@/tools/other/paperExtract';
 import { formatNodeForChat } from '@/tools/infrastructure/nodeFormatter';
 import { summarizeTranscript } from './transcriptSummarizer';
+import { eventBroadcaster } from '@/services/events';
 
 export type QuickAddMode = 'link' | 'note' | 'chat';
 
@@ -340,41 +340,42 @@ async function handleChatTranscriptQuickAdd(rawInput: string, task: string): Pro
   });
 }
 
-export async function enqueueQuickAdd({ rawInput, mode, description }: QuickAddInput) {
+export interface QuickAddResult {
+  success: boolean;
+  summary?: string;
+  error?: string;
+  nodeId?: number;
+}
+
+export async function enqueueQuickAdd({ rawInput, mode, description }: QuickAddInput): Promise<QuickAddResult> {
   const inputType = detectInputType(rawInput, mode);
-  const context: string[] = (inputType === 'note' || inputType === 'chat') ? [] : [rawInput];
   const task = buildTaskPrompt(inputType, rawInput);
-  const expectedOutcome = buildExpectedOutcome(inputType);
 
-  const delegation = AgentDelegationService.createDelegation({
-    task,
-    context,
-    expectedOutcome,
-  });
-
-  setImmediate(async () => {
-    try {
-      AgentDelegationService.markInProgress(delegation.sessionId);
-
-      let summary: string;
-      if (inputType === 'note') {
-        summary = await handleNoteQuickAdd(rawInput, task, description);
-      } else if (inputType === 'chat') {
-        summary = await handleChatTranscriptQuickAdd(rawInput, task);
-      } else {
-        summary = await handleExtractionQuickAdd(inputType as ExtractionQuickAddType, rawInput, task);
-      }
-
-      AgentDelegationService.completeDelegation(delegation.sessionId, summary, 'completed');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      AgentDelegationService.completeDelegation(
-        delegation.sessionId,
-        `Quick Add failed: ${message}`,
-        'failed'
-      );
+  try {
+    let summary: string;
+    if (inputType === 'note') {
+      summary = await handleNoteQuickAdd(rawInput, task, description);
+    } else if (inputType === 'chat') {
+      summary = await handleChatTranscriptQuickAdd(rawInput, task);
+    } else {
+      summary = await handleExtractionQuickAdd(inputType as ExtractionQuickAddType, rawInput, task);
     }
-  });
 
-  return delegation;
+    // Extract node ID from summary if present
+    const nodeIdMatch = summary.match(/\[NODE:(\d+)/);
+    const nodeId = nodeIdMatch ? parseInt(nodeIdMatch[1], 10) : undefined;
+
+    // Broadcast node created event
+    if (nodeId) {
+      eventBroadcaster.broadcast({
+        type: 'NODE_CREATED',
+        data: { node: { id: nodeId, title: 'Quick Add' } }
+      });
+    }
+
+    return { success: true, summary, nodeId };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown error';
+    return { success: false, error: `Quick Add failed: ${message}` };
+  }
 }
