@@ -1,11 +1,14 @@
 /**
- * Latent Space Hub - Remote MCP Endpoint
+ * RA-H Remote MCP Endpoint
  *
- * A stateless, read-only MCP server for Vercel serverless.
- * Exposes ls_* tools for external agents to query the knowledge graph.
+ * A stateless MCP server for Vercel/serverless deployments.
+ * Exposes rah_* tools for external agents to query (and optionally modify) the knowledge graph.
+ *
+ * Environment variables:
+ *   MCP_ALLOW_WRITES=true  - Enable write tools (add_node, create_edge, etc.)
  *
  * Usage:
- *   claude mcp add --transport http latent-space https://latentspace.ra-h.app/api/mcp
+ *   claude mcp add --transport http my-rah https://my-deployment.vercel.app/api/mcp
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -17,44 +20,56 @@ import { nodeService, edgeService } from '@/services/database';
 import { getSQLiteClient } from '@/services/database/sqlite-client';
 
 export const runtime = 'nodejs';
-export const maxDuration = 30; // 30 second timeout for tool calls
+export const maxDuration = 30;
 
-// Server info
+const ALLOW_WRITES = process.env.MCP_ALLOW_WRITES === 'true';
+
 const SERVER_INFO = {
-  name: 'latent-space-hub',
+  name: 'ra-h-mcp',
   version: '1.0.0',
 };
 
-const INSTRUCTIONS = [
-  'This is the Latent Space Knowledge Hub - a searchable graph of Latent Space content.',
-  'Use ls_search_nodes to find content by keyword (newsletters, podcasts, talks, etc.).',
-  'Use ls_get_nodes to load full node content by ID.',
-  'Use ls_query_edges to explore connections between content.',
-  'Use ls_list_dimensions to see content categories (AI News, Podcast, People, etc.).',
-  'This is a read-only API - you cannot modify the knowledge graph.',
-].join(' ');
+function buildInstructions(): string {
+  const lines = [
+    'RA-H Knowledge Graph - a local-first research workspace.',
+    'Use rah_search_nodes to find content by keyword.',
+    'Use rah_get_nodes to load full node content by ID.',
+    'Use rah_query_edges to explore connections between nodes.',
+    'Use rah_list_dimensions to see content categories.',
+  ];
+
+  if (ALLOW_WRITES) {
+    lines.push('Write operations are enabled. Use rah_add_node to create new nodes.');
+  } else {
+    lines.push('This is a read-only endpoint.');
+  }
+
+  return lines.join(' ');
+}
 
 /**
- * Create a fresh MCP server instance with read-only ls_* tools
+ * Create a fresh MCP server instance with rah_* tools
  */
-function createLSServer(): McpServer {
+function createRAHServer(): McpServer {
   const server = new McpServer(SERVER_INFO, {
-    instructions: INSTRUCTIONS,
+    instructions: buildInstructions(),
     capabilities: { tools: {} },
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // ls_search_nodes - Full-text search across all content
+  // READ TOOLS (always enabled)
   // ─────────────────────────────────────────────────────────────────────────────
+
+  // rah_search_nodes - Full-text search
   server.registerTool(
-    'ls_search_nodes',
+    'rah_search_nodes',
     {
-      title: 'Search Latent Space content',
-      description: 'Search the Latent Space knowledge graph by keyword. Returns matching nodes (newsletters, podcasts, talks, people, topics, etc.).',
+      title: 'Search RA-H nodes',
+      description: 'Search the knowledge graph by keyword. Returns matching nodes with title, description, dimensions.',
       inputSchema: {
         query: z.string().min(1).max(400).describe('Search query (keywords)'),
         limit: z.number().min(1).max(50).optional().describe('Max results (default 20)'),
-        dimensions: z.array(z.string()).max(5).optional().describe('Filter by dimensions (e.g., ["Podcast", "AI News"])'),
+        dimensions: z.array(z.string()).max(5).optional().describe('Filter by dimensions'),
       },
     },
     async ({ query, limit = 20, dimensions }) => {
@@ -90,14 +105,12 @@ function createLSServer(): McpServer {
     }
   );
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ls_get_nodes - Load full node content by ID
-  // ─────────────────────────────────────────────────────────────────────────────
+  // rah_get_nodes - Load full node content by ID
   server.registerTool(
-    'ls_get_nodes',
+    'rah_get_nodes',
     {
-      title: 'Get Latent Space nodes by ID',
-      description: 'Load full content of specific nodes by their IDs. Use this after searching to get complete details.',
+      title: 'Get RA-H nodes by ID',
+      description: 'Load full content of specific nodes by their IDs.',
       inputSchema: {
         nodeIds: z.array(z.number().int().positive()).min(1).max(10).describe('Node IDs to load (max 10)'),
       },
@@ -141,13 +154,11 @@ function createLSServer(): McpServer {
     }
   );
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ls_query_edges - Find connections between content
-  // ─────────────────────────────────────────────────────────────────────────────
+  // rah_query_edges - Find connections
   server.registerTool(
-    'ls_query_edges',
+    'rah_query_edges',
     {
-      title: 'Query Latent Space connections',
+      title: 'Query RA-H edges',
       description: 'Find connections (edges) between nodes. Use nodeId to get all connections for a specific node.',
       inputSchema: {
         nodeId: z.number().int().positive().optional().describe('Find edges connected to this node'),
@@ -158,16 +169,13 @@ function createLSServer(): McpServer {
       let edges: any[];
 
       if (nodeId) {
-        // Get edges for a specific node using getNodeConnections
         const connections = await edgeService.getNodeConnections(nodeId);
         edges = connections.slice(0, limit).map(c => c.edge);
       } else {
-        // Get all edges (limited)
         edges = await edgeService.getEdges();
         edges = edges.slice(0, limit);
       }
 
-      // Parse context if it's a string (SQLite returns JSON as string)
       const parseContext = (ctx: any) => {
         if (typeof ctx === 'string') {
           try { return JSON.parse(ctx); } catch { return {}; }
@@ -195,14 +203,12 @@ function createLSServer(): McpServer {
     }
   );
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ls_list_dimensions - List all content categories
-  // ─────────────────────────────────────────────────────────────────────────────
+  // rah_list_dimensions - List all dimensions
   server.registerTool(
-    'ls_list_dimensions',
+    'rah_list_dimensions',
     {
-      title: 'List Latent Space dimensions',
-      description: 'List all content categories (dimensions) in the knowledge graph, with node counts. Dimensions include: AI News, Podcast, People, Companies, Topics, etc.',
+      title: 'List RA-H dimensions',
+      description: 'List all dimensions (categories/tags) in the knowledge graph with node counts.',
       inputSchema: {},
     },
     async () => {
@@ -217,6 +223,7 @@ function createLSServer(): McpServer {
         SELECT
           d.name AS dimension,
           d.description,
+          d.is_priority AS isPriority,
           COALESCE(dc.count, 0) AS count
         FROM dimensions d
         LEFT JOIN dimension_counts dc ON dc.dimension = d.name
@@ -226,6 +233,7 @@ function createLSServer(): McpServer {
       const dimensions = result.rows.map((row: any) => ({
         name: row.dimension,
         description: row.description ?? null,
+        isPriority: Boolean(row.isPriority),
         count: Number(row.count),
       }));
 
@@ -242,6 +250,265 @@ function createLSServer(): McpServer {
     }
   );
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // WRITE TOOLS (only when MCP_ALLOW_WRITES=true)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  if (ALLOW_WRITES) {
+    // rah_add_node
+    server.registerTool(
+      'rah_add_node',
+      {
+        title: 'Add RA-H node',
+        description: 'Create a new node in the knowledge graph.',
+        inputSchema: {
+          title: z.string().min(1).max(160).describe('Node title'),
+          content: z.string().max(20000).optional().describe('Node content/notes'),
+          link: z.string().url().optional().describe('Source URL'),
+          description: z.string().max(2000).optional().describe('Short description'),
+          dimensions: z.array(z.string()).min(1).max(5).describe('Categories/tags (at least 1)'),
+          metadata: z.record(z.any()).optional().describe('Additional metadata'),
+        },
+      },
+      async ({ title, content, link, description, dimensions, metadata }) => {
+        // Call the nodes API internally
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/nodes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: title.trim(),
+            content: content?.trim(),
+            link: link?.trim(),
+            description: description?.trim(),
+            dimensions,
+            metadata: metadata || {},
+          }),
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to create node');
+        }
+
+        const node = result.data;
+        return {
+          content: [{ type: 'text', text: `Created node #${node.id}: ${node.title}` }],
+          structuredContent: {
+            success: true,
+            nodeId: node.id,
+            title: node.title,
+            dimensions: node.dimensions || dimensions,
+          },
+        };
+      }
+    );
+
+    // rah_update_node
+    server.registerTool(
+      'rah_update_node',
+      {
+        title: 'Update RA-H node',
+        description: 'Update an existing node. Content is APPENDED, dimensions are replaced.',
+        inputSchema: {
+          id: z.number().int().positive().describe('Node ID to update'),
+          updates: z.object({
+            title: z.string().optional().describe('New title'),
+            content: z.string().optional().describe('Content to APPEND'),
+            link: z.string().optional().describe('New link'),
+            dimensions: z.array(z.string()).optional().describe('New dimensions (replaces existing)'),
+          }).describe('Fields to update'),
+        },
+      },
+      async ({ id, updates }) => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/nodes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
+
+        const result = await response.json();
+        if (!result.success && !result.node) {
+          throw new Error(result.error || 'Failed to update node');
+        }
+
+        return {
+          content: [{ type: 'text', text: `Updated node #${id}` }],
+          structuredContent: { success: true, nodeId: id },
+        };
+      }
+    );
+
+    // rah_create_edge
+    server.registerTool(
+      'rah_create_edge',
+      {
+        title: 'Create RA-H edge',
+        description: 'Create a connection between two nodes.',
+        inputSchema: {
+          fromNodeId: z.number().int().positive().describe('Source node ID'),
+          toNodeId: z.number().int().positive().describe('Target node ID'),
+          explanation: z.string().min(1).describe('Why does this connection exist?'),
+        },
+      },
+      async ({ fromNodeId, toNodeId, explanation }) => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/edges`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from_node_id: fromNodeId,
+            to_node_id: toNodeId,
+            explanation: explanation.trim(),
+            source: 'helper_name',
+            created_via: 'mcp',
+          }),
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to create edge');
+        }
+
+        const edge = result.data;
+        return {
+          content: [{ type: 'text', text: `Created edge from #${fromNodeId} to #${toNodeId}` }],
+          structuredContent: { success: true, edgeId: edge?.id },
+        };
+      }
+    );
+
+    // rah_update_edge
+    server.registerTool(
+      'rah_update_edge',
+      {
+        title: 'Update RA-H edge',
+        description: 'Update an existing edge explanation.',
+        inputSchema: {
+          id: z.number().int().positive().describe('Edge ID to update'),
+          explanation: z.string().min(1).describe('New explanation'),
+        },
+      },
+      async ({ id, explanation }) => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/edges/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            context: { explanation: explanation.trim(), created_via: 'mcp' },
+          }),
+        });
+
+        const result = await response.json();
+        if (!result.success && !result.edge) {
+          throw new Error(result.error || 'Failed to update edge');
+        }
+
+        return {
+          content: [{ type: 'text', text: `Updated edge #${id}` }],
+          structuredContent: { success: true, edgeId: id },
+        };
+      }
+    );
+
+    // rah_create_dimension
+    server.registerTool(
+      'rah_create_dimension',
+      {
+        title: 'Create RA-H dimension',
+        description: 'Create a new dimension (category/tag) for organizing nodes.',
+        inputSchema: {
+          name: z.string().min(1).describe('Dimension name'),
+          description: z.string().max(500).optional().describe('Description'),
+          isPriority: z.boolean().optional().describe('Lock for auto-assignment'),
+        },
+      },
+      async ({ name, description, isPriority }) => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/dimensions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description, isPriority }),
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to create dimension');
+        }
+
+        return {
+          content: [{ type: 'text', text: `Created dimension: ${name}` }],
+          structuredContent: { success: true, dimension: name },
+        };
+      }
+    );
+
+    // rah_update_dimension
+    server.registerTool(
+      'rah_update_dimension',
+      {
+        title: 'Update RA-H dimension',
+        description: 'Update dimension properties (rename, description, priority).',
+        inputSchema: {
+          name: z.string().min(1).describe('Current dimension name'),
+          newName: z.string().optional().describe('New name (for renaming)'),
+          description: z.string().max(500).optional().describe('New description'),
+          isPriority: z.boolean().optional().describe('Lock/unlock dimension'),
+        },
+      },
+      async ({ name, newName, description, isPriority }) => {
+        const payload: any = {};
+        if (newName) {
+          payload.currentName = name;
+          payload.newName = newName;
+        } else {
+          payload.name = name;
+        }
+        if (description !== undefined) payload.description = description;
+        if (isPriority !== undefined) payload.isPriority = isPriority;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/dimensions`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to update dimension');
+        }
+
+        return {
+          content: [{ type: 'text', text: `Updated dimension: ${newName || name}` }],
+          structuredContent: { success: true, dimension: newName || name },
+        };
+      }
+    );
+
+    // rah_delete_dimension
+    server.registerTool(
+      'rah_delete_dimension',
+      {
+        title: 'Delete RA-H dimension',
+        description: 'Delete a dimension and remove it from all nodes.',
+        inputSchema: {
+          name: z.string().min(1).describe('Dimension name to delete'),
+        },
+      },
+      async ({ name }) => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/dimensions?name=${encodeURIComponent(name)}`, {
+          method: 'DELETE',
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to delete dimension');
+        }
+
+        return {
+          content: [{ type: 'text', text: `Deleted dimension: ${name}` }],
+          structuredContent: { success: true, dimension: name },
+        };
+      }
+    );
+  }
+
   return server;
 }
 
@@ -250,18 +517,14 @@ function createLSServer(): McpServer {
  */
 export async function POST(req: NextRequest) {
   try {
-    // Create fresh instances for stateless serverless execution
-    const server = createLSServer();
+    const server = createRAHServer();
     const transport = new WebStandardStreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, // Stateless mode - critical for serverless
+      sessionIdGenerator: undefined,
     });
 
     await server.connect(transport);
-
-    // Handle the request - WebStandardStreamableHTTPServerTransport accepts web Request
     const response = await transport.handleRequest(req);
 
-    // Cleanup
     await transport.close();
     await server.close();
 
@@ -303,21 +566,30 @@ export async function OPTIONS() {
 }
 
 /**
- * GET returns server info (not required for MCP, but useful for debugging)
+ * GET returns server info
  */
 export async function GET() {
+  const tools = ['rah_search_nodes', 'rah_get_nodes', 'rah_query_edges', 'rah_list_dimensions'];
+
+  if (ALLOW_WRITES) {
+    tools.push(
+      'rah_add_node', 'rah_update_node',
+      'rah_create_edge', 'rah_update_edge',
+      'rah_create_dimension', 'rah_update_dimension', 'rah_delete_dimension'
+    );
+  }
+
   return NextResponse.json(
     {
       name: SERVER_INFO.name,
       version: SERVER_INFO.version,
-      description: 'Latent Space Knowledge Hub - Read-only MCP server',
-      tools: ['ls_search_nodes', 'ls_get_nodes', 'ls_query_edges', 'ls_list_dimensions'],
-      usage: 'claude mcp add --transport http latent-space https://latentspace.ra-h.app/api/mcp',
+      description: 'RA-H Knowledge Graph - Remote MCP Server',
+      writesEnabled: ALLOW_WRITES,
+      tools,
+      usage: 'claude mcp add --transport http my-rah https://your-deployment.vercel.app/api/mcp',
     },
     {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-      },
+      headers: { 'Access-Control-Allow-Origin': '*' },
     }
   );
 }
