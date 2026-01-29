@@ -7,7 +7,7 @@ import {
   LayoutList,
   Map,
   Folder,
-  Workflow,
+  FileText,
   Settings,
 } from 'lucide-react';
 import type { PaneType } from '../panes/types';
@@ -27,18 +27,18 @@ const PANE_TYPE_ICONS: Record<string, typeof LayoutList> = {
   views: LayoutList,
   map: Map,
   dimensions: Folder,
-  workflows: Workflow,
+  guides: FileText,
 };
 
 const PANE_TYPE_LABELS: Record<string, string> = {
   views: 'Feed',
   map: 'Map',
   dimensions: 'Dimensions',
-  workflows: 'Workflows',
+  guides: 'Guides',
 };
 
 // Pane types shown in the toolbar (excludes 'node' which is opened via Feed, chat removed in rah-light)
-const TOOLBAR_PANE_TYPES: PaneType[] = ['views', 'map', 'dimensions', 'workflows'];
+const TOOLBAR_PANE_TYPES: PaneType[] = ['views', 'map', 'dimensions', 'guides'];
 
 interface ToolbarButtonProps {
   icon: typeof Search;

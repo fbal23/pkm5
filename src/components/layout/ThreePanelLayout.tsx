@@ -26,7 +26,7 @@ import LeftToolbar from './LeftToolbar';
 import SplitHandle from './SplitHandle';
 
 // Pane components (ChatPane removed in rah-light)
-import { NodePane, WorkflowsPane, DimensionsPane, MapPane, ViewsPane } from '../panes';
+import { NodePane, GuidesPane, DimensionsPane, MapPane, ViewsPane } from '../panes';
 import QuickAddInput from '../agents/QuickAddInput';
 import type { PaneType, SlotState, PaneAction } from '../panes/types';
 
@@ -258,9 +258,9 @@ export default function ThreePanelLayout() {
               // Delegation events ignored (delegation system removed in rah-light)
               break;
 
-            case 'WORKFLOW_PROGRESS':
+            case 'GUIDE_UPDATED':
               if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('workflow:progress', { detail: data.data }));
+                window.dispatchEvent(new CustomEvent('guides:updated', { detail: data.data }));
               }
               break;
 
@@ -807,22 +807,14 @@ export default function ThreePanelLayout() {
 
       // case 'chat' removed in rah-light
 
-      case 'workflows':
+      case 'guides':
         return (
-          <WorkflowsPane
+          <GuidesPane
             slot={slot}
             isActive={isActive}
             onPaneAction={slot === 'A' ? handleSlotAAction : handleSlotBAction}
             onCollapse={onCollapse}
             onSwapPanes={slotB ? handleSwapPanes : undefined}
-            delegations={delegations}
-            onNodeClick={(nodeId) => {
-              handleNodeSelect(nodeId, false);
-              setActivePane(slot);
-            }}
-            openTabsData={openTabsData}
-            activeTabId={activeTab}
-            activeDimension={activeDimension}
           />
         );
 

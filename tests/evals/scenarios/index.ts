@@ -2,7 +2,6 @@ import { scenario as simpleQuery } from './simple-query';
 import { scenario as searchEmbeddings } from './search-embeddings';
 import { scenario as createNode } from './create-node';
 import { scenario as hardModeQuery } from './hard-mode-query';
-import { scenario as workflowIntegrate } from './workflow-integrate';
 import { scenario as updateNode } from './update-node';
 import { scenario as createEdge } from './create-edge';
 import { scenario as queryDimensions } from './query-dimensions';
@@ -22,7 +21,6 @@ export const scenarios = [
   getDimension,
   dimensionLifecycle,
   hardModeQuery,
-  workflowIntegrate,
   youtubeExtract,
   websiteExtract,
   paperExtract,

@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import LogsViewer from './LogsViewer';
 import ToolsViewer from './ToolsViewer';
-import WorkflowsViewer from './WorkflowsViewer';
 import ApiKeysViewer from './ApiKeysViewer';
 import DatabaseViewer from './DatabaseViewer';
 import ExternalAgentsPanel from './ExternalAgentsPanel';
 import ContextViewer from './ContextViewer';
+import GuidesViewer from './GuidesViewer';
 import { apiKeyService } from '@/services/storage/apiKeys';
 
 export type SettingsTab =
   | 'logs'
   | 'tools'
-  | 'workflows'
+  | 'guides'
   | 'apikeys'
   | 'database'
   | 'context'
@@ -140,18 +140,18 @@ export default function SettingsModal({ isOpen, onClose, initialTab }: SettingsM
               Tools
             </div>
             <div
-              onClick={() => setActiveTab('workflows')}
+              onClick={() => setActiveTab('guides')}
               style={{
                 padding: '12px 24px',
                 fontSize: '14px',
-                color: activeTab === 'workflows' ? '#fff' : '#888',
-                background: activeTab === 'workflows' ? '#1a3a2a' : 'transparent',
-                borderLeft: activeTab === 'workflows' ? '3px solid #22c55e' : '3px solid transparent',
+                color: activeTab === 'guides' ? '#fff' : '#888',
+                background: activeTab === 'guides' ? '#1a3a2a' : 'transparent',
+                borderLeft: activeTab === 'guides' ? '3px solid #22c55e' : '3px solid transparent',
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
             >
-              Workflows
+              Guides
             </div>
             <div
               onClick={() => setActiveTab('apikeys')}
@@ -295,7 +295,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab }: SettingsM
             >
               {activeTab === 'logs' && 'System Logs'}
               {activeTab === 'tools' && 'Tools'}
-              {activeTab === 'workflows' && 'Workflows'}
+              {activeTab === 'guides' && 'Guides'}
               {activeTab === 'apikeys' && 'API Keys'}
               {activeTab === 'database' && 'Knowledge Database'}
               {activeTab === 'context' && 'Auto-Context'}
@@ -329,7 +329,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab }: SettingsM
           <div style={{ flex: 1, overflow: 'hidden' }}>
             {activeTab === 'logs' && <LogsViewer key={isOpen ? 'open' : 'closed'} />}
             {activeTab === 'tools' && <ToolsViewer />}
-            {activeTab === 'workflows' && <WorkflowsViewer />}
+            {activeTab === 'guides' && <GuidesViewer />}
             {activeTab === 'apikeys' && <ApiKeysViewer />}
             {activeTab === 'database' && <DatabaseViewer />}
             {activeTab === 'context' && <ContextViewer />}

@@ -15,7 +15,7 @@ export type AgentDelegation = {
 };
 
 // The five pane types (chat removed in rah-light)
-export type PaneType = 'node' | 'workflows' | 'dimensions' | 'map' | 'views';
+export type PaneType = 'node' | 'guides' | 'dimensions' | 'map' | 'views';
 
 // State for each slot
 export interface SlotState {
@@ -68,14 +68,7 @@ export interface HighlightedPassage {
 
 // ChatPaneProps removed in rah-light
 
-// WorkflowsPane specific props
-export interface WorkflowsPaneProps extends BasePaneProps {
-  delegations: AgentDelegation[];
-  onNodeClick?: (nodeId: number) => void;
-  openTabsData?: Node[];
-  activeTabId?: number | null;
-  activeDimension?: string | null;
-}
+// GuidesPaneProps - just uses BasePaneProps (guides are self-contained)
 
 // DimensionsPane specific props
 export interface DimensionsPaneProps extends BasePaneProps {
@@ -110,7 +103,7 @@ export interface PaneHeaderProps {
 // Labels for pane types
 export const PANE_LABELS: Record<PaneType, string> = {
   node: 'Nodes',
-  workflows: 'Workflows',
+  guides: 'Guides',
   dimensions: 'Dimensions',
   map: 'Map',
   views: 'Feed',
@@ -124,5 +117,5 @@ export const DEFAULT_SLOT_A: SlotState = {
 };
 
 export const DEFAULT_SLOT_B: SlotState = {
-  type: 'workflows',
+  type: 'guides',
 };
