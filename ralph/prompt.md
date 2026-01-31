@@ -1,6 +1,6 @@
-# Ralph Autonomous Agent - RA-H Light Strip-Down
+# Ralph Autonomous Agent - RA-OS Strip-Down
 
-You are an autonomous coding agent stripping down ra-h_os to create RA-H Light — a minimal knowledge graph UI with MCP server.
+You are an autonomous coding agent stripping down ra-h_os to create RA-OS — a minimal knowledge graph UI with MCP server.
 
 ## Your Task
 

@@ -1,10 +1,19 @@
-# RA-H Light Documentation
+# RA-OS Documentation
+
+```
+ ██████╗  █████╗       ██╗  ██╗
+ ██╔══██╗██╔══██╗      ██║  ██║
+ ██████╔╝███████║█████╗███████║
+ ██╔══██╗██╔══██║╚════╝██╔══██║
+ ██║  ██║██║  ██║      ██║  ██║
+ ╚═╝  ╚═╝╚═╝  ╚═╝      ╚═╝  ╚═╝
+```
 
 ## Quick Links
 
 | Doc | Description |
 |-----|-------------|
-| [Overview](./0_overview.md) | What is RA-H Light, design philosophy |
+| [Overview](./0_overview.md) | What is RA-OS, design philosophy |
 | [Schema](./2_schema.md) | Database schema, node/edge structure |
 | [Tools & Workflows](./4_tools-and-workflows.md) | MCP tools, workflow system |
 | [Logging & Evals](./5_logging-and-evals.md) | Debugging, evaluation framework |
@@ -12,6 +21,8 @@
 | [MCP](./8_mcp.md) | Connect Claude Code and external agents |
 | [About](./9_open-source.md) | What's included, contributing |
 | [Troubleshooting](./TROUBLESHOOTING.md) | Common issues and fixes |
+| [Development](./development/process.md) | Dev workflow and PR checklist |
+| [Docs Process](./development/docs-process.md) | How to maintain docs |
 
 ## Getting Started
 
