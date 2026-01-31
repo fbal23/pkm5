@@ -2,13 +2,13 @@
 
 > How to connect Claude Code and other AI assistants to your knowledge base.
 
-**How it works:** RA-H Light runs a local MCP (Model Context Protocol) server. This lets any MCP-compatible assistant — like Claude Code — search your notes, add new knowledge, and manage your knowledge graph. Everything stays local; nothing goes to the cloud.
+**How it works:** RA-OS runs a local MCP (Model Context Protocol) server. This lets any MCP-compatible assistant — like Claude Code — search your notes, add new knowledge, and manage your knowledge graph. Everything stays local; nothing goes to the cloud.
 
 ---
 
 ## Quick Start
 
-1. Start RA-H Light: `npm run dev`
+1. Start RA-OS: `npm run dev`
 2. Configure your AI assistant (see below)
 3. Use naturally: "Search RA-H for my notes on X" or "Add this to RA-H"
 
@@ -47,9 +47,9 @@ Add to your `~/.claude.json` or Claude Code settings:
 }
 ```
 
-Replace `/path/to/ra-h_os` with the actual path to your RA-H Light installation.
+Replace `/path/to/ra-h_os` with the actual path to your RA-OS installation.
 
-**Note:** RA-H Light must be running (`npm run dev`) for the MCP server to work.
+**Note:** RA-OS must be running (`npm run dev`) for the MCP server to work.
 
 ---
 
@@ -119,7 +119,7 @@ curl http://127.0.0.1:44145/status
 
 ### "Connection refused"
 
-1. Make sure RA-H Light is running: `npm run dev`
+1. Make sure RA-OS is running: `npm run dev`
 2. Check the port isn't blocked: `lsof -i :44145`
 3. Verify the server started: check terminal output
 

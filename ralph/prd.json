@@ -1,5 +1,5 @@
 {
-  "project": "rah-light",
+  "project": "rah-os",
   "context": "Stripping ra-h_os to a lightweight 2-panel knowledge graph UI with MCP server. Remove chat agents, voice, delegation system, memory pipeline. Keep: nodes/edges/dimensions CRUD, MCP server, workflows, extraction tools. The goal is a simple UI that technical users can run and connect their own agents to via MCP. Auth/subscription already removed from ra-h_os.",
   "userStories": [
     {
@@ -188,7 +188,7 @@
         "No references to removed features"
       ],
       "passes": true,
-      "notes": "Renamed to RA-H Light. Added 'What is RA-H Light?' section explaining it's for AI agent knowledge management. Added MCP integration section with Claude Code setup example and all 11 tools listed. Removed all references to chat agents, voice, 3-panel interface, content extraction."
+      "notes": "Renamed to RA-OS. Added 'What is RA-OS?' section explaining it's for AI agent knowledge management. Added MCP integration section with Claude Code setup example and all 11 tools listed. Removed all references to chat agents, voice, 3-panel interface, content extraction."
     },
     {
       "id": "15",

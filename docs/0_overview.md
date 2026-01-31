@@ -1,8 +1,8 @@
-# RA-H Light Overview
+# RA-OS Overview
 
-## What is RA-H Light?
+## What is RA-OS?
 
-RA-H Light is a minimal knowledge graph UI with MCP server integration. It provides a local-first knowledge management system designed to be extended by external AI agents via the Model Context Protocol.
+RA-OS is a minimal knowledge graph UI with MCP server integration. It provides a local-first knowledge management system designed to be extended by external AI agents via the Model Context Protocol.
 
 **Open Source:** [github.com/bradwmorris/ra-h_os](https://github.com/bradwmorris/ra-h_os)
 
@@ -10,7 +10,7 @@ RA-H Light is a minimal knowledge graph UI with MCP server integration. It provi
 
 **Local-first** — Your knowledge network belongs to you. Everything runs locally in a SQLite database you control.
 
-**Agent-agnostic** — No built-in AI chat. Instead, RA-H Light exposes an MCP server that any AI agent (Claude Code, custom agents) can connect to.
+**Agent-agnostic** — No built-in AI chat. Instead, RA-OS exposes an MCP server that any AI agent (Claude Code, custom agents) can connect to.
 
 **Simple & focused** — 2-panel UI for browsing and editing your knowledge graph. No bloat.
 
@@ -56,7 +56,7 @@ RA-H Light is a minimal knowledge graph UI with MCP server integration. It provi
 
 ## MCP Integration
 
-RA-H Light is designed to be the knowledge backend for your AI workflows:
+RA-OS is designed to be the knowledge backend for your AI workflows:
 
 ```json
 {

@@ -1,4 +1,4 @@
-# RA-H Open Source - Knowledge Management System
+# RA-OS - Knowledge Management System
 
 ## What This Is
 LLM-powered knowledge management system built for emergence and flexibility. This is the **open source, self-hosted version** with BYO (bring your own) API keys.

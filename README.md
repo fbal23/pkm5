@@ -1,17 +1,17 @@
-# RA-H Light
+# RA-OS
 
 A lightweight local knowledge graph UI with MCP server. Connect your AI coding agents to a personal knowledge base. BYO API keys, no cloud dependencies.
 
-## What is RA-H Light?
+## What is RA-OS?
 
-RA-H Light is a stripped-down version of RA-H focused on being a **knowledge management backend for AI agents**. It provides:
+RA-OS is a stripped-down version of RA-H focused on being a **knowledge management backend for AI agents**. It provides:
 
 - **2-panel UI** – Nodes list + focus panel for viewing/editing knowledge
 - **SQLite + sqlite-vec** – Local vector database with semantic search
 - **MCP Server** – Connect Claude Code, Cursor, or any MCP-compatible AI assistant
 - **Workflows** – Editable JSON workflows for multi-step operations
 
-**What's removed:** Built-in chat agents, voice features, delegation system. RA-H Light is designed for technical users who want to bring their own AI agents via MCP.
+**What's removed:** Built-in chat agents, voice features, delegation system. RA-OS is designed for technical users who want to bring their own AI agents via MCP.
 
 ## Platform Support
 
@@ -37,7 +37,7 @@ Open http://localhost:3000 → **Settings → API Keys** → add your OpenAI key
 
 ## Connecting AI Agents via MCP
 
-RA-H Light exposes an MCP server that external AI assistants can use to read/write your knowledge graph.
+RA-OS exposes an MCP server that external AI assistants can use to read/write your knowledge graph.
 
 ### Claude Code Integration
 

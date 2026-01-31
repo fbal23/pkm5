@@ -1,10 +1,10 @@
-# RA-H Light
+# RA-OS
 
-This is **RA-H Light** — a minimal, local-first knowledge graph UI with MCP server integration.
+This is **RA-OS** — a minimal, local-first knowledge graph UI with MCP server integration.
 
-## What is RA-H Light?
+## What is RA-OS?
 
-RA-H Light is a stripped-down version of [RA-H](https://ra-h.app) focused on:
+RA-OS is a stripped-down version of [RA-H](https://ra-h.app) focused on:
 
 - **2-panel UI** for browsing and editing your knowledge graph
 - **MCP server** so external AI agents (like Claude Code) can access your notes
@@ -13,7 +13,7 @@ RA-H Light is a stripped-down version of [RA-H](https://ra-h.app) focused on:
 
 ## What's NOT Included
 
-RA-H Light intentionally excludes:
+RA-OS intentionally excludes:
 
 - Chat interface (use external agents via MCP)
 - Voice features

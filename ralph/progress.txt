@@ -1,4 +1,4 @@
-# Ralph Progress Log - RA-H Light Strip-Down
+# Ralph Progress Log - RA-OS Strip-Down
 Started: Thu 29 Jan 2026 15:00:36 AEDT
 Branch: feature/rah-light
 Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
@@ -228,8 +228,8 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
 - Files modified:
   - README.md (complete rewrite)
 - Changes:
-  - Renamed from "RA-H Open Source" to "RA-H Light"
-  - Added "What is RA-H Light?" section explaining the stripped-down purpose
+- Renamed from "RA-H Open Source" to "RA-OS"
+- Added "What is RA-OS?" section explaining the stripped-down purpose
   - Explicitly list what's removed: chat agents, voice, delegation
   - Added comprehensive MCP integration section:
     - Claude Code setup with JSON config example
@@ -240,7 +240,7 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - Kept: quick start, platform support, commands, docs links, Linux/Windows setup
 - Learnings:
   - The README is the primary entry point - important to set expectations clearly
-  - MCP integration is now the main selling point of RA-H Light
+- MCP integration is now the main selling point of RA-OS
   - Users need clear setup instructions for Claude Code integration
 
 ## Story 15: Final verification
@@ -250,7 +250,7 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - npm run type-check: SUCCESS (no errors)
   - npm run dev: SUCCESS (starts on localhost:3000)
   - UI loads: SUCCESS (HTML renders with LeftToolbar, nodes panel visible)
-- Summary of RA-H Light:
+- Summary of RA-OS:
   - Total files deleted: ~50+ files across chat, voice, delegation systems
   - Total lines removed: ~5000+ lines of code
   - Remaining functionality: nodes/edges/dimensions CRUD, workflows, MCP server (11 tools)
@@ -261,7 +261,7 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
 
 # SPRINT COMPLETE
 
-All 15 stories passed. RA-H Light is now a minimal knowledge graph UI with MCP server:
+All 15 stories passed. RA-OS is now a minimal knowledge graph UI with MCP server:
 
 - **Removed:** Chat agents, voice features, delegation system, Anthropic integration
 - **Kept:** Node/Edge/Dimension CRUD, workflows, MCP server, embeddings, search
