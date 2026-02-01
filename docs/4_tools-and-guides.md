@@ -2,17 +2,13 @@
 
 > MCP tools for external agents and the guides system for context sharing.
 
-<<<<<<< HEAD
 **How it works:** RA-OS exposes tools via MCP that external AI agents can call to read, create, and update your knowledge graph. Guides are markdown documents that help external agents understand your knowledge base.
-=======
-**How it works:** RA-H Light exposes tools via MCP that external AI agents can call to read, create, and update your knowledge graph. Guides are markdown documents that help external agents understand your knowledge base.
->>>>>>> 05ac0a8 (docs: update tools and workflows)
 
 ---
 
 ## MCP Tools
 
-RA-OS provides MCP tools for external agents:
+RA-OS provides 14 MCP tools for external agents:
 
 ### Node Operations
 

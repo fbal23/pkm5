@@ -26,8 +26,8 @@ RA-OS is a minimal knowledge graph UI with MCP server integration. It provides a
 - 2-panel UI (nodes list + focus panel)
 - Node/Edge/Dimension CRUD
 - Full-text and semantic search
-- MCP server with 11 tools
-- Workflows system
+- MCP server with 14 tools
+- Guides system (context for external agents)
 - PDF extraction
 - Graph visualization (Map view)
 - BYO API keys
@@ -76,7 +76,7 @@ Available tools: `rah_add_node`, `rah_search_nodes`, `rah_update_node`, `rah_get
 | Doc | Description |
 |-----|-------------|
 | [Schema](./2_schema.md) | Database schema, node/edge structure |
-| [Tools & Workflows](./4_tools-and-workflows.md) | Available MCP tools, workflow system |
+| [Tools & Guides](./4_tools-and-guides.md) | Available MCP tools, guide system |
 | [UI](./6_ui.md) | Component structure, panels, views |
 | [MCP](./8_mcp.md) | External agent connector setup |
 | [Troubleshooting](./TROUBLESHOOTING.md) | Common issues and fixes |
