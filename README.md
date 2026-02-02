@@ -27,7 +27,7 @@ Your data stays on your machine. Nothing is sent anywhere unless you configure a
 
 ## Requirements
 
-- **Node.js 18+** — [nodejs.org](https://nodejs.org/)
+- **Node.js 20.18.1+** — [nodejs.org](https://nodejs.org/)
 - **macOS** — Works out of the box
 - **Linux/Windows** — Requires building sqlite-vec manually (see below)
 
@@ -95,7 +95,23 @@ Add to your `~/.claude.json`:
 }
 ```
 
-Restart Claude Code. Your agent can now use these tools:
+Restart Claude Code fully (**Cmd+Q on Mac**, not just closing the window).
+
+**Verify it worked:** Ask Claude "Do you have rah_ tools available?" — you should see tools like `rah_add_node`, `rah_search_nodes`, etc.
+
+**For contributors** testing local changes, use the local path instead:
+```json
+{
+  "mcpServers": {
+    "ra-h": {
+      "command": "node",
+      "args": ["/absolute/path/to/ra-h_os/apps/mcp-server/stdio-server.js"]
+    }
+  }
+}
+```
+
+Available tools:
 
 | Tool | What it does |
 |------|--------------|
