@@ -1,11 +1,9 @@
 import OpenAI from 'openai';
-import { apiKeyService } from './storage/apiKeys';
 
-// Initialize OpenAI client with dynamic API key support
 function getOpenAiClient(): OpenAI {
-  const apiKey = apiKeyService.getOpenAiKey();
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error('OpenAI API key required. Please:\n1. Click the Settings icon (⚙️) in the bottom left\n2. Go to API Keys tab\n3. Add your OpenAI API key\n\nGet your key at: https://platform.openai.com/api-keys');
+    throw new Error('OpenAI API key not configured. Add OPENAI_API_KEY to your .env.local file.');
   }
   return new OpenAI({ apiKey });
 }

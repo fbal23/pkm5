@@ -1,5 +1,6 @@
 import { openai as openaiProvider } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { hasValidOpenAiKey } from '../storage/apiKeys';
 
 export interface DescriptionInput {
   title: string;
@@ -15,16 +16,8 @@ export interface DescriptionInput {
   dimensions?: string[];
 }
 
-/**
- * Check if we have a valid OpenAI API key configured.
- * Checks both environment variable and validates format.
- */
-export function hasValidOpenAiKey(): boolean {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key || key === 'your-openai-api-key-here') return false;
-  // Valid OpenAI keys start with sk- or sk-proj-
-  return key.startsWith('sk-') && key.length > 20;
-}
+// Re-export for backwards compatibility — canonical source is ../storage/apiKeys
+export { hasValidOpenAiKey } from '../storage/apiKeys';
 
 /**
  * Generate a simple fallback description without AI.

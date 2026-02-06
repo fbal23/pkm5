@@ -2,49 +2,19 @@
 
 import { useState, useEffect, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { apiKeyService } from '@/services/storage/apiKeys';
+import { isFirstRun, markFirstRunComplete } from '@/services/storage/apiKeys';
 
 export default function FirstRunModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [status, setStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    // Check if this is first run
-    if (apiKeyService.isFirstRun()) {
+    if (isFirstRun()) {
       setIsOpen(true);
     }
   }, []);
 
-  const handleSaveKey = async () => {
-    if (!apiKey.trim()) return;
-
-    setStatus('testing');
-    setErrorMessage('');
-
-    try {
-      apiKeyService.setOpenAiKey(apiKey.trim());
-      const ok = await apiKeyService.testOpenAiConnection();
-
-      if (ok) {
-        setStatus('success');
-        setTimeout(() => {
-          apiKeyService.markFirstRunComplete();
-          setIsOpen(false);
-        }, 1000);
-      } else {
-        setStatus('error');
-        setErrorMessage('Could not connect to OpenAI. Please check your key.');
-      }
-    } catch (error) {
-      setStatus('error');
-      setErrorMessage('Invalid API key format. Keys start with sk-');
-    }
-  };
-
-  const handleSkip = () => {
-    apiKeyService.markFirstRunComplete();
+  const handleClose = () => {
+    markFirstRunComplete();
     setIsOpen(false);
   };
 
@@ -53,54 +23,28 @@ export default function FirstRunModal() {
   return createPortal(
     <div style={overlayStyle}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-        {/* Content */}
         <div style={contentStyle}>
           <div style={sectionStyle}>
             <p style={sectionDescStyle}>
-              To use automated features (embeddings, auto-organise, smart descriptions),
-              you'll need an OpenAI API key.
+              To use AI features (embeddings, auto-descriptions, smart tagging),
+              add your OpenAI API key to <code style={codeStyle}>.env.local</code>:
             </p>
+            <div style={codeBlockStyle}>
+              <code>OPENAI_API_KEY=sk-your-key-here</code>
+            </div>
             <p style={costNoteStyle}>
-              Average cost for heavy use is less than $0.10 per day.
+              Then restart the app. Average cost for heavy use is less than $0.10/day.
             </p>
-          </div>
-
-          <div style={inputSectionStyle}>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-..."
-              style={inputStyle}
-              autoFocus
-            />
-            {errorMessage && <div style={errorStyle}>{errorMessage}</div>}
-            {status === 'success' && (
-              <div style={successStyle}>Connected successfully!</div>
-            )}
           </div>
 
           <div style={buttonSectionStyle}>
-            <button
-              onClick={handleSaveKey}
-              disabled={!apiKey.trim() || status === 'testing'}
-              style={{
-                ...primaryButtonStyle,
-                opacity: apiKey.trim() && status !== 'testing' ? 1 : 0.5,
-              }}
-            >
-              {status === 'testing' ? 'Testing...' : 'Save & Continue'}
-            </button>
-
-            <button onClick={handleSkip} style={skipButtonStyle}>
-              Skip for now
+            <button onClick={handleClose} style={primaryButtonStyle}>
+              Got it
             </button>
           </div>
 
           <div style={noteStyle}>
-            <p>
-              You can add or change your key later in Settings → API Keys.
-            </p>
+            <p>Without a key, you can still create and organise nodes manually.</p>
             <p style={{ marginTop: 8 }}>
               <a
                 href="https://platform.openai.com/api-keys"
@@ -153,43 +97,33 @@ const sectionDescStyle: CSSProperties = {
   lineHeight: 1.5,
 };
 
+const codeStyle: CSSProperties = {
+  background: 'rgba(255, 255, 255, 0.08)',
+  padding: '2px 6px',
+  borderRadius: 4,
+  fontSize: 13,
+  fontFamily: 'monospace',
+  color: '#22c55e',
+};
+
+const codeBlockStyle: CSSProperties = {
+  background: 'rgba(0, 0, 0, 0.4)',
+  border: '1px solid #333',
+  borderRadius: 8,
+  padding: '12px 14px',
+  fontSize: 13,
+  fontFamily: 'monospace',
+  color: '#e5e7eb',
+  marginBottom: 12,
+  overflowX: 'auto',
+};
+
 const costNoteStyle: CSSProperties = {
   fontSize: 13,
   color: '#6b7280',
 };
 
-const inputSectionStyle: CSSProperties = {
-  marginBottom: 20,
-};
-
-const inputStyle: CSSProperties = {
-  width: '100%',
-  padding: '12px 14px',
-  fontSize: 14,
-  fontFamily: 'monospace',
-  background: 'rgba(0, 0, 0, 0.4)',
-  border: '1px solid #333',
-  borderRadius: 8,
-  color: '#fff',
-  outline: 'none',
-};
-
-const errorStyle: CSSProperties = {
-  marginTop: 8,
-  fontSize: 12,
-  color: '#ef4444',
-};
-
-const successStyle: CSSProperties = {
-  marginTop: 8,
-  fontSize: 12,
-  color: '#22c55e',
-};
-
 const buttonSectionStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 12,
   marginBottom: 20,
 };
 
@@ -201,18 +135,6 @@ const primaryButtonStyle: CSSProperties = {
   background: '#22c55e',
   color: '#052e16',
   border: 'none',
-  borderRadius: 8,
-  cursor: 'pointer',
-};
-
-const skipButtonStyle: CSSProperties = {
-  width: '100%',
-  padding: '12px 16px',
-  fontSize: 14,
-  fontWeight: 500,
-  background: 'transparent',
-  color: '#6b7280',
-  border: '1px solid #333',
   borderRadius: 8,
   cursor: 'pointer',
 };

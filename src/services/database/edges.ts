@@ -2,7 +2,6 @@ import { getSQLiteClient } from './sqlite-client';
 import { Edge, EdgeContext, EdgeData, EdgeCreatedVia, NodeConnection, Node } from '@/types/database';
 import { eventBroadcaster } from '../events';
 import { nodeService } from './nodes';
-import { apiKeyService } from '../storage/apiKeys';
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
@@ -54,7 +53,7 @@ async function inferEdgeContext(params: {
 
   // If no API key is configured, degrade gracefully.
   // We still enforce explanation, but fall back to "related_to" classification.
-  const apiKey = apiKeyService.getOpenAiKey();
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return { type: 'related_to', confidence: 0.0, swap_direction: false };
   }
@@ -119,7 +118,7 @@ async function autoInferEdge(params: {
 }): Promise<{ explanation: string; type: EdgeContext['type']; confidence: number; swap_direction: boolean }> {
   const { fromNode, toNode } = params;
 
-  const apiKey = apiKeyService.getOpenAiKey();
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     // Fallback without AI
     return {

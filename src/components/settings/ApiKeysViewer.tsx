@@ -1,49 +1,19 @@
 "use client";
 
 import { useState, useEffect, type CSSProperties } from 'react';
-import { apiKeyService, ApiKeyStatus } from '@/services/storage/apiKeys';
 
 export default function ApiKeysViewer() {
-  const [openaiKey, setOpenaiKey] = useState('');
-  const [status, setStatus] = useState<ApiKeyStatus>({ openai: 'not-set' });
-  const [showKey, setShowKey] = useState(false);
+  const [status, setStatus] = useState<'checking' | 'configured' | 'not-set'>('checking');
 
   useEffect(() => {
-    if (apiKeyService.hasOpenAiKey()) {
-      setOpenaiKey(apiKeyService.getMaskedOpenAiKey());
-    }
-    setStatus(apiKeyService.getStatus());
+    // Check via health endpoint (server-side check of process.env)
+    fetch('/api/health')
+      .then(res => res.json())
+      .then(data => {
+        setStatus(data.aiFeatures?.startsWith('enabled') ? 'configured' : 'not-set');
+      })
+      .catch(() => setStatus('not-set'));
   }, []);
-
-  const handleSave = async () => {
-    if (!openaiKey.trim() || openaiKey.includes('•')) return;
-    try {
-      apiKeyService.setOpenAiKey(openaiKey.trim());
-      setStatus({ openai: 'testing' });
-      const ok = await apiKeyService.testOpenAiConnection();
-      setStatus({ openai: ok ? 'connected' : 'failed' });
-      if (ok) {
-        setOpenaiKey(apiKeyService.getMaskedOpenAiKey());
-      }
-    } catch (error) {
-      setStatus({ openai: 'failed' });
-    }
-  };
-
-  const handleClear = () => {
-    apiKeyService.clearOpenAiKey();
-    setOpenaiKey('');
-    setStatus({ openai: 'not-set' });
-  };
-
-  const getStatusLabel = (s: string) => {
-    if (s === 'connected') return { text: 'Connected', color: '#22c55e' };
-    if (s === 'failed') return { text: 'Failed', color: '#ef4444' };
-    if (s === 'testing') return { text: 'Testing...', color: '#6b7280' };
-    return { text: 'Not configured', color: '#6b7280' };
-  };
-
-  const statusInfo = getStatusLabel(status.openai);
 
   return (
     <div style={containerStyle}>
@@ -56,57 +26,34 @@ export default function ApiKeysViewer() {
           <li>Semantic search via embeddings</li>
         </ul>
         <div style={noteStyle}>
-          Without a key, you can still create and organize nodes manually.
+          Without a key, you can still create and organise nodes manually.
         </div>
       </div>
 
-      {/* Key input */}
+      {/* Status */}
       <div style={cardStyle}>
         <div style={cardHeaderStyle}>
           <span style={cardTitleStyle}>OpenAI API Key</span>
-          <span style={{ fontSize: 12, color: statusInfo.color }}>
-            {statusInfo.text}
+          <span style={{
+            fontSize: 12,
+            color: status === 'configured' ? '#22c55e' :
+                   status === 'checking' ? '#6b7280' : '#ef4444'
+          }}>
+            {status === 'configured' ? 'Configured' :
+             status === 'checking' ? 'Checking...' : 'Not configured'}
           </span>
         </div>
 
-        <input
-          type={showKey ? 'text' : 'password'}
-          value={openaiKey}
-          onChange={(e) => setOpenaiKey(e.target.value)}
-          placeholder="sk-..."
-          style={inputStyle}
-        />
-
-        <div style={buttonRowStyle}>
-          <button
-            onClick={handleSave}
-            disabled={!openaiKey.trim() || openaiKey.includes('•')}
-            style={{
-              ...btnPrimaryStyle,
-              opacity: openaiKey.trim() && !openaiKey.includes('•') ? 1 : 0.4,
-            }}
-          >
-            Save & Test
-          </button>
-          <button
-            onClick={handleClear}
-            disabled={status.openai === 'not-set'}
-            style={{
-              ...btnSecondaryStyle,
-              opacity: status.openai !== 'not-set' ? 1 : 0.4,
-            }}
-          >
-            Clear
-          </button>
-          <label style={toggleStyle}>
-            <input
-              type="checkbox"
-              checked={showKey}
-              onChange={(e) => setShowKey(e.target.checked)}
-              style={{ marginRight: 6 }}
-            />
-            Show
-          </label>
+        <div style={instructionsStyle}>
+          <p style={{ margin: 0, marginBottom: 8 }}>
+            Add your key to <code style={codeInlineStyle}>.env.local</code> in the project root:
+          </p>
+          <div style={codeBlockStyle}>
+            <code>OPENAI_API_KEY=sk-your-key-here</code>
+          </div>
+          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
+            Restart the app after changing the key.
+          </p>
         </div>
       </div>
 
@@ -182,54 +129,30 @@ const cardTitleStyle: CSSProperties = {
   color: '#e5e7eb',
 };
 
-const inputStyle: CSSProperties = {
-  width: '100%',
+const instructionsStyle: CSSProperties = {
+  fontSize: 13,
+  color: '#d1d5db',
+  lineHeight: 1.5,
+};
+
+const codeInlineStyle: CSSProperties = {
+  background: 'rgba(255, 255, 255, 0.08)',
+  padding: '2px 6px',
+  borderRadius: 4,
+  fontSize: 12,
+  fontFamily: 'monospace',
+  color: '#22c55e',
+};
+
+const codeBlockStyle: CSSProperties = {
+  background: 'rgba(0, 0, 0, 0.4)',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  borderRadius: 6,
   padding: '10px 12px',
   fontSize: 13,
   fontFamily: 'monospace',
-  background: 'rgba(0, 0, 0, 0.3)',
-  border: '1px solid rgba(255, 255, 255, 0.08)',
-  borderRadius: 6,
   color: '#e5e7eb',
-  marginBottom: 12,
-  outline: 'none',
-};
-
-const buttonRowStyle: CSSProperties = {
-  display: 'flex',
-  gap: 8,
-  alignItems: 'center',
-};
-
-const btnPrimaryStyle: CSSProperties = {
-  padding: '8px 14px',
-  fontSize: 12,
-  fontWeight: 500,
-  background: '#22c55e',
-  color: '#052e16',
-  border: 'none',
-  borderRadius: 6,
-  cursor: 'pointer',
-};
-
-const btnSecondaryStyle: CSSProperties = {
-  padding: '8px 14px',
-  fontSize: 12,
-  fontWeight: 500,
-  background: 'rgba(255, 255, 255, 0.06)',
-  color: '#9ca3af',
-  border: 'none',
-  borderRadius: 6,
-  cursor: 'pointer',
-};
-
-const toggleStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  fontSize: 12,
-  color: '#6b7280',
-  cursor: 'pointer',
-  marginLeft: 'auto',
+  marginBottom: 8,
 };
 
 const helpStyle: CSSProperties = {

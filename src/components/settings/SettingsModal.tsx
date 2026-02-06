@@ -9,8 +9,6 @@ import DatabaseViewer from './DatabaseViewer';
 import ExternalAgentsPanel from './ExternalAgentsPanel';
 import ContextViewer from './ContextViewer';
 import GuidesViewer from './GuidesViewer';
-import { apiKeyService } from '@/services/storage/apiKeys';
-
 export type SettingsTab =
   | 'logs'
   | 'tools'
@@ -29,16 +27,7 @@ interface SettingsModalProps {
 type TabType = SettingsTab;
 
 export default function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProps) {
-  // Default to API Keys tab if no keys are configured, otherwise logs
-  const getDefaultTab = (): TabType => {
-    if (typeof window !== 'undefined') {
-      const hasKey = apiKeyService.getOpenAiKey();
-      return hasKey ? 'logs' : 'apikeys';
-    }
-    return 'logs';
-  };
-
-  const [activeTab, setActiveTab] = useState<TabType>(getDefaultTab());
+  const [activeTab, setActiveTab] = useState<TabType>('logs');
   useEffect(() => {
     if (!isOpen) return;
 

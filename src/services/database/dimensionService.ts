@@ -1,7 +1,7 @@
 import { getSQLiteClient } from './sqlite-client';
 import { openai as openaiProvider } from '@ai-sdk/openai';
 import { generateText } from 'ai';
-import { hasValidOpenAiKey } from './descriptionService';
+import { hasValidOpenAiKey } from '../storage/apiKeys';
 
 export interface Dimension {
   name: string;
