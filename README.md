@@ -105,28 +105,36 @@ Restart Claude Code fully (**Cmd+Q on Mac**, not just closing the window).
   "mcpServers": {
     "ra-h": {
       "command": "node",
-      "args": ["/absolute/path/to/ra-h_os/apps/mcp-server/stdio-server.js"]
+      "args": ["/absolute/path/to/ra-h_os/apps/mcp-server-standalone/index.js"]
     }
   }
 }
 ```
 
+**What happens:** Once connected, Claude will proactively identify valuable information in your conversations and offer to save it to your knowledge graph. It calls `rah_get_context` first to understand what's already in your graph, then searches before creating to avoid duplicates.
+
 Available tools:
 
 | Tool | What it does |
 |------|--------------|
+| `rah_get_context` | Get graph overview — stats, hub nodes, dimensions, recent activity |
 | `rah_search_nodes` | Find nodes by keyword |
 | `rah_add_node` | Create a new node |
 | `rah_get_nodes` | Fetch nodes by ID |
 | `rah_update_node` | Edit an existing node |
 | `rah_create_edge` | Link two nodes together |
+| `rah_update_edge` | Update an edge explanation |
 | `rah_query_edges` | Find connections |
 | `rah_list_dimensions` | List all tags/categories |
+| `rah_create_dimension` | Create a new dimension |
+| `rah_update_dimension` | Update/rename a dimension |
+| `rah_delete_dimension` | Delete a dimension |
 
 **Example prompts for Claude Code:**
+- "What's in my knowledge graph?"
 - "Search my knowledge base for notes about React performance"
 - "Add a node about the article I just read on transformers"
-- "What nodes are connected to my 'project-ideas' dimension?"
+- "What nodes are connected to my 'research' dimension?"
 
 ---
 

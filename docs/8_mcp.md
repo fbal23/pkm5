@@ -25,9 +25,8 @@ Add this to your `~/.claude.json` (Claude Code) or Claude Desktop settings.
 
 **Requirements:**
 - Node.js 18+ installed
-- RA-OS run at least once (to create the database)
 
-**That's it.** No need to keep RA-OS running.
+**That's it.** The database is created automatically on first connection. No need to keep RA-OS running.
 
 ---
 
@@ -77,11 +76,13 @@ If you want real-time UI updates when nodes are created:
 
 | Tool | Description |
 |------|-------------|
+| `rah_get_context` | Get graph overview — stats, hub nodes, dimensions, recent activity. Called first automatically. |
 | `rah_add_node` | Create a new node (title/content/dimensions) |
-| `rah_search_nodes` | Search existing nodes |
+| `rah_search_nodes` | Search existing nodes by keyword |
 | `rah_update_node` | Update an existing node |
 | `rah_get_nodes` | Get nodes by ID |
 | `rah_create_edge` | Create relationship between nodes |
+| `rah_update_edge` | Update an edge explanation |
 | `rah_query_edges` | Query existing edges |
 | `rah_list_dimensions` | List all dimensions |
 | `rah_create_dimension` | Create a new dimension |
@@ -90,11 +91,25 @@ If you want real-time UI updates when nodes are created:
 
 ---
 
+## What to Expect
+
+Once connected, the MCP server instructs Claude to:
+
+1. **Call `rah_get_context` first** to understand your graph (hub nodes, dimensions, stats)
+2. **Proactively identify valuable information** in conversations and offer to save it
+3. **Search before creating** to avoid duplicates
+4. **Require edge explanations** — every connection needs a reason
+
+You don't need to ask Claude to use your knowledge base — it will offer when it spots something worth saving.
+
+---
+
 ## Example Usage
 
 Once connected, you can ask your AI assistant:
 
 ```
+"What's in my knowledge graph?"
 "Search RA-H for what I wrote about product strategy"
 "Add this conversation summary to RA-H as a new node"
 "Find all nodes with the 'research' dimension"
@@ -125,7 +140,7 @@ Once connected, you can ask your AI assistant:
 
 ### "Database not found"
 
-Run RA-OS at least once to create the database:
+The MCP server auto-creates the database on first connection (v1.1.0+). If you're on an older version, run RA-OS once to create it:
 ```bash
 npm run dev
 ```

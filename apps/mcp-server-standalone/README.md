@@ -30,8 +30,7 @@ Restart Claude. Done.
 ## Requirements
 
 - Node.js 18+
-- RA-H database at `~/Library/Application Support/RA-H/db/rah.sqlite`
-  - Run the RA-H desktop app once to create it
+- Database is created automatically at `~/Library/Application Support/RA-H/db/rah.sqlite` on first connection
 
 ## Environment Variables
 
@@ -39,15 +38,24 @@ Restart Claude. Done.
 |----------|---------|-------------|
 | `RAH_DB_PATH` | ~/Library/Application Support/RA-H/db/rah.sqlite | Database path |
 
+## What to Expect
+
+Once connected, Claude will:
+- **Call `rah_get_context` first** to see what's in your graph
+- **Proactively offer to save** valuable information from your conversations
+- **Search before creating** to avoid duplicates
+
 ## Available Tools
 
 | Tool | Description |
 |------|-------------|
+| `rah_get_context` | Get graph overview — stats, hub nodes, dimensions, recent activity |
 | `rah_add_node` | Create a new node |
 | `rah_search_nodes` | Search nodes by keyword |
 | `rah_get_nodes` | Load nodes by ID |
 | `rah_update_node` | Update an existing node |
 | `rah_create_edge` | Create connection between nodes |
+| `rah_update_edge` | Update an edge explanation |
 | `rah_query_edges` | Find edges for a node |
 | `rah_list_dimensions` | List all dimensions |
 | `rah_create_dimension` | Create a dimension |
