@@ -317,6 +317,21 @@
       "description": "Publish mcp-server-standalone as an npm package so users can run it via npx ra-h-mcp-server instead of cloning the repo. Set up package.json, bin entry, and npm publishing workflow.",
       "priority": 6,
       "status": "pending"
+    },
+    {
+      "id": "B7",
+      "title": "Rename 'content' cell to 'notes' in nodes table",
+      "description": "Rename the 'content' column in the nodes table to 'notes' across the full stack: database schema, migration, services, API routes, MCP tools, UI components, and guides. Coordinate with the packaged Mac app schema.",
+      "priority": 7,
+      "status": "pending"
+    },
+    {
+      "id": "B8",
+      "title": "Temporal awareness for agents",
+      "description": "Give MCP-connected agents better temporal awareness of knowledge in the graph. Research best practices for datetime storage in SQLite and temporal querying patterns for LLM agents. Two approaches to evaluate: (1) Add a dedicated datetime column (e.g. created_at / captured_at) to the nodes table — requires an ALTER TABLE migration which is sensitive because the Mac app ships with a fixed schema. (2) Store temporal metadata in an existing metadata/JSON column to avoid schema changes. Research should cover: ISO 8601 vs Unix timestamps, timezone handling, how agents should query by time range, how to surface recency in MCP tool responses (e.g. rah_search_nodes returning temporal context), and how the start-here guide should instruct agents on temporal queries. Must coordinate with the packaged Mac app to ensure schema compatibility. Do this task directly after B7 (rename content→notes) since both touch the nodes table.",
+      "priority": 8,
+      "status": "pending",
+      "dependsOn": "B7"
     }
   ]
 }
