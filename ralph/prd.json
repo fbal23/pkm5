@@ -274,29 +274,5 @@
         }
       ]
     }
-  },
-  "backlog": [
-    {
-      "id": "B1",
-      "title": "Rename 'content' cell to 'notes' in nodes table",
-      "description": "Rename the 'content' column in the nodes table to 'notes' across the full stack: database schema, migration, services, API routes, MCP tools, UI components, and guides. Coordinate with the packaged Mac app schema.",
-      "priority": 1,
-      "status": "pending"
-    },
-    {
-      "id": "B2",
-      "title": "Temporal awareness for agents",
-      "description": "Give MCP-connected agents better temporal awareness of knowledge in the graph. Research best practices for datetime storage in SQLite and temporal querying patterns for LLM agents. Two approaches to evaluate: (1) Add a dedicated datetime column (e.g. created_at / captured_at) to the nodes table — requires an ALTER TABLE migration which is sensitive because the Mac app ships with a fixed schema. (2) Store temporal metadata in an existing metadata/JSON column to avoid schema changes. Research should cover: ISO 8601 vs Unix timestamps, timezone handling, how agents should query by time range, how to surface recency in MCP tool responses (e.g. rah_search_nodes returning temporal context), and how the start-here guide should instruct agents on temporal queries. Must coordinate with the packaged Mac app to ensure schema compatibility. Do this task directly after B1 (rename content→notes) since both touch the nodes table.",
-      "priority": 2,
-      "status": "pending",
-      "dependsOn": "B1"
-    },
-    {
-      "id": "B3",
-      "title": "MCP stress test and efficiency audit",
-      "description": "Thorough hands-on stress testing of the entire MCP structure: guides, tools, and configuration. Spend extended time using Claude Code with the database to exercise every tool and guide path. Identify overlap between tools, redundant guide content, inefficient tool descriptions, and gaps in coverage. Look for: tools that could be combined, guide content that duplicates tool descriptions, MCP instructions that conflict or confuse agents, tool parameters that are unclear, missing error handling, and edge cases that break. Goal is a lean, efficient MCP config where every tool and guide earns its place.",
-      "priority": 3,
-      "status": "pending"
-    }
-  ]
+  }
 }
