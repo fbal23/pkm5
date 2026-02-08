@@ -41,8 +41,9 @@ Restart Claude. Done.
 ## What to Expect
 
 Once connected, Claude will:
-- **Call `rah_get_context` first** to see what's in your graph
-- **Proactively offer to save** valuable information from your conversations
+- **Call `rah_get_context` first** to orient itself (stats, hub nodes, dimensions, guides)
+- **Proactively capture knowledge** — when a new insight, decision, person, or reference surfaces, it proposes a specific node (title, dimensions, description) so you can approve with minimal friction
+- **Read guides for complex tasks** — system guides (immutable) teach it how your graph works; custom guides teach it your workflows
 - **Search before creating** to avoid duplicates
 
 ## Available Tools

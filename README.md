@@ -111,7 +111,7 @@ Restart Claude Code fully (**Cmd+Q on Mac**, not just closing the window).
 }
 ```
 
-**What happens:** Once connected, Claude will proactively identify valuable information in your conversations and offer to save it to your knowledge graph. It calls `rah_get_context` first to understand what's already in your graph, then searches before creating to avoid duplicates.
+**What happens:** Once connected, Claude calls `rah_get_context` first to orient itself (stats, hub nodes, dimensions, available guides). It proactively captures knowledge — when a new insight, decision, person, or reference surfaces, it proposes a specific node (title, dimensions, description) so you can approve with minimal friction. For complex tasks it reads guides to understand your graph conventions and custom workflows.
 
 Available tools:
 

@@ -99,10 +99,10 @@ If you want real-time UI updates when nodes are created:
 
 Once connected, the MCP server instructs Claude to:
 
-1. **Call `rah_get_context` first** to understand your graph (hub nodes, dimensions, stats)
-2. **Proactively identify valuable information** in conversations and offer to save it
-3. **Search before creating** to avoid duplicates
-4. **Require edge explanations** — every connection needs a reason
+1. **Call `rah_get_context` first** to orient itself (hub nodes, dimensions, stats, available guides)
+2. **Proactively capture knowledge** — when a new insight, decision, person, or reference surfaces, it proposes a specific node (title, dimensions, description) so you can approve with minimal friction
+3. **Read guides for complex tasks** — system guides (immutable) teach it how your graph works; custom guides teach it your workflows
+4. **Search before creating** to avoid duplicates
 
 You don't need to ask Claude to use your knowledge base — it will offer when it spots something worth saving.
 
