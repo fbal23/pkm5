@@ -19,9 +19,9 @@ const serverInfo = {
 
 const instructions = [
   "RA-H is the user's personal knowledge graph — local SQLite, fully on-device.",
-  'Call rah_get_context first to orient yourself.',
+  'Call rah_get_context first for a quick orientation (stats, hubs, dimensions).',
   'For simple tasks (add a node, search), the tool descriptions have everything you need — just execute.',
-  'For complex or ambiguous tasks, call rah_read_guide("start-here") first for full orientation.',
+  'For complex or ambiguous tasks, also call rah_read_guide("start-here") for full graph understanding.',
   'Proactively identify valuable information in conversations and offer to save it.',
   'Search before creating to avoid duplicates.',
   'All data stays on this device.'
@@ -182,7 +182,7 @@ async function main() {
     'rah_add_node',
     {
       title: 'Add RA-H node',
-      description: 'Create a new node. Always search first (rah_search_nodes) to avoid duplicates. Use "link" ONLY for external content (URL, video, article) — omit for synthesis/ideas derived from existing nodes. "content" = your notes/analysis. "chunk" = verbatim source text. "description" = one-sentence summary for search. Assign 1-5 dimensions — call rah_list_dimensions first to use existing ones.',
+      description: 'Create a new node. Always search first (rah_search_nodes) to avoid duplicates. Title: max 160 chars, clear and descriptive. Use "link" ONLY for external content (URL, video, article) — omit for synthesis/ideas derived from existing nodes. "content" = your notes/analysis. "chunk" = verbatim source text. "description" = one-sentence summary for search. Assign 1-5 dimensions — call rah_list_dimensions first to use existing ones.',
       inputSchema: addNodeInputSchema
     },
     async ({ title, content, link, description, dimensions, metadata, chunk }) => {
@@ -219,7 +219,7 @@ async function main() {
     'rah_search_nodes',
     {
       title: 'Search RA-H nodes',
-      description: 'Search nodes by keyword across title, description, and content fields. Prioritizes exact title matches. Call before creating nodes to check for duplicates. Optionally filter by dimensions.',
+      description: 'Search nodes by keyword across title, description, and content fields. Prioritizes exact title matches. Returns up to 25 results (default 10). Call before creating nodes to check for duplicates. Optionally filter by dimensions.',
       inputSchema: searchNodesInputSchema
     },
     async ({ query, limit = 10, dimensions }) => {
@@ -257,7 +257,7 @@ async function main() {
     'rah_get_nodes',
     {
       title: 'Get RA-H nodes by ID',
-      description: 'Load full node records by their IDs.',
+      description: 'Load full node records by their IDs (max 10 per call).',
       inputSchema: getNodesInputSchema
     },
     async ({ nodeIds }) => {
@@ -370,7 +370,7 @@ async function main() {
     'rah_query_edges',
     {
       title: 'Query RA-H edges',
-      description: 'Find edges/connections. Optionally filter by nodeId to see all connections for a specific node. Returns edge IDs, connected node IDs, and explanations.',
+      description: 'Find edges/connections. Optionally filter by nodeId to see all connections for a specific node. Returns up to 50 edges (default 25) with edge IDs, connected node IDs, and explanations.',
       inputSchema: queryEdgesInputSchema
     },
     async ({ nodeId, limit = 25 }) => {
