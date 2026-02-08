@@ -18,6 +18,7 @@ const BUNDLED_USER_DIR = path.join(__dirname, '..', 'guides');
 
 // System guide names (immutable, always re-seeded)
 const SYSTEM_GUIDE_NAMES = new Set([
+  'start-here',
   'schema',
   'creating-nodes',
   'edges',

@@ -19,11 +19,11 @@ const serverInfo = {
 
 const instructions = [
   "RA-H is the user's personal knowledge graph — local SQLite, fully on-device.",
-  'Call rah_get_context first to see what\'s in the graph.',
+  'Call rah_get_context first to orient yourself.',
+  'For simple tasks (add a node, search), the tool descriptions have everything you need — just execute.',
+  'For complex or ambiguous tasks, call rah_read_guide("start-here") first for full orientation.',
   'Proactively identify valuable information in conversations and offer to save it.',
   'Search before creating to avoid duplicates.',
-  'Every edge needs an explanation — why does this connection exist?',
-  'Guides are detailed instruction sets — call rah_list_guides when you need procedural help.',
   'All data stays on this device.'
 ].join(' ');
 
@@ -148,7 +148,7 @@ async function main() {
     'rah_get_context',
     {
       title: 'Get RA-H context',
-      description: 'Get knowledge graph overview: stats, hub nodes (most connected), dimensions, and recent activity. Call this first to understand the user\'s graph.',
+      description: 'Get knowledge graph overview: stats, hub nodes (most connected), dimensions, recent activity, and available guides. Call this first to orient yourself. For deeper understanding, follow up with rah_read_guide("start-here").',
       inputSchema: {}
     },
     async () => {
@@ -182,7 +182,7 @@ async function main() {
     'rah_add_node',
     {
       title: 'Add RA-H node',
-      description: 'Create a new node in the knowledge graph. Always search first (rah_search_nodes) to avoid duplicates.',
+      description: 'Create a new node. Always search first (rah_search_nodes) to avoid duplicates. Use "link" ONLY for external content (URL, video, article) — omit for synthesis/ideas derived from existing nodes. "content" = your notes/analysis. "chunk" = verbatim source text. "description" = one-sentence summary for search. Assign 1-5 dimensions — call rah_list_dimensions first to use existing ones.',
       inputSchema: addNodeInputSchema
     },
     async ({ title, content, link, description, dimensions, metadata, chunk }) => {
@@ -219,7 +219,7 @@ async function main() {
     'rah_search_nodes',
     {
       title: 'Search RA-H nodes',
-      description: 'Search the knowledge graph by keyword. Call before creating nodes to check for duplicates.',
+      description: 'Search nodes by keyword across title, description, and content fields. Prioritizes exact title matches. Call before creating nodes to check for duplicates. Optionally filter by dimensions.',
       inputSchema: searchNodesInputSchema
     },
     async ({ query, limit = 10, dimensions }) => {
@@ -296,7 +296,7 @@ async function main() {
     'rah_update_node',
     {
       title: 'Update RA-H node',
-      description: 'Update an existing node. Content is APPENDED, dimensions are replaced.',
+      description: 'Update an existing node. Content is APPENDED to existing content (not replaced). Dimensions are REPLACED entirely with the new array. Title, description, and link are overwritten.',
       inputSchema: updateNodeInputSchema
     },
     async ({ id, updates }) => {
@@ -323,7 +323,7 @@ async function main() {
     'rah_create_edge',
     {
       title: 'Create RA-H edge',
-      description: 'Connect two nodes. Edges are the most valuable part of the graph — they represent understanding, not just proximity.',
+      description: 'Connect two nodes with an edge. Edges are the most valuable part of the graph — they represent understanding, not proximity. Direction matters: reads as sourceId → [explanation] → targetId. The explanation should read as a sentence (e.g. "invented this technique", "contradicts the claim in").',
       inputSchema: createEdgeInputSchema
     },
     async ({ sourceId, targetId, explanation }) => {
@@ -370,7 +370,7 @@ async function main() {
     'rah_query_edges',
     {
       title: 'Query RA-H edges',
-      description: 'Find connections between nodes.',
+      description: 'Find edges/connections. Optionally filter by nodeId to see all connections for a specific node. Returns edge IDs, connected node IDs, and explanations.',
       inputSchema: queryEdgesInputSchema
     },
     async ({ nodeId, limit = 25 }) => {
@@ -421,7 +421,7 @@ async function main() {
     'rah_create_dimension',
     {
       title: 'Create RA-H dimension',
-      description: 'Create a new dimension/category.',
+      description: 'Create a new dimension/category. Use lowercase, singular form (e.g. "biology" not "Biology" or "biologies"). Set isPriority=true to lock it for automatic assignment to new nodes. Always include a description.',
       inputSchema: createDimensionInputSchema
     },
     async ({ name, description, isPriority }) => {
@@ -495,7 +495,7 @@ async function main() {
     'rah_list_guides',
     {
       title: 'List RA-H guides',
-      description: 'List available guides — detailed instruction sets for working with the knowledge graph. Includes system guides (immutable) and user-created guides.',
+      description: 'List all guides — system guides (immutable reference docs) and user-created guides (custom workflows and preferences). Read "start-here" first for orientation.',
       inputSchema: {}
     },
     async () => {
@@ -515,7 +515,7 @@ async function main() {
     'rah_read_guide',
     {
       title: 'Read RA-H guide',
-      description: 'Read a guide by name. Returns full markdown content with procedural instructions.',
+      description: 'Read a guide by name. Returns full markdown with procedural instructions. Read "start-here" for master orientation. Call rah_list_guides to see all available guides.',
       inputSchema: readGuideInputSchema
     },
     async ({ name }) => {
