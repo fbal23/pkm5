@@ -133,6 +133,8 @@ Available tools:
 | `rah_read_guide` | Read a guide by name |
 | `rah_write_guide` | Create or update a custom guide |
 | `rah_delete_guide` | Delete a custom guide |
+| `rah_search_content` | Search through source content (transcripts, books, articles) |
+| `rah_sqlite_query` | Run read-only SQL queries (SELECT/WITH/PRAGMA) |
 
 **Example prompts for Claude Code:**
 - "What's in my knowledge graph?"
