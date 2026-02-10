@@ -5,7 +5,7 @@ const { z } = require('zod');
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 
-const { initDatabase, getDatabasePath, closeDatabase } = require('./services/sqlite-client');
+const { initDatabase, getDatabasePath, closeDatabase, getDb, query } = require('./services/sqlite-client');
 const nodeService = require('./services/nodeService');
 const edgeService = require('./services/edgeService');
 const dimensionService = require('./services/dimensionService');
@@ -14,7 +14,7 @@ const guideService = require('./services/guideService');
 // Server info
 const serverInfo = {
   name: 'ra-h-standalone',
-  version: '1.2.0'
+  version: '1.4.0'
 };
 
 const instructions = [
@@ -110,6 +110,17 @@ const deleteGuideInputSchema = {
   name: z.string().min(1).describe('Guide name to delete')
 };
 
+const searchContentInputSchema = {
+  query: z.string().min(1).max(400).describe('Search text'),
+  node_id: z.number().int().positive().optional().describe('Scope to a specific node\'s chunks'),
+  limit: z.number().min(1).max(20).optional().describe('Max results (default 5)')
+};
+
+const sqliteQueryInputSchema = {
+  sql: z.string().min(1).describe('The SQL query to execute. Must be a SELECT, WITH, or PRAGMA statement.'),
+  format: z.enum(['json', 'table']).optional().describe('Output format (default json)')
+};
+
 // Helper to sanitize dimensions
 function sanitizeDimensions(raw) {
   if (!Array.isArray(raw)) return [];
@@ -128,6 +139,84 @@ function sanitizeDimensions(raw) {
   return result;
 }
 
+// FTS5 helpers
+function sanitizeFtsQuery(input) {
+  return input
+    .replace(/['"()*:^~{}[\]]/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(w => w.length > 0 && !/^(AND|OR|NOT|NEAR)$/i.test(w))
+    .join(' ');
+}
+
+let _ftsAvailability = null;
+
+function checkFtsAvailability() {
+  if (_ftsAvailability !== null) return _ftsAvailability;
+  try {
+    const db = getDb();
+    const nodesFts = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='nodes_fts'").get();
+    const chunksFts = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='chunks_fts'").get();
+    _ftsAvailability = { nodes: !!nodesFts, chunks: !!chunksFts };
+  } catch {
+    _ftsAvailability = { nodes: false, chunks: false };
+  }
+  return _ftsAvailability;
+}
+
+function rebuildFtsIndexes() {
+  const fts = checkFtsAvailability();
+  if (!fts.nodes && !fts.chunks) return;
+
+  const db = getDb();
+  if (fts.nodes) {
+    try {
+      db.exec("INSERT INTO nodes_fts(nodes_fts) VALUES('rebuild')");
+      log('Rebuilt nodes_fts index');
+    } catch (err) {
+      log('Warning: Failed to rebuild nodes_fts:', err.message);
+      _ftsAvailability.nodes = false;
+    }
+  }
+  if (fts.chunks) {
+    try {
+      db.exec("INSERT INTO chunks_fts(chunks_fts) VALUES('rebuild')");
+      log('Rebuilt chunks_fts index');
+    } catch (err) {
+      log('Warning: Failed to rebuild chunks_fts:', err.message);
+      _ftsAvailability.chunks = false;
+    }
+  }
+}
+
+// Security: Only allow read-only SQL statements
+function isReadOnlyQuery(sql) {
+  const normalized = sql.trim().toLowerCase();
+
+  const allowedPrefixes = ['select', 'with', 'pragma'];
+  const startsWithAllowed = allowedPrefixes.some(prefix =>
+    normalized.startsWith(prefix)
+  );
+
+  if (!startsWithAllowed) return false;
+
+  const dangerousPatterns = [
+    /\binsert\b/i,
+    /\bupdate\b/i,
+    /\bdelete\b/i,
+    /\bdrop\b/i,
+    /\bcreate\b/i,
+    /\balter\b/i,
+    /\battach\b/i,
+    /\bdetach\b/i,
+    /\breindex\b/i,
+    /\bvacuum\b/i,
+    /\banalyze\b/i,
+  ];
+
+  return !dangerousPatterns.some(pattern => pattern.test(sql));
+}
+
 // Log to stderr (stdout is reserved for MCP protocol)
 function log(...args) {
   console.error('[ra-h-standalone]', ...args);
@@ -138,6 +227,7 @@ async function main() {
   try {
     initDatabase();
     log('Database connected:', getDatabasePath());
+    rebuildFtsIndexes();
   } catch (error) {
     log('ERROR:', error.message);
     process.exit(1);
@@ -222,17 +312,116 @@ async function main() {
     'rah_search_nodes',
     {
       title: 'Search RA-H nodes',
-      description: 'Search nodes by keyword across title, description, and content fields. Prioritizes exact title matches. Returns up to 25 results (default 10). Call before creating nodes to check for duplicates. Optionally filter by dimensions.',
+      description: 'Search nodes by keyword across title, description, and content fields. Multi-word queries find nodes containing all words (not exact phrases). Returns up to 25 results (default 10). Call before creating nodes to check for duplicates. Optionally filter by dimensions.',
       inputSchema: searchNodesInputSchema
     },
-    async ({ query, limit = 10, dimensions }) => {
+    async ({ query: searchQuery, limit = 10, dimensions }) => {
       const normalizedDimensions = sanitizeDimensions(dimensions || []);
+      const safeLimit = Math.min(Math.max(limit, 1), 25);
+      const trimmedQuery = searchQuery.trim();
+      const fts = checkFtsAvailability();
 
-      const nodes = nodeService.getNodes({
-        search: query.trim(),
-        limit: Math.min(Math.max(limit, 1), 25),
-        dimensions: normalizedDimensions.length > 0 ? normalizedDimensions : undefined
-      });
+      let nodes = null;
+
+      // Try FTS5 first (handles multi-word queries naturally)
+      if (fts.nodes) {
+        const ftsQuery = sanitizeFtsQuery(trimmedQuery);
+        if (ftsQuery) {
+          try {
+            let sql, params;
+
+            if (normalizedDimensions.length > 0) {
+              sql = `
+                WITH fts_matches AS (
+                  SELECT rowid, rank FROM nodes_fts WHERE nodes_fts MATCH ? LIMIT 100
+                )
+                SELECT n.id, n.title, n.description, n.content, n.link, n.updated_at,
+                       COALESCE((SELECT JSON_GROUP_ARRAY(d.dimension)
+                                 FROM node_dimensions d WHERE d.node_id = n.id), '[]') as dimensions_json
+                FROM fts_matches fm
+                JOIN nodes n ON n.id = fm.rowid
+                WHERE EXISTS (
+                  SELECT 1 FROM node_dimensions nd
+                  WHERE nd.node_id = n.id
+                  AND nd.dimension IN (${normalizedDimensions.map(() => '?').join(',')})
+                )
+                ORDER BY fm.rank
+                LIMIT ?
+              `;
+              params = [ftsQuery, ...normalizedDimensions, safeLimit];
+            } else {
+              sql = `
+                WITH fts_matches AS (
+                  SELECT rowid, rank FROM nodes_fts WHERE nodes_fts MATCH ? LIMIT ?
+                )
+                SELECT n.id, n.title, n.description, n.content, n.link, n.updated_at,
+                       COALESCE((SELECT JSON_GROUP_ARRAY(d.dimension)
+                                 FROM node_dimensions d WHERE d.node_id = n.id), '[]') as dimensions_json
+                FROM fts_matches fm
+                JOIN nodes n ON n.id = fm.rowid
+                ORDER BY fm.rank
+              `;
+              params = [ftsQuery, safeLimit];
+            }
+
+            const rows = query(sql, params);
+            nodes = rows.map(row => ({
+              id: row.id,
+              title: row.title,
+              content: row.content ?? null,
+              description: row.description ?? null,
+              link: row.link ?? null,
+              dimensions: JSON.parse(row.dimensions_json || '[]'),
+              updated_at: row.updated_at
+            }));
+          } catch (err) {
+            log('FTS search failed, falling back to LIKE:', err.message);
+            nodes = null;
+          }
+        }
+      }
+
+      // Fallback: LIKE with word splitting (each word must appear somewhere)
+      if (nodes === null) {
+        const words = trimmedQuery.split(/\s+/).filter(w => w.length > 0);
+
+        let sql = `
+          SELECT n.id, n.title, n.description, n.content, n.link, n.updated_at,
+                 COALESCE((SELECT JSON_GROUP_ARRAY(d.dimension)
+                           FROM node_dimensions d WHERE d.node_id = n.id), '[]') as dimensions_json
+          FROM nodes n
+          WHERE 1=1
+        `;
+        const params = [];
+
+        for (const word of words) {
+          sql += ` AND (n.title LIKE ? COLLATE NOCASE OR n.description LIKE ? COLLATE NOCASE OR n.content LIKE ? COLLATE NOCASE)`;
+          params.push(`%${word}%`, `%${word}%`, `%${word}%`);
+        }
+
+        if (normalizedDimensions.length > 0) {
+          sql += ` AND EXISTS (
+            SELECT 1 FROM node_dimensions nd
+            WHERE nd.node_id = n.id
+            AND nd.dimension IN (${normalizedDimensions.map(() => '?').join(',')})
+          )`;
+          params.push(...normalizedDimensions);
+        }
+
+        sql += ` ORDER BY n.updated_at DESC LIMIT ?`;
+        params.push(safeLimit);
+
+        const rows = query(sql, params);
+        nodes = rows.map(row => ({
+          id: row.id,
+          title: row.title,
+          content: row.content ?? null,
+          description: row.description ?? null,
+          link: row.link ?? null,
+          dimensions: JSON.parse(row.dimensions_json || '[]'),
+          updated_at: row.updated_at
+        }));
+      }
 
       const summary = nodes.length === 0
         ? 'No nodes found matching that query.'
@@ -242,15 +431,7 @@ async function main() {
         content: [{ type: 'text', text: summary }],
         structuredContent: {
           count: nodes.length,
-          nodes: nodes.map(node => ({
-            id: node.id,
-            title: node.title,
-            content: node.content ?? null,
-            description: node.description ?? null,
-            link: node.link ?? null,
-            dimensions: node.dimensions || [],
-            updated_at: node.updated_at
-          }))
+          nodes
         }
       };
     }
@@ -260,7 +441,7 @@ async function main() {
     'rah_get_nodes',
     {
       title: 'Get RA-H nodes by ID',
-      description: 'Load full node records by their IDs (max 10 per call).',
+      description: 'Load full node records by their IDs (max 10 per call). Chunks over 10K chars are truncated — check chunk_truncated and chunk_length fields. For full text, use rah_search_content to search or rah_sqlite_query with substr() to read sections.',
       inputSchema: getNodesInputSchema
     },
     async ({ nodeIds }) => {
@@ -269,17 +450,25 @@ async function main() {
         throw new Error('No valid node IDs provided.');
       }
 
+      const CHUNK_LIMIT = 10000;
       const nodes = [];
       for (const id of uniqueIds) {
         const node = nodeService.getNodeById(id);
         if (node) {
+          const rawChunk = node.chunk ?? null;
+          const chunkTruncated = rawChunk ? rawChunk.length > CHUNK_LIMIT : false;
+
           nodes.push({
             id: node.id,
             title: node.title,
             content: node.content ?? null,
             description: node.description ?? null,
             link: node.link ?? null,
+            chunk: chunkTruncated ? rawChunk.substring(0, CHUNK_LIMIT) : rawChunk,
+            chunk_truncated: chunkTruncated,
+            chunk_length: rawChunk ? rawChunk.length : 0,
             dimensions: node.dimensions || [],
+            metadata: node.metadata ?? null,
             updated_at: node.updated_at
           });
         }
@@ -582,6 +771,163 @@ async function main() {
           message: `Guide "${name}" deleted.`
         }
       };
+    }
+  );
+
+  // ========== CONTENT SEARCH TOOL ==========
+
+  server.registerTool(
+    'rah_search_content',
+    {
+      title: 'Search RA-H source content',
+      description: 'Search through source content (transcripts, books, articles) stored as chunks. Use when you need to find specific text within a node\'s full source material. For node-level search (titles, descriptions), use rah_search_nodes instead.',
+      inputSchema: searchContentInputSchema
+    },
+    async ({ query: searchQuery, node_id, limit = 5 }) => {
+      const db = getDb();
+
+      // Check if chunks table exists
+      const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='chunks'").get();
+      if (!tableCheck) {
+        return {
+          content: [{ type: 'text', text: 'No chunks table found. Source content has not been chunked yet. Use rah_get_nodes to read the raw chunk field instead.' }],
+          structuredContent: { count: 0, chunks: [], note: 'chunks table does not exist' }
+        };
+      }
+
+      const safeLimit = Math.min(Math.max(limit, 1), 20);
+      const trimmedQuery = searchQuery.trim();
+      const fts = checkFtsAvailability();
+
+      let results = null;
+
+      // Try FTS5 first (handles multi-word, relevance ranked)
+      if (fts.chunks) {
+        const ftsQuery = sanitizeFtsQuery(trimmedQuery);
+        if (ftsQuery) {
+          try {
+            let sql, params;
+
+            if (node_id) {
+              sql = `
+                SELECT c.id, c.node_id, c.chunk_idx, c.text, n.title as node_title
+                FROM chunks c
+                JOIN nodes n ON c.node_id = n.id
+                WHERE c.node_id = ?
+                AND c.id IN (SELECT rowid FROM chunks_fts WHERE chunks_fts MATCH ?)
+                ORDER BY c.chunk_idx ASC
+                LIMIT ?
+              `;
+              params = [node_id, ftsQuery, safeLimit];
+            } else {
+              sql = `
+                WITH fts_matches AS (
+                  SELECT rowid, rank FROM chunks_fts WHERE chunks_fts MATCH ? LIMIT ?
+                )
+                SELECT c.id, c.node_id, c.chunk_idx, c.text, n.title as node_title
+                FROM fts_matches fm
+                JOIN chunks c ON c.id = fm.rowid
+                JOIN nodes n ON c.node_id = n.id
+                ORDER BY fm.rank
+              `;
+              params = [ftsQuery, safeLimit];
+            }
+
+            results = query(sql, params);
+          } catch (err) {
+            log('FTS content search failed, falling back to LIKE:', err.message);
+            results = null;
+          }
+        }
+      }
+
+      // Fallback: LIKE with word splitting
+      if (results === null) {
+        const words = trimmedQuery.split(/\s+/).filter(w => w.length > 0);
+
+        let sql = `
+          SELECT c.id, c.node_id, c.chunk_idx, c.text, n.title as node_title
+          FROM chunks c
+          JOIN nodes n ON c.node_id = n.id
+          WHERE 1=1
+        `;
+        const params = [];
+
+        if (node_id) {
+          sql += ` AND c.node_id = ?`;
+          params.push(node_id);
+        }
+
+        for (const word of words) {
+          sql += ` AND c.text LIKE ? COLLATE NOCASE`;
+          params.push(`%${word}%`);
+        }
+
+        sql += ` ORDER BY n.updated_at DESC, c.chunk_idx ASC LIMIT ?`;
+        params.push(safeLimit);
+
+        results = query(sql, params);
+      }
+
+      const summary = results.length === 0
+        ? 'No matching content found in chunks.'
+        : `Found ${results.length} chunk(s) matching "${trimmedQuery}".`;
+
+      return {
+        content: [{ type: 'text', text: summary }],
+        structuredContent: {
+          count: results.length,
+          chunks: results.map(r => ({
+            id: r.id,
+            node_id: r.node_id,
+            chunk_idx: r.chunk_idx,
+            text: r.text,
+            node_title: r.node_title
+          }))
+        }
+      };
+    }
+  );
+
+  // ========== SQL QUERY TOOL ==========
+
+  server.registerTool(
+    'rah_sqlite_query',
+    {
+      title: 'Execute read-only SQL',
+      description: 'Execute read-only SQL queries against the knowledge graph database. Tables: nodes, edges, dimensions, node_dimensions, chunks. Use PRAGMA table_info(tablename) for schema. Only SELECT/WITH/PRAGMA allowed.',
+      inputSchema: sqliteQueryInputSchema
+    },
+    async ({ sql: userSql, format = 'json' }) => {
+      if (!isReadOnlyQuery(userSql)) {
+        throw new Error('Only SELECT, WITH, and PRAGMA statements are allowed. Write operations must use dedicated tools.');
+      }
+
+      try {
+        const rows = query(userSql);
+        const rowCount = Array.isArray(rows) ? rows.length : 0;
+
+        if (format === 'table' && Array.isArray(rows) && rows.length > 0) {
+          // Simple table format
+          const cols = Object.keys(rows[0]);
+          const header = cols.join(' | ');
+          const separator = cols.map(c => '-'.repeat(c.length)).join(' | ');
+          const body = rows.map(r => cols.map(c => String(r[c] ?? '')).join(' | ')).join('\n');
+          const tableStr = `${header}\n${separator}\n${body}`;
+
+          return {
+            content: [{ type: 'text', text: `${rowCount} row(s).\n\n${tableStr}` }],
+            structuredContent: { count: rowCount, rows }
+          };
+        }
+
+        return {
+          content: [{ type: 'text', text: `${rowCount} row(s).` }],
+          structuredContent: { count: rowCount, rows: Array.isArray(rows) ? rows : [rows] }
+        };
+      } catch (err) {
+        throw new Error(`SQL error: ${err.message}`);
+      }
     }
   );
 

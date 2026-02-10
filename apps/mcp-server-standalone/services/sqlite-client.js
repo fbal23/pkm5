@@ -134,7 +134,7 @@ function query(sql, params = []) {
   const stmt = database.prepare(sql);
 
   const sqlLower = sql.trim().toLowerCase();
-  if (sqlLower.startsWith('select') || sqlLower.startsWith('with') || sqlLower.includes('returning')) {
+  if (sqlLower.startsWith('select') || sqlLower.startsWith('with') || sqlLower.startsWith('pragma') || sqlLower.includes('returning')) {
     return params.length > 0 ? stmt.all(...params) : stmt.all();
   } else {
     const result = params.length > 0 ? stmt.run(...params) : stmt.run();

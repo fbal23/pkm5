@@ -38,25 +38,27 @@ immutable: true
 ### dimensions
 | Column | Type | Notes |
 |--------|------|-------|
-| id | INTEGER | Primary key |
-| name | TEXT | Unique, case-insensitive |
+| name | TEXT | Primary key |
 | description | TEXT | Purpose description |
-| is_locked | INTEGER | 1 = priority dimension (auto-assigns to new nodes) |
+| is_priority | INTEGER | 1 = priority dimension (auto-assigns to new nodes) |
+| updated_at | TEXT | ISO timestamp |
 
 ### node_dimensions (junction)
 | Column | Type |
 |--------|------|
 | node_id | INTEGER FK → nodes.id |
-| dimension_id | INTEGER FK → dimensions.id |
+| dimension | TEXT (dimension name) |
 
 ### chunks (for semantic search)
 | Column | Type | Notes |
 |--------|------|-------|
 | id | INTEGER | Primary key |
 | node_id | INTEGER | FK → nodes.id |
-| chunk_index | INTEGER | Position in sequence |
+| chunk_idx | INTEGER | Position in sequence |
 | text | TEXT | Chunk content |
-| embedding | BLOB | Vector (via sqlite-vec) |
+| created_at | TEXT | ISO timestamp |
+| embedding_type | TEXT | Embedding model used |
+| metadata | TEXT | JSON blob |
 
 ### FTS Tables
 - `chunks_fts` — full-text search on chunk text
@@ -76,8 +78,7 @@ GROUP BY n.id ORDER BY edge_count DESC LIMIT 5
 ```sql
 SELECT n.* FROM nodes n
 JOIN node_dimensions nd ON n.id = nd.node_id
-JOIN dimensions d ON nd.dimension_id = d.id
-WHERE d.name = ?
+WHERE nd.dimension = ?
 ```
 
 **Edges for a node (both directions):**
@@ -89,4 +90,14 @@ JOIN nodes n2 ON e.to_node_id = n2.id
 WHERE e.from_node_id = ? OR e.to_node_id = ?
 ```
 
-**Use sqliteQuery for any read operation not covered by structured tools.**
+**Search source content (chunks):**
+```sql
+SELECT c.id, c.node_id, c.chunk_idx, c.text, n.title
+FROM chunks c
+JOIN nodes n ON c.node_id = n.id
+WHERE c.text LIKE '%search term%' COLLATE NOCASE
+ORDER BY c.chunk_idx ASC
+LIMIT 10
+```
+
+**Use `rah_search_content` to search chunks by keyword, or `rah_sqlite_query` for any read operation not covered by structured tools.**

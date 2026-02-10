@@ -53,7 +53,7 @@ Once connected, Claude will:
 | `rah_get_context` | Get graph overview — stats, hub nodes, dimensions, recent activity |
 | `rah_add_node` | Create a new node |
 | `rah_search_nodes` | Search nodes by keyword |
-| `rah_get_nodes` | Load nodes by ID |
+| `rah_get_nodes` | Load nodes by ID (includes chunk + metadata) |
 | `rah_update_node` | Update an existing node |
 | `rah_create_edge` | Create connection between nodes |
 | `rah_update_edge` | Update an edge explanation |
@@ -66,6 +66,8 @@ Once connected, Claude will:
 | `rah_read_guide` | Read a guide by name |
 | `rah_write_guide` | Create or update a custom guide |
 | `rah_delete_guide` | Delete a custom guide |
+| `rah_search_content` | Search through source content (transcripts, books, articles) |
+| `rah_sqlite_query` | Execute read-only SQL queries (SELECT/WITH/PRAGMA) |
 
 ## Guides
 
