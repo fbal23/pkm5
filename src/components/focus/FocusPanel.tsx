@@ -110,7 +110,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
   const [edgesExpanded, setEdgesExpanded] = useState<{ [key: number]: boolean }>({});
   
   // Connections section collapsed state (default closed)
-  const [showConnectionsModal, setShowConnectionsModal] = useState(false);
+  const [edgeSearchOpen, setEdgeSearchOpen] = useState(false);
   
   // Title expanded state for click-to-expand full title
   const [titleExpanded, setTitleExpanded] = useState<{ [key: number]: boolean }>({});
@@ -119,7 +119,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
   const [regeneratingDescription, setRegeneratingDescription] = useState<number | null>(null);
 
   // Content tab state: 'notes', 'desc', or 'source'
-  const [activeContentTab, setActiveContentTab] = useState<'notes' | 'desc' | 'source'>('notes');
+  const [activeContentTab, setActiveContentTab] = useState<'notes' | 'desc' | 'edges' | 'source'>('notes');
 
   // Desc (description) edit mode state
   const [descEditMode, setDescEditMode] = useState(false);
@@ -1146,7 +1146,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
       setAddingEdge(null);
       setEdgeExplanation('');
       setPendingEdgeTarget(null);
-      setShowConnectionsModal(false);
+      setEdgeSearchOpen(false);
 
     } catch (error) {
       console.error('Error creating edge:', error);
@@ -1184,7 +1184,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
       setPendingEdgeTarget(null);
       setNodeSearchQuery('');
       setNodeSearchSuggestions([]);
-      setShowConnectionsModal(false);
+      setEdgeSearchOpen(false);
 
     } catch (error) {
       console.error('Error creating edge:', error);
@@ -1260,112 +1260,114 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        {/* Search Section */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            background: '#141414',
-            padding: '16px 20px',
-            borderRadius: '12px',
-            border: '1px solid #262626',
-            boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.02)'
-          }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="#525252" style={{ flexShrink: 0 }}>
-              <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
-            </svg>
+        {/* Search Section — only visible when toggled */}
+        {edgeSearchOpen && (
+          <div style={{ marginBottom: '12px', position: 'relative' }}>
             <input
               type="text"
+              autoFocus
               value={nodeSearchQuery}
               onChange={(e) => setNodeSearchQuery(e.target.value)}
-              onKeyDown={handleNodeSearchKeyDown}
-              placeholder="Connect to node..."
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setEdgeSearchOpen(false);
+                  setNodeSearchQuery('');
+                  setNodeSearchSuggestions([]);
+                } else {
+                  handleNodeSearchKeyDown(e);
+                }
+              }}
+              placeholder="Search for a node to connect..."
               style={{
-                flex: 1,
-                background: 'none',
-                border: 'none',
-                outline: 'none',
-                color: '#fafafa',
-                fontSize: '16px',
+                width: '100%',
+                background: '#111',
+                border: '1px solid #2a2a2a',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                color: '#e5e5e5',
+                fontSize: '12px',
                 fontFamily: 'inherit',
-                fontWeight: 400
+                outline: 'none',
               }}
             />
+            {/* Search Suggestions */}
+            {nodeSearchSuggestions.length > 0 && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                marginTop: '4px',
+                background: '#141414',
+                border: '1px solid #262626',
+                borderRadius: '8px',
+                maxHeight: '200px',
+                overflowY: 'auto',
+                zIndex: 10,
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)'
+              }}>
+                {nodeSearchSuggestions.map((suggestion, index) => (
+                  <div
+                    key={suggestion.id}
+                    onClick={() => handleSelectNodeSuggestion(suggestion)}
+                    style={{
+                      padding: '10px 14px',
+                      cursor: 'pointer',
+                      borderBottom: index < nodeSearchSuggestions.length - 1 ? '1px solid #1f1f1f' : 'none',
+                      background: index === selectedSearchIndex ? '#1a1a1a' : 'transparent',
+                      transition: 'background 100ms ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (index !== selectedSearchIndex) {
+                        e.currentTarget.style.background = '#1a1a1a';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (index !== selectedSearchIndex) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '9px',
+                      fontWeight: 600,
+                      color: '#0a0a0a',
+                      background: '#22c55e',
+                      padding: '3px 6px',
+                      borderRadius: '6px',
+                      minWidth: '24px',
+                      textAlign: 'center',
+                      flexShrink: 0,
+                      fontFamily: "'SF Mono', 'Fira Code', monospace"
+                    }}>
+                      {suggestion.id}
+                    </span>
+                    <span style={{
+                      fontSize: '13px',
+                      color: '#e5e5e5',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1
+                    }}>
+                      {suggestion.title}
+                    </span>
+                    {index === selectedSearchIndex && (
+                      <span style={{ color: '#525252', fontSize: '13px' }}>↵</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          
-          {/* Search Suggestions */}
-          {nodeSearchSuggestions.length > 0 && (
-            <div style={{
-              marginTop: '8px',
-              background: '#141414',
-              border: '1px solid #262626',
-              borderRadius: '12px',
-              maxHeight: '240px',
-              overflowY: 'auto',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.02)'
-            }}>
-              {nodeSearchSuggestions.map((suggestion, index) => (
-                <div
-                  key={suggestion.id}
-                  onClick={() => handleSelectNodeSuggestion(suggestion)}
-                  style={{
-                    padding: '10px 14px',
-                    cursor: 'pointer',
-                    borderBottom: index < nodeSearchSuggestions.length - 1 ? '1px solid #1f1f1f' : 'none',
-                    background: index === selectedSearchIndex ? '#1a1a1a' : 'transparent',
-                    transition: 'background 100ms ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (index !== selectedSearchIndex) {
-                      e.currentTarget.style.background = '#1a1a1a';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (index !== selectedSearchIndex) {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
-                >
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '9px',
-                    fontWeight: 600,
-                    color: '#0a0a0a',
-                    background: '#22c55e',
-                    padding: '3px 6px',
-                    borderRadius: '6px',
-                    minWidth: '24px',
-                    textAlign: 'center',
-                    flexShrink: 0,
-                    fontFamily: "'SF Mono', 'Fira Code', monospace"
-                  }}>
-                    {suggestion.id}
-                  </span>
-                  <span style={{
-                    fontSize: '13px',
-                    color: '#e5e5e5',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    flex: 1
-                  }}>
-                    {suggestion.title}
-                  </span>
-                  {index === selectedSearchIndex && (
-                    <span style={{ color: '#525252', fontSize: '13px' }}>↵</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-        </div>
+        )}
 
         {/* Existing Connections */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -1963,9 +1965,9 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                 </h1>
               )}
 
-              {/* Connections Button */}
+              {/* Connections Button — opens Edges tab */}
               <button
-                onClick={() => setShowConnectionsModal(true)}
+                onClick={() => setActiveContentTab('edges')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1973,21 +1975,26 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                   padding: '4px 8px',
                   fontSize: '10px',
                   fontWeight: 500,
-                  color: '#22c55e',
-                  background: 'transparent',
-                  border: '1px solid #166534',
+                  color: activeContentTab === 'edges' ? '#22c55e' : '#666',
+                  background: activeContentTab === 'edges' ? '#0f2417' : 'transparent',
+                  border: '1px solid',
+                  borderColor: activeContentTab === 'edges' ? '#22c55e' : '#262626',
                   borderRadius: '4px',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                   flexShrink: 0
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#0f2417';
-                  e.currentTarget.style.borderColor = '#22c55e';
+                  if (activeContentTab !== 'edges') {
+                    e.currentTarget.style.color = '#22c55e';
+                    e.currentTarget.style.borderColor = '#166534';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = '#166534';
+                  if (activeContentTab !== 'edges') {
+                    e.currentTarget.style.color = '#666';
+                    e.currentTarget.style.borderColor = '#262626';
+                  }
                 }}
                 title="Connections"
               >
@@ -2140,7 +2147,24 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                   Desc
                 </button>
                 <button
-                  onClick={() => { setActiveContentTab('source'); setDescEditMode(false); setNotesEditMode(false); }}
+                  onClick={() => { setActiveContentTab('edges'); setDescEditMode(false); setNotesEditMode(false); setSourceEditMode(false); }}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '11px',
+                    fontWeight: activeContentTab === 'edges' ? 600 : 400,
+                    color: activeContentTab === 'edges' ? '#e5e5e5' : '#666',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: activeContentTab === 'edges' ? '2px solid #22c55e' : '2px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    marginBottom: '-1px'
+                  }}
+                >
+                  Edges{activeTab && edgesData[activeTab]?.length ? ` (${edgesData[activeTab].length})` : ''}
+                </button>
+                <button
+                  onClick={() => { setActiveContentTab('source'); setDescEditMode(false); setNotesEditMode(false); setEdgeSearchOpen(false); }}
                   style={{
                     padding: '8px 16px',
                     fontSize: '11px',
@@ -2254,6 +2278,36 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                       onChange={setNotesEditValue}
                       inline
                     />
+                  </div>
+                )}
+                {/* Action button for Edges tab */}
+                {activeContentTab === 'edges' && (
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                    <button
+                      onClick={() => {
+                        setEdgeSearchOpen(!edgeSearchOpen);
+                        if (edgeSearchOpen) {
+                          setNodeSearchQuery('');
+                          setNodeSearchSuggestions([]);
+                        }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '4px 8px',
+                        fontSize: '10px',
+                        color: edgeSearchOpen ? '#000' : '#22c55e',
+                        background: edgeSearchOpen ? '#22c55e' : 'transparent',
+                        border: '1px solid #166534',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <Plus size={12} />
+                      {edgeSearchOpen ? 'Cancel' : 'Create'}
+                    </button>
                   </div>
                 )}
               </div>
@@ -2724,6 +2778,13 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                 </div>
               )}
 
+              {/* Edges Tab Content */}
+              {activeContentTab === 'edges' && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+                  {renderConnectionsBody()}
+                </div>
+              )}
+
               {/* Source Tab Content */}
               {activeContentTab === 'source' && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -2966,442 +3027,6 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
       onConfirm={handleConfirmNodeDelete}
       onCancel={handleCancelNodeDelete}
     />
-    {showConnectionsModal && activeTab && (
-      <div
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setShowConnectionsModal(false);
-            setNodeSearchQuery('');
-            setNodeSearchSuggestions([]);
-          }
-        }}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          justifyContent: 'center',
-          paddingTop: '10vh',
-          zIndex: 9999,
-          animation: 'backdropIn 200ms ease-out'
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: '640px',
-            maxHeight: '80vh',
-            display: 'flex',
-            flexDirection: 'column',
-            animation: 'containerIn 200ms cubic-bezier(0.16, 1, 0.3, 1)'
-          }}
-        >
-          {/* Search Input */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            background: '#141414',
-            border: '1px solid #262626',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.04), 0 24px 48px -12px rgba(0, 0, 0, 0.6)'
-          }}>
-            <svg width="22" height="22" viewBox="0 0 20 20" fill="#525252" style={{ flexShrink: 0 }}>
-              <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
-            </svg>
-            <input
-              autoFocus
-              type="text"
-              value={nodeSearchQuery}
-              onChange={(e) => setNodeSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  setShowConnectionsModal(false);
-                  setNodeSearchQuery('');
-                  setNodeSearchSuggestions([]);
-                } else {
-                  handleNodeSearchKeyDown(e);
-                }
-              }}
-              placeholder="Search to add connection..."
-              style={{
-                flex: 1,
-                background: 'none',
-                border: 'none',
-                outline: 'none',
-                color: '#fafafa',
-                fontSize: '18px',
-                fontFamily: 'inherit',
-                fontWeight: 400
-              }}
-            />
-            <kbd style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '4px 8px',
-              background: '#262626',
-              borderRadius: '6px',
-              fontSize: '11px',
-              fontFamily: 'inherit',
-              color: '#737373',
-              border: '1px solid #333'
-            }}>
-              esc
-            </kbd>
-          </div>
-
-          {/* Search Results */}
-          {nodeSearchSuggestions.length > 0 && (
-            <div style={{
-              marginTop: '8px',
-              background: '#141414',
-              border: '1px solid #262626',
-              borderRadius: '16px',
-              overflow: 'hidden',
-              boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.04), 0 24px 48px -12px rgba(0, 0, 0, 0.6)',
-              animation: 'resultsIn 150ms ease-out',
-              maxHeight: '200px',
-              overflowY: 'auto'
-            }}>
-              {nodeSearchSuggestions.map((suggestion, index) => (
-                <div
-                  key={suggestion.id}
-                  onClick={() => {
-                    handleSelectNodeSuggestion(suggestion);
-                    setNodeSearchQuery('');
-                    setNodeSearchSuggestions([]);
-                  }}
-                  style={{
-                    padding: '10px 16px',
-                    cursor: 'pointer',
-                    borderBottom: index < nodeSearchSuggestions.length - 1 ? '1px solid #1f1f1f' : 'none',
-                    background: index === selectedSearchIndex ? '#1a1a1a' : 'transparent',
-                    transition: 'background 100ms ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#1a1a1a';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (index !== selectedSearchIndex) {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
-                >
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '9px',
-                    fontWeight: 600,
-                    color: '#0a0a0a',
-                    background: '#22c55e',
-                    padding: '3px 6px',
-                    borderRadius: '6px',
-                    minWidth: '24px',
-                    textAlign: 'center',
-                    flexShrink: 0,
-                    fontFamily: "'SF Mono', 'Fira Code', monospace"
-                  }}>
-                    {suggestion.id}
-                  </span>
-                  <span style={{
-                    fontSize: '13px',
-                    color: '#e5e5e5',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    flex: 1
-                  }}>
-                    {suggestion.title}
-                  </span>
-                  {index === selectedSearchIndex && (
-                    <span style={{ color: '#525252', fontSize: '13px' }}>↵</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Empty search state */}
-          {nodeSearchQuery && nodeSearchSuggestions.length === 0 && (
-            <div style={{
-              marginTop: '8px',
-              padding: '24px',
-              background: '#141414',
-              border: '1px solid #262626',
-              borderRadius: '16px',
-              color: '#525252',
-              fontSize: '14px',
-              textAlign: 'center'
-            }}>
-              No results for "{nodeSearchQuery}"
-            </div>
-          )}
-
-          {/* Existing Connections */}
-          {!nodeSearchQuery && (
-            <div style={{
-              marginTop: '16px',
-              background: '#141414',
-              border: '1px solid #262626',
-              borderRadius: '16px',
-              overflow: 'hidden',
-              boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.04), 0 8px 24px -8px rgba(0, 0, 0, 0.4)',
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0
-            }}>
-              <div style={{
-                padding: '12px 16px',
-                borderBottom: '1px solid #1f1f1f',
-                fontSize: '12px',
-                color: '#737373',
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                fontWeight: 600
-              }}>
-                Existing Connections ({(edgesData[activeTab] || []).length})
-              </div>
-              <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-                {loadingEdges.has(activeTab) ? (
-                  <div style={{ padding: '24px', color: '#666', fontSize: '13px', textAlign: 'center' }}>
-                    Loading...
-                  </div>
-                ) : (edgesData[activeTab] || []).length === 0 ? (
-                  <div style={{ padding: '32px 24px', color: '#525252', fontSize: '14px', textAlign: 'center' }}>
-                    No connections yet. Search above to add one.
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    {(edgesData[activeTab] || []).map((connection) => (
-                      <div
-                        key={connection.id}
-                        style={{
-                          padding: '10px 16px',
-                          borderBottom: '1px solid #1f1f1f',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '6px'
-                        }}
-                      >
-                        {/* Connection header row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          {/* Direction arrow: → if current node is FROM (outgoing), ← if current node is TO (incoming) */}
-                          <span style={{
-                            fontSize: '14px',
-                            color: connection.edge.from_node_id === activeTab ? '#22c55e' : '#f59e0b',
-                            fontWeight: 600,
-                            width: '18px',
-                            textAlign: 'center',
-                            flexShrink: 0
-                          }}>
-                            {connection.edge.from_node_id === activeTab ? '→' : '←'}
-                          </span>
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            color: '#0a0a0a',
-                            background: '#22c55e',
-                            padding: '3px 6px',
-                            borderRadius: '6px',
-                            minWidth: '24px',
-                            textAlign: 'center',
-                            flexShrink: 0,
-                            fontFamily: "'SF Mono', 'Fira Code', monospace"
-                          }}>
-                            {connection.connected_node.id}
-                          </span>
-                          <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-                            {getNodeIcon(connection.connected_node, dimensionIcons, 12)}
-                          </span>
-                          <span
-                            onClick={() => onNodeClick?.(connection.connected_node.id)}
-                            style={{
-                              flex: 1,
-                              fontSize: '13px',
-                              color: '#e5e5e5',
-                              cursor: 'pointer',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.color = '#22c55e'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.color = '#e5e5e5'; }}
-                          >
-                            {connection.connected_node.title}
-                          </span>
-                          <button
-                            onClick={() => deleteEdge(connection.edge.id)}
-                            disabled={deletingEdge === connection.edge.id}
-                            style={{
-                              padding: '6px',
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#525252',
-                              cursor: deletingEdge === connection.edge.id ? 'not-allowed' : 'pointer',
-                              borderRadius: '6px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'all 0.15s ease',
-                              opacity: deletingEdge === connection.edge.id ? 0.5 : 1
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#1f1f1f'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.color = '#525252'; e.currentTarget.style.background = 'transparent'; }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                        {/* Description row */}
-                        {edgeEditingId === connection.edge.id ? (
-                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                            <input
-                              value={edgeEditingValue}
-                              onChange={(e) => setEdgeEditingValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  saveEdgeExplanation(connection.edge.id, connection.edge.context);
-                                } else if (e.key === 'Escape') {
-                                  e.preventDefault();
-                                  cancelEditEdgeExplanation();
-                                }
-                              }}
-                              autoFocus
-                              placeholder="Add explanation..."
-                              style={{
-                                flex: 1,
-                                fontSize: '11px',
-                                color: '#e5e5e5',
-                                background: '#0a0a0a',
-                                border: '1px solid #333',
-                                borderRadius: '6px',
-                                padding: '6px 8px',
-                                outline: 'none',
-                                fontFamily: 'inherit'
-                              }}
-                            />
-                            <button
-                              onClick={() => saveEdgeExplanation(connection.edge.id, connection.edge.context)}
-                              style={{
-                                padding: '5px 10px',
-                                background: '#22c55e',
-                                border: 'none',
-                                borderRadius: '6px',
-                                color: '#0a0a0a',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={cancelEditEdgeExplanation}
-                              style={{
-                                padding: '5px 10px',
-                                background: '#262626',
-                                border: 'none',
-                                borderRadius: '6px',
-                                color: '#999',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <div
-                            onClick={() => startEditEdgeExplanation(connection.edge.id, connection.edge.context?.explanation as string | undefined)}
-                            style={{
-                              fontSize: '12px',
-                              color: connection.edge.context?.explanation ? '#888' : '#525252',
-                              cursor: 'pointer',
-                              padding: '4px 0',
-                              fontStyle: connection.edge.context?.explanation ? 'normal' : 'italic',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px'
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.color = '#aaa'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.color = connection.edge.context?.explanation ? '#888' : '#525252'; }}
-                          >
-                            {typeof connection.edge.context?.type === 'string' && (
-                              <span style={{
-                                fontSize: '10px',
-                                color: '#a3a3a3',
-                                background: '#0f0f0f',
-                                border: '1px solid #262626',
-                                padding: '2px 6px',
-                                borderRadius: '999px',
-                                flexShrink: 0
-                              }}>
-                                {String(connection.edge.context.type).replace(/_/g, ' ')}
-                              </span>
-                            )}
-                            <span
-                              style={{
-                                flex: 1,
-                                minWidth: 0,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
-                              title={String(connection.edge.context?.explanation || '')}
-                            >
-                              {(connection.edge.context?.explanation as string) || 'Click to add explanation...'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-        <style jsx>{`
-          @keyframes backdropIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @keyframes containerIn {
-            from { 
-              opacity: 0;
-              transform: scale(0.96) translateY(-8px);
-            }
-            to { 
-              opacity: 1;
-              transform: scale(1) translateY(0);
-            }
-          }
-          @keyframes resultsIn {
-            from { 
-              opacity: 0;
-              transform: translateY(-4px);
-            }
-            to { 
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}</style>
-      </div>
-    )}
-
     {/* Tab Context Menu */}
     {contextMenu && (
       <div
