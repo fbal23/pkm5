@@ -5,6 +5,7 @@ import { Plus, Trash2, LayoutGrid, List, Columns3, Save, Filter, ChevronDown, X 
 import type { Node } from '@/types/database';
 import InputDialog from '../common/InputDialog';
 import { getNodeIcon } from '@/utils/nodeIcons';
+import { useDimensionIcons } from '@/context/DimensionIconsContext';
 
 type ViewMode = 'grid' | 'list' | 'kanban';
 
@@ -39,6 +40,7 @@ interface ViewsOverlayProps {
 }
 
 export default function ViewsOverlay({ onNodeClick, onNodeOpenInOtherPane, refreshToken = 0 }: ViewsOverlayProps) {
+  const { dimensionIcons } = useDimensionIcons();
   // Dimensions for filter picker
   const [dimensions, setDimensions] = useState<DimensionSummary[]>([]);
   const [dimensionsLoading, setDimensionsLoading] = useState(true);
@@ -401,7 +403,7 @@ export default function ViewsOverlay({ onNodeClick, onNodeOpenInOtherPane, refre
 
   // Render node card
   const renderNodeCard = (node: Node, columnId?: string, dimension?: string) => {
-    const nodeIcon = getNodeIcon(node);
+    const nodeIcon = getNodeIcon(node, dimensionIcons);
 
     return (
       <div

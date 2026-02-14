@@ -1,7 +1,8 @@
 "use client";
 
 import { Node } from '@/types/database';
-import { File } from 'lucide-react';
+import { getNodeIcon } from '@/utils/nodeIcons';
+import { useDimensionIcons } from '@/context/DimensionIconsContext';
 
 interface ListViewProps {
   nodes: Node[];
@@ -9,6 +10,7 @@ interface ListViewProps {
 }
 
 export default function ListView({ nodes, onNodeClick }: ListViewProps) {
+  const { dimensionIcons } = useDimensionIcons();
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -84,7 +86,7 @@ export default function ListView({ nodes, onNodeClick }: ListViewProps) {
               borderRadius: '6px',
               flexShrink: 0
             }}>
-              <File size={16} color="#666" />
+              {getNodeIcon(node, dimensionIcons, 16)}
             </div>
 
             {/* Content */}

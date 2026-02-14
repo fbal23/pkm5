@@ -1,7 +1,8 @@
 "use client";
 
 import { Node } from '@/types/database';
-import { File } from 'lucide-react';
+import { getNodeIcon } from '@/utils/nodeIcons';
+import { useDimensionIcons } from '@/context/DimensionIconsContext';
 
 interface GridViewProps {
   nodes: Node[];
@@ -9,6 +10,7 @@ interface GridViewProps {
 }
 
 export default function GridView({ nodes, onNodeClick }: GridViewProps) {
+  const { dimensionIcons } = useDimensionIcons();
   const truncateContent = (content?: string, maxLength: number = 120) => {
     if (!content) return '';
     if (content.length <= maxLength) return content;
@@ -85,7 +87,7 @@ export default function GridView({ nodes, onNodeClick }: GridViewProps) {
                   borderRadius: '6px',
                   flexShrink: 0
                 }}>
-                  <File size={14} color="#666" />
+                  {getNodeIcon(node, dimensionIcons, 14)}
                 </div>
                 <div style={{
                   fontSize: '13px',

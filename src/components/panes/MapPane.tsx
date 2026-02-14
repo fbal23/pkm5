@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useCallback, type CSSProperties }
 import {
   ReactFlow,
   Background,
+  MiniMap,
   useNodesState,
   useEdgesState,
   addEdge as rfAddEdge,
@@ -22,8 +23,10 @@ import type { MapPaneProps } from './types';
 import { ChevronDown } from 'lucide-react';
 
 import { RahNode } from './map/RahNode';
+import { RahEdge } from './map/RahEdge';
 import EdgeExplanationModal from './map/EdgeExplanationModal';
 import { toRFNodes, toRFEdges, NODE_LIMIT, type RahNodeData } from './map/utils';
+import { useDimensionIcons } from '@/context/DimensionIconsContext';
 import './map/map-styles.css';
 
 interface DimensionInfo {
@@ -34,6 +37,7 @@ interface DimensionInfo {
 }
 
 const nodeTypes = { rahNode: RahNode };
+const edgeTypes = { rahEdge: RahEdge };
 
 // Debounce helper
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,6 +61,7 @@ function MapPaneInner({
   activeTabId,
 }: MapPaneProps) {
   const reactFlowInstance = useReactFlow();
+  const { dimensionIcons } = useDimensionIcons();
 
   // --- Data state (DB-level) ---
   const [baseNodes, setBaseNodes] = useState<DbNode[]>([]);
@@ -190,6 +195,7 @@ function MapPaneInner({
       selectedNodeId,
       connectedNodeIds,
       rfPositionsRef.current,
+      dimensionIcons,
     );
 
     const nodeIdSet = new Set(newRfNodes.map(n => n.id));
@@ -590,15 +596,26 @@ function MapPaneInner({
               onNodeDragStop={onNodeDragStop}
               onConnect={onConnect}
               nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               fitView
               fitViewOptions={{ padding: 0.2 }}
               minZoom={0.1}
               maxZoom={3}
-              defaultEdgeOptions={{ type: 'default' }}
+              defaultEdgeOptions={{ type: 'rahEdge' }}
               proOptions={{ hideAttribution: true }}
               colorMode="dark"
             >
               <Background color="#1a1a1a" gap={40} size={1} />
+              <MiniMap
+                style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 6 }}
+                maskColor="rgba(0,0,0,0.6)"
+                nodeColor={(n) => {
+                  const data = n.data as RahNodeData | undefined;
+                  return data?.primaryDimensionColor || '#374151';
+                }}
+                pannable
+                zoomable
+              />
             </ReactFlow>
 
             {/* Selected node info panel */}

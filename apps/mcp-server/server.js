@@ -43,9 +43,12 @@ let lastErrorMessage = null;
 let logger = (message) => console.log(`[mcp] ${message}`);
 
 const instructions = [
-  'Use rah.add_node to summarize conversations or files into nodes with dimensions.',
-  'Use rah.search_nodes to recall prior notes before you suggest creating new ones.',
-  'All operations happen locally on this device; data never leaves 127.0.0.1.'
+  'RA-H is a personal knowledge graph — local-first, vendor-neutral.',
+  'Core concepts: nodes (knowledge units), edges (connections with explanations), dimensions (categories).',
+  'Always call rah_get_context first to orient yourself — it returns hub nodes, dimensions, stats, and available guides.',
+  'Search before creating: use rah_search_nodes to check if content already exists.',
+  'Every edge needs an explanation: why does this connection exist?',
+  'All data stays local on this device; nothing leaves 127.0.0.1.',
 ].join(' ');
 
 const serverInfo = {
@@ -123,6 +126,7 @@ const updateNodeInputSchema = {
   id: z.number().int().positive().describe('The ID of the node to update'),
   updates: z.object({
     title: z.string().optional().describe('New title'),
+    description: z.string().optional().describe('New description (overwrites existing)'),
     content: z.string().optional().describe('Content to APPEND (not replace)'),
     link: z.string().optional().describe('New link'),
     dimensions: z.array(z.string()).optional().describe('New dimensions (replaces existing)'),
@@ -251,6 +255,45 @@ const searchEmbeddingsOutputSchema = {
       similarity: z.number()
     })
   )
+};
+
+// rah_extract_url schemas
+const extractUrlInputSchema = {
+  url: z.string().url().describe('URL of the webpage to extract content from')
+};
+
+const extractUrlOutputSchema = {
+  success: z.boolean(),
+  title: z.string(),
+  content: z.string(),
+  chunk: z.string(),
+  metadata: z.record(z.any())
+};
+
+// rah_extract_youtube schemas
+const extractYoutubeInputSchema = {
+  url: z.string().describe('YouTube video URL to extract transcript from')
+};
+
+const extractYoutubeOutputSchema = {
+  success: z.boolean(),
+  title: z.string(),
+  channel: z.string(),
+  transcript: z.string(),
+  metadata: z.record(z.any())
+};
+
+// rah_extract_pdf schemas
+const extractPdfInputSchema = {
+  url: z.string().url().describe('URL of the PDF file to extract content from')
+};
+
+const extractPdfOutputSchema = {
+  success: z.boolean(),
+  title: z.string(),
+  content: z.string(),
+  chunk: z.string(),
+  metadata: z.record(z.any())
 };
 
 async function resolveBaseUrl() {
@@ -679,6 +722,131 @@ mcpServer.registerTool(
           similarity: r.similarity || r.score || 0
         }))
       }
+    };
+  }
+);
+
+mcpServer.registerTool(
+  'rah_extract_url',
+  {
+    title: 'Extract URL content',
+    description: 'Extract content from a webpage URL. Returns title, content, and metadata for creating nodes.',
+    inputSchema: extractUrlInputSchema,
+    outputSchema: extractUrlOutputSchema
+  },
+  async ({ url }) => {
+    const result = await callRaHApi('/api/extract/url', {
+      method: 'POST',
+      body: JSON.stringify({ url })
+    });
+
+    const summary = `Extracted content from: ${result.title || 'webpage'}`;
+    return {
+      content: [{ type: 'text', text: summary }],
+      structuredContent: {
+        success: true,
+        title: result.title || 'Untitled',
+        content: result.content || '',
+        chunk: result.chunk || '',
+        metadata: result.metadata || {}
+      }
+    };
+  }
+);
+
+mcpServer.registerTool(
+  'rah_extract_youtube',
+  {
+    title: 'Extract YouTube transcript',
+    description: 'Extract transcript from a YouTube video. Returns title, channel, transcript, and metadata.',
+    inputSchema: extractYoutubeInputSchema,
+    outputSchema: extractYoutubeOutputSchema
+  },
+  async ({ url }) => {
+    const result = await callRaHApi('/api/extract/youtube', {
+      method: 'POST',
+      body: JSON.stringify({ url })
+    });
+
+    const summary = `Extracted transcript from: ${result.title || 'YouTube video'}`;
+    return {
+      content: [{ type: 'text', text: summary }],
+      structuredContent: {
+        success: true,
+        title: result.title || 'Untitled',
+        channel: result.channel || 'Unknown',
+        transcript: result.transcript || '',
+        metadata: result.metadata || {}
+      }
+    };
+  }
+);
+
+mcpServer.registerTool(
+  'rah_extract_pdf',
+  {
+    title: 'Extract PDF content',
+    description: 'Extract content from a PDF file URL. Returns title, content, and metadata for creating nodes.',
+    inputSchema: extractPdfInputSchema,
+    outputSchema: extractPdfOutputSchema
+  },
+  async ({ url }) => {
+    const result = await callRaHApi('/api/extract/pdf', {
+      method: 'POST',
+      body: JSON.stringify({ url })
+    });
+
+    const summary = `Extracted content from: ${result.title || 'PDF document'}`;
+    return {
+      content: [{ type: 'text', text: summary }],
+      structuredContent: {
+        success: true,
+        title: result.title || 'Untitled PDF',
+        content: result.content || '',
+        chunk: result.chunk || '',
+        metadata: result.metadata || {}
+      }
+    };
+  }
+);
+
+// rah_get_context — orientation tool for external agents
+mcpServer.registerTool(
+  'rah_get_context',
+  {
+    title: 'Get RA-H context',
+    description: 'Get orientation context: hub nodes, dimensions, stats, and available guides. Call this first.',
+    inputSchema: {},
+    outputSchema: {
+      schema: z.object({ nodeCount: z.number(), edgeCount: z.number(), dimensionCount: z.number() }),
+      hubNodes: z.array(z.object({ id: z.number(), title: z.string(), description: z.string().nullable(), edgeCount: z.number() })),
+      dimensions: z.array(z.object({ name: z.string(), nodeCount: z.number(), description: z.string().nullable() })),
+      guides: z.array(z.string())
+    }
+  },
+  async () => {
+    const hubResult = await callRaHApi('/api/nodes?sortBy=edges&limit=5', { method: 'GET' });
+    const hubNodes = Array.isArray(hubResult.data) ? hubResult.data.map(n => ({
+      id: n.id, title: n.title, description: n.description ?? null, edgeCount: n.edge_count ?? 0
+    })) : [];
+
+    const dimResult = await callRaHApi('/api/dimensions', { method: 'GET' });
+    const dimensions = Array.isArray(dimResult.data) ? dimResult.data.map(d => ({
+      name: d.name, nodeCount: d.node_count ?? 0, description: d.description ?? null
+    })) : [];
+
+    const guideResult = await callRaHApi('/api/guides', { method: 'GET' });
+    const guides = Array.isArray(guideResult.data) ? guideResult.data.map(g => g.name) : [];
+
+    const stats = { nodeCount: 0, edgeCount: 0, dimensionCount: dimensions.length };
+    try {
+      const countResult = await callRaHApi('/api/nodes?limit=1', { method: 'GET' });
+      if (countResult.total !== undefined) stats.nodeCount = countResult.total;
+    } catch { /* use defaults */ }
+
+    return {
+      content: [{ type: 'text', text: `Knowledge graph: ${stats.dimensionCount} dimensions, ${hubNodes.length} hub nodes. ${guides.length} guides available.` }],
+      structuredContent: { schema: stats, hubNodes, dimensions, guides }
     };
   }
 );

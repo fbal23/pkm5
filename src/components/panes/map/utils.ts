@@ -1,12 +1,42 @@
 import type { Node as DbNode, Edge as DbEdge } from '@/types/database';
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 
+// Fixed palette for dimension border colors (muted, dark-theme-friendly)
+const DIMENSION_COLORS = [
+  '#22c55e', // green
+  '#3b82f6', // blue
+  '#f59e0b', // amber
+  '#ef4444', // red
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#f97316', // orange
+  '#14b8a6', // teal
+  '#a855f7', // purple
+];
+
+function hashDimensionColor(dimension: string): string {
+  let hash = 0;
+  for (let i = 0; i < dimension.length; i++) {
+    hash = ((hash << 5) - hash + dimension.charCodeAt(i)) | 0;
+  }
+  return DIMENSION_COLORS[Math.abs(hash) % DIMENSION_COLORS.length];
+}
+
+export function getDimensionColor(dimensions: string[] | undefined): string | undefined {
+  if (!dimensions || dimensions.length === 0) return undefined;
+  // Use first dimension for border color
+  return hashDimensionColor(dimensions[0]);
+}
+
 export interface RahNodeData {
   label: string;
   dimensions: string[];
   edgeCount: number;
   isExpanded: boolean;
   dbNode: DbNode;
+  dimensionIcons?: Record<string, string>;
+  primaryDimensionColor?: string;
   [key: string]: unknown;
 }
 
@@ -83,6 +113,7 @@ export function toRFNodes(
   selectedNodeId: number | null,
   connectedNodeIds: Set<number>,
   existingPositions: Map<string, { x: number; y: number }>,
+  dimensionIcons?: Record<string, string>,
 ): RFNode<RahNodeData>[] {
   const sortedBase = [...baseNodes].sort((a, b) => (b.edge_count ?? 0) - (a.edge_count ?? 0));
   const maxEdges = Math.max(...sortedBase.map(n => n.edge_count ?? 0), 1);
@@ -109,6 +140,8 @@ export function toRFNodes(
         edgeCount: node.edge_count ?? 0,
         isExpanded: false,
         dbNode: node,
+        dimensionIcons,
+        primaryDimensionColor: getDimensionColor(node.dimensions),
       },
     };
   });
@@ -154,6 +187,8 @@ export function toRFNodes(
         edgeCount: node.edge_count ?? 0,
         isExpanded: true,
         dbNode: node,
+        dimensionIcons,
+        primaryDimensionColor: getDimensionColor(node.dimensions),
       },
     });
   });
@@ -181,11 +216,15 @@ export function toRFEdges(
       );
       const isDimmed = hasSelection && !isConnected;
 
+      const explanation = typeof e.context?.explanation === 'string' ? e.context.explanation : '';
+
       return {
         id: String(e.id),
         source: String(e.from_node_id),
         target: String(e.to_node_id),
+        type: 'rahEdge',
         animated: isConnected,
+        data: { explanation },
         style: isConnected
           ? { stroke: '#22c55e', strokeWidth: 2.5, opacity: 1 }
           : isDimmed

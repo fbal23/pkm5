@@ -9,6 +9,7 @@ import { parseNodeMarkers } from '@/tools/infrastructure/nodeFormatter';
 import { Node, NodeConnection, Chunk } from '@/types/database';
 import DimensionTags from './dimensions/DimensionTags';
 import { getNodeIcon } from '@/utils/nodeIcons';
+import { useDimensionIcons } from '@/context/DimensionIconsContext';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { SourceReader } from './source';
 
@@ -44,6 +45,7 @@ interface FocusPanelProps {
 }
 
 export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeClick, onTabClose, refreshTrigger, onOpenInOtherSlot, hideTabBar, onTextSelect, highlightedPassage }: FocusPanelProps) {
+  const { dimensionIcons } = useDimensionIcons();
   const [nodesData, setNodesData] = useState<Record<number, Node>>({});
 
   // Context menu state
@@ -1408,6 +1410,9 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                         }}>
                           {connection.connected_node.id}
                         </span>
+                        <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                          {getNodeIcon(connection.connected_node, dimensionIcons, 12)}
+                        </span>
                         <span style={{ color: '#f8fafc', fontSize: '13px', fontWeight: 500 }}>{connection.connected_node.title}</span>
                       </div>
                       {edgeEditingId === connection.edge.id ? (
@@ -1879,6 +1884,13 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
               >
                 {activeTab}
               </span>
+
+              {/* Node type icon */}
+              {nodesData[activeTab] && (
+                <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                  {getNodeIcon(nodesData[activeTab], dimensionIcons, 18)}
+                </span>
+              )}
 
               {editingField === 'title' ? (
                 <input
@@ -3208,6 +3220,9 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                             fontFamily: "'SF Mono', 'Fira Code', monospace"
                           }}>
                             {connection.connected_node.id}
+                          </span>
+                          <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                            {getNodeIcon(connection.connected_node, dimensionIcons, 12)}
                           </span>
                           <span
                             onClick={() => onNodeClick?.(connection.connected_node.id)}

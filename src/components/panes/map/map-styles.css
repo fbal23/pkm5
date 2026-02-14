@@ -89,6 +89,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rah-map-node__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 .rah-map-node__dims {
@@ -129,4 +138,11 @@
 
 .rah-map-wrapper .react-flow__node.dimmed:hover {
   opacity: 0.6;
+}
+
+/* MiniMap dark theme */
+.rah-map-wrapper .react-flow__minimap {
+  background: #0a0a0a;
+  border: 1px solid #1f1f1f;
+  border-radius: 6px;
 }

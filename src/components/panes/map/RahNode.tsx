@@ -4,11 +4,12 @@ import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 import type { RahNodeData } from './utils';
 import { LABEL_THRESHOLD } from './utils';
+import { getNodeIcon } from '@/utils/nodeIcons';
 
 type RahNodeType = Node<RahNodeData, 'rahNode'>;
 
 function RahNodeComponent({ data, selected }: NodeProps<RahNodeType>) {
-  const { label, dimensions, edgeCount, isExpanded } = data;
+  const { label, dimensions, edgeCount, isExpanded, dbNode, dimensionIcons, primaryDimensionColor } = data;
   const isTop = !isExpanded && edgeCount > 3;
 
   return (
@@ -19,6 +20,7 @@ function RahNodeComponent({ data, selected }: NodeProps<RahNodeType>) {
         isTop && 'rah-map-node--top',
         selected && 'rah-map-node--selected',
       ].filter(Boolean).join(' ')}
+      style={primaryDimensionColor ? { borderLeftColor: primaryDimensionColor, borderLeftWidth: 3 } : undefined}
     >
       <Handle
         type="target"
@@ -26,7 +28,10 @@ function RahNodeComponent({ data, selected }: NodeProps<RahNodeType>) {
         className="rah-map-handle"
       />
       <div className="rah-map-node__title">
-        {label.length > 28 ? label.slice(0, 26) + '\u2026' : label}
+        <span className="rah-map-node__icon">
+          {getNodeIcon(dbNode, dimensionIcons, 14)}
+        </span>
+        {label.length > 26 ? label.slice(0, 24) + '\u2026' : label}
       </div>
       {(isTop || isExpanded) && dimensions.length > 0 && (
         <div className="rah-map-node__dims">

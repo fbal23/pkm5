@@ -1,4 +1,5 @@
 import './globals.css';
+import { DimensionIconsProvider } from '@/context/DimensionIconsContext';
 
 export const metadata = {
   title: 'RA-H Open Source',
@@ -12,7 +13,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <DimensionIconsProvider>
+          {children}
+        </DimensionIconsProvider>
+      </body>
     </html>
   );
 }

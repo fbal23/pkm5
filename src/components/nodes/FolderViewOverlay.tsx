@@ -7,6 +7,7 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import InputDialog from '../common/InputDialog';
 import { getNodeIcon } from '@/utils/nodeIcons';
 import LucideIconPicker, { DynamicIcon } from '../common/LucideIconPicker';
+import { useDimensionIcons } from '@/context/DimensionIconsContext';
 import { usePersistentState } from '@/hooks/usePersistentState';
 
 type DimensionViewMode = 'grid' | 'list' | 'kanban';
@@ -121,8 +122,8 @@ export default function FolderViewOverlay({ onClose, onNodeOpen, refreshToken, o
   // Node priority ordering within dimensions (persisted)
   const [dimensionOrders, setDimensionOrders] = usePersistentState<Record<string, number[]>>('ui.dimensionOrders', {});
 
-  // Dimension icons (persisted) - maps dimension name to Lucide icon name
-  const [dimensionIcons, setDimensionIcons] = usePersistentState<Record<string, string>>('ui.dimensionIcons', {});
+  // Dimension icons from shared context
+  const { dimensionIcons, setDimensionIcons } = useDimensionIcons();
 
   // Dimension edit modal state
   const [editingDimensionModal, setEditingDimensionModal] = useState<DimensionSummary | null>(null);
@@ -1235,7 +1236,7 @@ export default function FolderViewOverlay({ onClose, onNodeOpen, refreshToken, o
             </div>
             {node.link && (
               <span style={{ flexShrink: 0 }}>
-                {getNodeIcon(node)}
+                {getNodeIcon(node, dimensionIcons)}
               </span>
             )}
           </div>
@@ -1359,7 +1360,7 @@ export default function FolderViewOverlay({ onClose, onNodeOpen, refreshToken, o
             borderRadius: '8px',
             flexShrink: 0
           }}>
-            {getNodeIcon(node)}
+            {getNodeIcon(node, dimensionIcons)}
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1829,7 +1830,7 @@ export default function FolderViewOverlay({ onClose, onNodeOpen, refreshToken, o
                   borderRadius: '8px',
                   flexShrink: 0
                 }}>
-                  {getNodeIcon(node)}
+                  {getNodeIcon(node, dimensionIcons)}
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -2560,7 +2561,7 @@ export default function FolderViewOverlay({ onClose, onNodeOpen, refreshToken, o
                     justifyContent: 'center',
                     flexShrink: 0
                   }}>
-                    {getNodeIcon(node)}
+                    {getNodeIcon(node, dimensionIcons)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
@@ -2848,7 +2849,7 @@ export default function FolderViewOverlay({ onClose, onNodeOpen, refreshToken, o
                       }}>
                         #{node.id}
                       </span>
-                      <span style={{ flexShrink: 0, marginTop: '1px' }}>{getNodeIcon(node)}</span>
+                      <span style={{ flexShrink: 0, marginTop: '1px' }}>{getNodeIcon(node, dimensionIcons)}</span>
                       <div style={{
                         fontSize: '12px',
                         fontWeight: 500,

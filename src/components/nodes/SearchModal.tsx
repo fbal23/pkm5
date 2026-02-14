@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Chip from '../common/Chip';
+import { getNodeIcon } from '@/utils/nodeIcons';
+import { useDimensionIcons } from '@/context/DimensionIconsContext';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -15,9 +17,11 @@ interface NodeSuggestion {
   id: number;
   title: string;
   dimensions?: string[];
+  link?: string;
 }
 
 export default function SearchModal({ isOpen, onClose, onNodeSelect, existingFilters }: SearchModalProps) {
+  const { dimensionIcons } = useDimensionIcons();
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<NodeSuggestion[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -107,7 +111,8 @@ export default function SearchModal({ isOpen, onClose, onNodeSelect, existingFil
           const nodeSuggestions: NodeSuggestion[] = result.data.map((node: any) => ({
             id: node.id,
             title: node.title,
-            dimensions: node.dimensions || []
+            dimensions: node.dimensions || [],
+            link: node.link || undefined,
           }));
           
           setSuggestions(nodeSuggestions);
@@ -202,7 +207,8 @@ export default function SearchModal({ isOpen, onClose, onNodeSelect, existingFil
                 onMouseEnter={() => setSelectedIndex(index)}
                 className={`search-result-item ${index === selectedIndex ? 'selected' : ''}`}
               >
-                <span className="result-id">#{suggestion.id}</span>
+                <span className="result-id">{suggestion.id}</span>
+                <span className="result-icon">{getNodeIcon(suggestion as any, dimensionIcons, 14)}</span>
                 <span className="result-title">{suggestion.title}</span>
                 {index === selectedIndex && (
                   <span className="result-hint">↵</span>
@@ -345,6 +351,12 @@ export default function SearchModal({ isOpen, onClose, onNodeSelect, existingFil
           flex-shrink: 0;
         }
         
+        .result-icon {
+          display: flex;
+          align-items: center;
+          flex-shrink: 0;
+        }
+
         .result-title {
           flex: 1;
           color: #e5e5e5;

@@ -78,6 +78,7 @@ const updateNodeInputSchema = {
   id: z.number().int().positive().describe('Node ID'),
   updates: z.object({
     title: z.string().optional().describe('New title'),
+    description: z.string().optional().describe('New description (overwrites existing)'),
     content: z.string().optional().describe('Content to APPEND'),
     link: z.string().optional().describe('New link'),
     dimensions: z.array(z.string()).optional().describe('New dimensions (replaces existing)'),
