@@ -3,19 +3,18 @@ export interface Node {
   id: number;
   title: string;
   description?: string;
-  notes?: string;           // Consolidated content from description + abstract + notes
+  notes?: string;             // User's notes/thoughts about this node
   link?: string;
-  event_date?: string;
+  event_date?: string | null; // When the thing actually happened (ISO 8601)
   dimensions: string[];       // Flexible dimensions replacing type + stage + segment + tags
   embedding?: Buffer;         // Node-level embedding (BLOB data)
   chunk?: string;
-  metadata?: any;            // Flexible metadata storage from extras + chunk_status + sub_type
+  metadata?: any;            // Flexible metadata storage
   created_at: string;
   updated_at: string;
-        // Legacy pin flag (read-only, slated for removal)
   edge_count?: number;       // Derived count of edges, included in some queries
 
-  // Optional embedding fields (restored from migration)
+  // Optional embedding fields
   embedding_updated_at?: string;
   embedding_text?: string;
   chunk_status?: 'not_chunked' | 'chunking' | 'chunked' | 'error' | null;
@@ -72,6 +71,10 @@ export interface NodeFilters {
   offset?: number;
   sortBy?: 'updated' | 'edges' | 'created';  // Sort by updated_at, edge count, or created_at
   dimensionsMatch?: 'any' | 'all';  // 'any' = OR (default), 'all' = AND
+  createdAfter?: string;     // ISO date (YYYY-MM-DD) — nodes created on or after
+  createdBefore?: string;    // ISO date (YYYY-MM-DD) — nodes created before
+  eventAfter?: string;       // ISO date (YYYY-MM-DD) — nodes with event_date on or after
+  eventBefore?: string;      // ISO date (YYYY-MM-DD) — nodes with event_date before
 }
 
 export interface ChunkData {
@@ -118,6 +121,7 @@ export interface DatabaseError {
 export interface Dimension {
   name: string;
   description?: string | null;
+  icon?: string | null;
   is_priority: boolean;
   updated_at: string;
 }

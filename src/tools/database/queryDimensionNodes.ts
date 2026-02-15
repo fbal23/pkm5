@@ -5,7 +5,7 @@ import { formatNodeForChat } from '../infrastructure/nodeFormatter';
 import type { Node } from '@/types/database';
 
 export const queryDimensionNodesTool = tool({
-  description: 'Query all nodes within a specific dimension. Returns nodes sorted by edge count (most connected first).',
+  description: 'Get nodes in a dimension, sorted by connection count.',
   inputSchema: z.object({
     dimension: z.string().describe('The dimension name to query nodes from'),
     limit: z.number().optional().default(20).describe('Maximum number of nodes to return (default: 20)'),
@@ -43,6 +43,9 @@ export const queryDimensionNodesTool = tool({
           }),
           edgeCount: node.edge_count || 0,
           dimensions: node.dimensions || [],
+          created_at: node.created_at,
+          updated_at: node.updated_at,
+          event_date: node.event_date ?? null,
         };
 
         if (includeContent && node.notes) {

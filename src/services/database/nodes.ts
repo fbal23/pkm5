@@ -10,15 +10,16 @@ export class NodeService {
   // PostgreSQL path removed in SQLite-only consolidation
 
   private async getNodesSQLite(filters: NodeFilters = {}): Promise<Node[]> {
-    const { dimensions, search, limit = 100, offset = 0, sortBy, dimensionsMatch = 'any' } = filters;
+    const { dimensions, search, limit = 100, offset = 0, sortBy, dimensionsMatch = 'any',
+            createdAfter, createdBefore, eventAfter, eventBefore } = filters;
     const sqlite = getSQLiteClient();
     
     // Use nodes_v view for array-like dimensions behavior (exclude embedding BLOB for performance)
     let query = `
-      SELECT n.id, n.title, n.description, n.notes, n.link, n.event_date, n.metadata, n.chunk, 
+      SELECT n.id, n.title, n.description, n.notes, n.link, n.event_date, n.metadata, n.chunk,
              n.chunk_status, n.embedding_updated_at, n.embedding_text,
              n.created_at, n.updated_at,
-             COALESCE((SELECT JSON_GROUP_ARRAY(d.dimension) 
+             COALESCE((SELECT JSON_GROUP_ARRAY(d.dimension)
                        FROM node_dimensions d WHERE d.node_id = n.id), '[]') as dimensions_json,
              (SELECT COUNT(*) FROM edges WHERE from_node_id = n.id OR to_node_id = n.id) as edge_count
       FROM nodes n
@@ -47,15 +48,33 @@ export class NodeService {
       }
     }
 
-    // Text search in title, description, and content (SQLite LIKE with COLLATE NOCASE)
+    // Text search in title, description, and notes (SQLite LIKE with COLLATE NOCASE)
     if (search) {
       query += ` AND (n.title LIKE ? COLLATE NOCASE OR n.description LIKE ? COLLATE NOCASE OR n.notes LIKE ? COLLATE NOCASE)`;
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
+    // Temporal filters
+    if (createdAfter) {
+      query += ` AND n.created_at >= ?`;
+      params.push(createdAfter);
+    }
+    if (createdBefore) {
+      query += ` AND n.created_at < ?`;
+      params.push(createdBefore);
+    }
+    if (eventAfter) {
+      query += ` AND n.event_date >= ?`;
+      params.push(eventAfter);
+    }
+    if (eventBefore) {
+      query += ` AND n.event_date < ?`;
+      params.push(eventBefore);
+    }
+
     // Sorting logic
     if (search) {
-      // For search queries, prioritize by relevance: exact title → starts with → contains in title → description → content
+      // For search queries, prioritize by relevance: exact title → starts with → contains in title → description → notes
       query += ` ORDER BY
         CASE WHEN LOWER(n.title) = LOWER(?) THEN 1 ELSE 6 END,
         CASE WHEN LOWER(n.title) LIKE LOWER(?) THEN 2 ELSE 6 END,
@@ -68,7 +87,7 @@ export class NodeService {
         `${search}%`,     // Starts with search term
         `%${search}%`,    // Contains in title
         `%${search}%`,    // Contains in description
-        `%${search}%`     // Contains in content
+        `%${search}%`     // Contains in notes
       );
     } else if (sortBy === 'edges') {
       // Sort by edge count (most connected first)

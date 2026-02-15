@@ -10,7 +10,11 @@ export const queryNodesTool = tool({
     filters: z.object({
       dimensions: z.array(z.string()).describe('Filter by dimensions (e.g., ["research", "ai", "technology"]). Replaces old type/stage filtering.').optional(),
       search: z.string().describe('Search term to match against title or notes').optional(),
-      limit: z.number().min(1).max(50).default(10).describe('Maximum number of results to return')
+      limit: z.number().min(1).max(50).default(10).describe('Maximum number of results to return'),
+      createdAfter: z.string().optional().describe('ISO date (YYYY-MM-DD). Only return nodes created on or after this date.'),
+      createdBefore: z.string().optional().describe('ISO date (YYYY-MM-DD). Only return nodes created before this date.'),
+      eventAfter: z.string().optional().describe('ISO date (YYYY-MM-DD). Only return nodes with event_date on or after this date.'),
+      eventBefore: z.string().optional().describe('ISO date (YYYY-MM-DD). Only return nodes with event_date before this date.'),
     }).optional()
   }),
   execute: async ({ filters = {} }) => {
@@ -47,6 +51,9 @@ export const queryNodesTool = tool({
               id: node.id,
               title: node.title,
               dimensions: node.dimensions || [],
+              created_at: node.created_at,
+              updated_at: node.updated_at,
+              event_date: node.event_date ?? null,
               formatted_display: formatted,
             }],
             count: 1,
@@ -65,7 +72,11 @@ export const queryNodesTool = tool({
       const nodesPromise: Promise<Node[] | undefined> = nodeService.getNodes({
         limit,
         dimensions: filters.dimensions,
-        search: filters.search
+        search: filters.search,
+        createdAfter: filters.createdAfter,
+        createdBefore: filters.createdBefore,
+        eventAfter: filters.eventAfter,
+        eventBefore: filters.eventBefore,
       });
 
       const nodes = await Promise.race<Node[] | undefined>([nodesPromise, timeoutPromise]);
@@ -85,6 +96,9 @@ export const queryNodesTool = tool({
           id: node.id,
           title: node.title,
           dimensions: node.dimensions || [],
+          created_at: node.created_at,
+          updated_at: node.updated_at,
+          event_date: node.event_date ?? null,
           formatted_display: formatted
         };
       });
