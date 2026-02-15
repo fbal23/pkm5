@@ -60,8 +60,7 @@ function initDatabase() {
         embedding BLOB,
         embedding_updated_at TEXT,
         embedding_text TEXT,
-        chunk_status TEXT DEFAULT 'not_chunked',
-        is_pinned INTEGER DEFAULT 0
+        chunk_status TEXT DEFAULT 'not_chunked'
       );
 
       CREATE TABLE IF NOT EXISTS edges (
@@ -71,7 +70,6 @@ function initDatabase() {
         source TEXT,
         created_at TEXT,
         context TEXT,
-        
         FOREIGN KEY (from_node_id) REFERENCES nodes(id) ON DELETE CASCADE,
         FOREIGN KEY (to_node_id) REFERENCES nodes(id) ON DELETE CASCADE
       );
@@ -89,6 +87,8 @@ function initDatabase() {
 
       CREATE TABLE IF NOT EXISTS dimensions (
         name TEXT PRIMARY KEY,
+        description TEXT,
+        icon TEXT,
         is_priority INTEGER DEFAULT 0,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       );

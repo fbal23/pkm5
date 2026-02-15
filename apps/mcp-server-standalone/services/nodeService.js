@@ -91,37 +91,60 @@ function getNodeById(id) {
 }
 
 /**
+ * Sanitize title — strip extraction artifacts.
+ */
+function sanitizeTitle(title) {
+  let clean = title.trim();
+  if (clean.startsWith('Title: ')) clean = clean.slice(7);
+  if (clean.endsWith(' / X')) clean = clean.slice(0, -4);
+  clean = clean.replace(/\s+/g, ' ');
+  return clean.slice(0, 160);
+}
+
+/**
  * Create a new node.
  */
 function createNode(nodeData) {
   const {
-    title,
+    title: rawTitle,
     description,
     notes,
     link,
-    type,
+    event_date,
     dimensions = [],
     chunk,
     metadata = {}
   } = nodeData;
 
+  const title = sanitizeTitle(rawTitle);
+
   const now = new Date().toISOString();
   const db = getDb();
 
+  // Build chunk fallback from available fields when no explicit chunk provided
+  let chunkToStore = chunk ?? null;
+  if (!chunkToStore || !chunkToStore.trim()) {
+    const fallbackParts = [title, description, notes].filter(Boolean);
+    const fallback = fallbackParts.join('\n\n').trim();
+    if (fallback) {
+      chunkToStore = fallback;
+    }
+  }
+
   const nodeId = transaction(() => {
     const stmt = db.prepare(`
-      INSERT INTO nodes (title, description, notes, link, type, metadata, chunk, created_at, updated_at)
+      INSERT INTO nodes (title, description, notes, link, event_date, metadata, chunk, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
       title,
       description ?? null,
-      content ?? null,
+      notes ?? null,
       link ?? null,
-      type ?? null,
+      event_date ?? null,
       JSON.stringify(metadata),
-      chunk ?? null,
+      chunkToStore,
       now,
       now
     );
@@ -146,11 +169,11 @@ function createNode(nodeData) {
 
 /**
  * Update an existing node.
- * Note: content is APPENDED by default (MCP tool behavior), not replaced.
+ * Note: notes is APPENDED by default (MCP tool behavior), not replaced.
  */
 function updateNode(id, updates, options = {}) {
   const { appendNotes = true } = options;
-  const { title, description, notes, link, type, dimensions, chunk, metadata } = updates;
+  const { title, description, notes, link, event_date, dimensions, chunk, metadata } = updates;
   const now = new Date().toISOString();
   const db = getDb();
 
@@ -172,23 +195,23 @@ function updateNode(id, updates, options = {}) {
       setFields.push('description = ?');
       params.push(description);
     }
-    if (content !== undefined) {
+    if (notes !== undefined) {
       if (appendNotes && existing.notes) {
-        // Append to existing content
-        setFields.push('content = ?');
-        params.push(existing.notes + '\n\n' + content);
+        // Append to existing notes
+        setFields.push('notes = ?');
+        params.push(existing.notes + '\n\n' + notes);
       } else {
-        setFields.push('content = ?');
-        params.push(content);
+        setFields.push('notes = ?');
+        params.push(notes);
       }
     }
     if (link !== undefined) {
       setFields.push('link = ?');
       params.push(link);
     }
-    if (type !== undefined) {
-      setFields.push('type = ?');
-      params.push(type);
+    if (event_date !== undefined) {
+      setFields.push('event_date = ?');
+      params.push(event_date);
     }
     if (chunk !== undefined) {
       setFields.push('chunk = ?');

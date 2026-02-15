@@ -446,9 +446,16 @@ mcpServer.registerTool(
       throw new McpError(ErrorCode.InvalidParams, 'At least one field must be provided in updates.');
     }
 
+    // Map MCP 'content' field → internal 'notes' field
+    const mappedUpdates = { ...updates };
+    if (mappedUpdates.content !== undefined) {
+      mappedUpdates.notes = mappedUpdates.content;
+      delete mappedUpdates.content;
+    }
+
     const result = await callRaHApi(`/api/nodes/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(updates)
+      body: JSON.stringify(mappedUpdates)
     });
 
     const node = result.node || result.data;
@@ -485,7 +492,7 @@ mcpServer.registerTool(
           nodes.push({
             id: result.node.id,
             title: result.node.title,
-            content: result.node.content ?? null,
+            notes: result.node.notes ?? null,
             link: result.node.link ?? null,
             dimensions: result.node.dimensions || [],
             updated_at: result.node.updated_at

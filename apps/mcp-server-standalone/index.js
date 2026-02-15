@@ -40,25 +40,31 @@ const serverInfo = {
   version: '1.4.1'
 };
 
-const instructions = [
-  "RA-H is the user's personal knowledge graph — local SQLite, fully on-device.",
-  'Call rah_get_context first for a quick orientation (stats, hubs, dimensions).',
-  'For simple tasks (add a node, search), the tool descriptions have everything you need — just execute.',
-  'For complex or ambiguous tasks, also call rah_read_guide("start-here") for full graph understanding.',
-  'Knowledge capture: after substantive exchanges, offer to save valuable information.',
-  'Triggers: a new insight emerges, a decision is made, a person/entity/concept is discussed in depth, research or references are shared, a connection to existing knowledge surfaces.',
-  'When offering, propose a specific node — title, dimensions, one-line description — so the user can approve with minimal friction.',
-  'Don\'t ask "should I save this?" — instead say "I\'d add this as: [title] in [dimensions] — want me to?"',
-  'Search before creating to avoid duplicates.',
-  'All data stays on this device.'
-].join(' ');
+function buildInstructions() {
+  const now = new Date().toISOString().split('T')[0];
+  return [
+    `Today's date: ${now}.`,
+    "RA-H is the user's personal knowledge graph — local SQLite, fully on-device.",
+    'Call rah_get_context first for a quick orientation (stats, hubs, dimensions).',
+    'For simple tasks (add a node, search), the tool descriptions have everything you need — just execute.',
+    'For complex or ambiguous tasks, also call rah_read_guide("start-here") for full graph understanding.',
+    'Knowledge capture: after substantive exchanges, offer to save valuable information.',
+    'Triggers: a new insight emerges, a decision is made, a person/entity/concept is discussed in depth, research or references are shared, a connection to existing knowledge surfaces.',
+    'When offering, propose a specific node — title, dimensions, and a concrete description (WHAT it is + WHY it matters, no vague "discusses/explores") — so the user can approve with minimal friction.',
+    'Don\'t ask "should I save this?" — instead say "I\'d add this as: [title] in [dimensions] — want me to?"',
+    'Search before creating to avoid duplicates.',
+    'All data stays on this device.'
+  ].join(' ');
+}
+
+const instructions = buildInstructions();
 
 // Tool schemas
 const addNodeInputSchema = {
   title: z.string().min(1).max(160).describe('Clear, descriptive title'),
   content: z.string().max(20000).optional().describe('Node content/notes'),
   link: z.string().url().optional().describe('Source URL'),
-  description: z.string().max(2000).optional().describe('One-sentence summary. Helps search and AI understanding.'),
+  description: z.string().max(2000).optional().describe('One-sentence summary: WHAT this is (explicit, concrete) + WHY it matters. No weak verbs (discusses, explores, examines). Example: "Podcast — Lex Fridman interviews Sam Altman on AGI timelines. First public comments since board drama."'),
   dimensions: z.array(z.string()).min(1).max(5).describe('1-5 categories. Call rah_list_dimensions first to use existing ones.'),
   metadata: z.record(z.any()).optional().describe('Additional metadata'),
   chunk: z.string().max(50000).optional().describe('Full source text')
@@ -67,7 +73,11 @@ const addNodeInputSchema = {
 const searchNodesInputSchema = {
   query: z.string().min(1).max(400).describe('Search query'),
   limit: z.number().min(1).max(25).optional().describe('Max results (default 10)'),
-  dimensions: z.array(z.string()).max(5).optional().describe('Filter by dimensions')
+  dimensions: z.array(z.string()).max(5).optional().describe('Filter by dimensions'),
+  created_after: z.string().optional().describe('ISO date (YYYY-MM-DD). Only return nodes created on or after this date.'),
+  created_before: z.string().optional().describe('ISO date (YYYY-MM-DD). Only return nodes created before this date.'),
+  event_after: z.string().optional().describe('ISO date (YYYY-MM-DD). Only return nodes with event_date on or after this date.'),
+  event_before: z.string().optional().describe('ISO date (YYYY-MM-DD). Only return nodes with event_date before this date.')
 };
 
 const getNodesInputSchema = {
@@ -300,6 +310,7 @@ async function main() {
     {
       title: 'Add RA-H node',
       description: 'Create a new node. Always search first (rah_search_nodes) to avoid duplicates. Title: max 160 chars, clear and descriptive. Use "link" ONLY for external content (URL, video, article) — omit for synthesis/ideas derived from existing nodes. "content" = your notes/analysis. "chunk" = verbatim source text. "description" = one-sentence summary for search. Assign 1-5 dimensions — call rah_list_dimensions first to use existing ones.',
+      // Note: MCP schema uses "content" for external API compat; mapped to "notes" internally
       inputSchema: addNodeInputSchema
     },
     async ({ title, content, link, description, dimensions, metadata, chunk }) => {
@@ -337,13 +348,23 @@ async function main() {
     {
       title: 'Search RA-H nodes',
       description: 'Search nodes by keyword across title, description, and content fields. Multi-word queries find nodes containing all words (not exact phrases). Returns up to 25 results (default 10). Call before creating nodes to check for duplicates. Optionally filter by dimensions.',
+      // Note: searches across title, description, and notes columns
       inputSchema: searchNodesInputSchema
     },
-    async ({ query: searchQuery, limit = 10, dimensions }) => {
+    async ({ query: searchQuery, limit = 10, dimensions, created_after, created_before, event_after, event_before }) => {
       const normalizedDimensions = sanitizeDimensions(dimensions || []);
       const safeLimit = Math.min(Math.max(limit, 1), 25);
       const trimmedQuery = searchQuery.trim();
       const fts = checkFtsAvailability();
+
+      // Build temporal filter clauses
+      const temporalClauses = [];
+      const temporalParams = [];
+      if (created_after) { temporalClauses.push('n.created_at >= ?'); temporalParams.push(created_after); }
+      if (created_before) { temporalClauses.push('n.created_at < ?'); temporalParams.push(created_before); }
+      if (event_after) { temporalClauses.push('n.event_date >= ?'); temporalParams.push(event_after); }
+      if (event_before) { temporalClauses.push('n.event_date < ?'); temporalParams.push(event_before); }
+      const temporalSQL = temporalClauses.length > 0 ? temporalClauses.map(c => `AND ${c}`).join(' ') : '';
 
       let nodes = null;
 
@@ -359,7 +380,8 @@ async function main() {
                 WITH fts_matches AS (
                   SELECT rowid, rank FROM nodes_fts WHERE nodes_fts MATCH ? LIMIT 100
                 )
-                SELECT n.id, n.title, n.description, n.notes, n.link, n.updated_at,
+                SELECT n.id, n.title, n.description, n.notes, n.link,
+                       n.created_at, n.updated_at, n.event_date,
                        COALESCE((SELECT JSON_GROUP_ARRAY(d.dimension)
                                  FROM node_dimensions d WHERE d.node_id = n.id), '[]') as dimensions_json
                 FROM fts_matches fm
@@ -369,23 +391,26 @@ async function main() {
                   WHERE nd.node_id = n.id
                   AND nd.dimension IN (${normalizedDimensions.map(() => '?').join(',')})
                 )
+                ${temporalSQL}
                 ORDER BY fm.rank
                 LIMIT ?
               `;
-              params = [ftsQuery, ...normalizedDimensions, safeLimit];
+              params = [ftsQuery, ...normalizedDimensions, ...temporalParams, safeLimit];
             } else {
               sql = `
                 WITH fts_matches AS (
                   SELECT rowid, rank FROM nodes_fts WHERE nodes_fts MATCH ? LIMIT ?
                 )
-                SELECT n.id, n.title, n.description, n.notes, n.link, n.updated_at,
+                SELECT n.id, n.title, n.description, n.notes, n.link,
+                       n.created_at, n.updated_at, n.event_date,
                        COALESCE((SELECT JSON_GROUP_ARRAY(d.dimension)
                                  FROM node_dimensions d WHERE d.node_id = n.id), '[]') as dimensions_json
                 FROM fts_matches fm
                 JOIN nodes n ON n.id = fm.rowid
+                ${temporalSQL ? 'WHERE ' + temporalClauses.join(' AND ') : ''}
                 ORDER BY fm.rank
               `;
-              params = [ftsQuery, safeLimit];
+              params = [ftsQuery, safeLimit, ...temporalParams];
             }
 
             const rows = query(sql, params);
@@ -396,7 +421,9 @@ async function main() {
               description: row.description ?? null,
               link: row.link ?? null,
               dimensions: JSON.parse(row.dimensions_json || '[]'),
-              updated_at: row.updated_at
+              created_at: row.created_at,
+              updated_at: row.updated_at,
+              event_date: row.event_date ?? null
             }));
           } catch (err) {
             log('FTS search failed, falling back to LIKE:', err.message);
@@ -410,7 +437,8 @@ async function main() {
         const words = trimmedQuery.split(/\s+/).filter(w => w.length > 0);
 
         let sql = `
-          SELECT n.id, n.title, n.description, n.notes, n.link, n.updated_at,
+          SELECT n.id, n.title, n.description, n.notes, n.link,
+                 n.created_at, n.updated_at, n.event_date,
                  COALESCE((SELECT JSON_GROUP_ARRAY(d.dimension)
                            FROM node_dimensions d WHERE d.node_id = n.id), '[]') as dimensions_json
           FROM nodes n
@@ -432,6 +460,12 @@ async function main() {
           params.push(...normalizedDimensions);
         }
 
+        // Temporal filters
+        if (temporalSQL) {
+          sql += ` ${temporalSQL}`;
+          params.push(...temporalParams);
+        }
+
         sql += ` ORDER BY n.updated_at DESC LIMIT ?`;
         params.push(safeLimit);
 
@@ -443,7 +477,9 @@ async function main() {
           description: row.description ?? null,
           link: row.link ?? null,
           dimensions: JSON.parse(row.dimensions_json || '[]'),
-          updated_at: row.updated_at
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          event_date: row.event_date ?? null
         }));
       }
 
@@ -493,7 +529,9 @@ async function main() {
             chunk_length: rawChunk ? rawChunk.length : 0,
             dimensions: node.dimensions || [],
             metadata: node.metadata ?? null,
-            updated_at: node.updated_at
+            created_at: node.created_at,
+            updated_at: node.updated_at,
+            event_date: node.event_date ?? null
           });
         }
       }
@@ -512,7 +550,7 @@ async function main() {
     'rah_update_node',
     {
       title: 'Update RA-H node',
-      description: 'Update an existing node. Content is APPENDED to existing content (not replaced). Dimensions are REPLACED entirely with the new array. Title, description, and link are overwritten.',
+      description: 'Update an existing node. Content is APPENDED to existing notes (not replaced). Dimensions are REPLACED entirely with the new array. Title, description, and link are overwritten.',
       inputSchema: updateNodeInputSchema
     },
     async ({ id, updates }) => {
@@ -520,12 +558,13 @@ async function main() {
         throw new Error('At least one field must be provided in updates.');
       }
 
-      // Map external 'content' param to internal 'notes'
+      // Map MCP 'content' field → internal 'notes' field
       const mappedUpdates = { ...updates };
       if (mappedUpdates.content !== undefined) {
         mappedUpdates.notes = mappedUpdates.content;
         delete mappedUpdates.content;
       }
+
       const node = nodeService.updateNode(id, mappedUpdates, { appendNotes: true });
 
       return {

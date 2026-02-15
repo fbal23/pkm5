@@ -10,9 +10,12 @@ const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio
 const packageJson = require('../../package.json');
 
 const instructions = [
-  'Use rah.add_node to summarize conversations or files into nodes with dimensions.',
-  'Use rah.search_nodes to recall prior notes before you suggest creating new ones.',
-  'All operations happen locally on this device; data never leaves 127.0.0.1.'
+  'RA-H is a personal knowledge graph — local-first, vendor-neutral.',
+  'Core concepts: nodes (knowledge units), edges (connections with explanations), dimensions (categories).',
+  'Always call rah_get_context first to orient yourself — it returns hub nodes, dimensions, stats, and available guides.',
+  'Search before creating: use rah_search_nodes to check if content already exists.',
+  'Every edge needs an explanation: why does this connection exist?',
+  'All data stays local on this device; nothing leaves 127.0.0.1.',
 ].join(' ');
 
 const serverInfo = {
@@ -202,6 +205,45 @@ const searchEmbeddingsOutputSchema = {
   )
 };
 
+// rah_extract_url schemas
+const extractUrlInputSchema = {
+  url: z.string().url().describe('URL of the webpage to extract content from')
+};
+
+const extractUrlOutputSchema = {
+  success: z.boolean(),
+  title: z.string(),
+  content: z.string(),
+  chunk: z.string(),
+  metadata: z.record(z.any())
+};
+
+// rah_extract_youtube schemas
+const extractYoutubeInputSchema = {
+  url: z.string().describe('YouTube video URL to extract transcript from')
+};
+
+const extractYoutubeOutputSchema = {
+  success: z.boolean(),
+  title: z.string(),
+  channel: z.string(),
+  transcript: z.string(),
+  metadata: z.record(z.any())
+};
+
+// rah_extract_pdf schemas
+const extractPdfInputSchema = {
+  url: z.string().url().describe('URL of the PDF file to extract content from')
+};
+
+const extractPdfOutputSchema = {
+  success: z.boolean(),
+  title: z.string(),
+  content: z.string(),
+  chunk: z.string(),
+  metadata: z.record(z.any())
+};
+
 const server = new McpServer(serverInfo, { instructions });
 
 function logError(...args) {
@@ -375,9 +417,16 @@ server.registerTool(
       throw new Error('At least one field must be provided in updates.');
     }
 
+    // Map MCP 'content' field → internal 'notes' field
+    const mappedUpdates = { ...updates };
+    if (mappedUpdates.content !== undefined) {
+      mappedUpdates.notes = mappedUpdates.content;
+      delete mappedUpdates.content;
+    }
+
     const result = await callRaHApi(`/api/nodes/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(updates)
+      body: JSON.stringify(mappedUpdates)
     });
 
     const node = result.node || result.data;
@@ -414,7 +463,7 @@ server.registerTool(
           nodes.push({
             id: result.node.id,
             title: result.node.title,
-            content: result.node.content ?? null,
+            notes: result.node.notes ?? null,
             link: result.node.link ?? null,
             dimensions: result.node.dimensions || [],
             updated_at: result.node.updated_at
@@ -650,6 +699,171 @@ server.registerTool(
           chunkPreview: (r.chunk || r.notes || '').slice(0, 200),
           similarity: r.similarity || r.score || 0
         }))
+      }
+    };
+  }
+);
+
+server.registerTool(
+  'rah_extract_url',
+  {
+    title: 'Extract URL content',
+    description: 'Extract content from a webpage URL. Returns title, content, and metadata for creating nodes.',
+    inputSchema: extractUrlInputSchema,
+    outputSchema: extractUrlOutputSchema
+  },
+  async ({ url }) => {
+    const result = await callRaHApi('/api/extract/url', {
+      method: 'POST',
+      body: JSON.stringify({ url })
+    });
+
+    const summary = `Extracted content from: ${result.title || 'webpage'}`;
+    return {
+      content: [{ type: 'text', text: summary }],
+      structuredContent: {
+        success: true,
+        title: result.title || 'Untitled',
+        content: result.content || '',
+        chunk: result.chunk || '',
+        metadata: result.metadata || {}
+      }
+    };
+  }
+);
+
+server.registerTool(
+  'rah_extract_youtube',
+  {
+    title: 'Extract YouTube transcript',
+    description: 'Extract transcript from a YouTube video. Returns title, channel, transcript, and metadata.',
+    inputSchema: extractYoutubeInputSchema,
+    outputSchema: extractYoutubeOutputSchema
+  },
+  async ({ url }) => {
+    const result = await callRaHApi('/api/extract/youtube', {
+      method: 'POST',
+      body: JSON.stringify({ url })
+    });
+
+    const summary = `Extracted transcript from: ${result.title || 'YouTube video'}`;
+    return {
+      content: [{ type: 'text', text: summary }],
+      structuredContent: {
+        success: true,
+        title: result.title || 'Untitled',
+        channel: result.channel || 'Unknown',
+        transcript: result.transcript || '',
+        metadata: result.metadata || {}
+      }
+    };
+  }
+);
+
+server.registerTool(
+  'rah_extract_pdf',
+  {
+    title: 'Extract PDF content',
+    description: 'Extract content from a PDF file URL. Returns title, content, and metadata for creating nodes.',
+    inputSchema: extractPdfInputSchema,
+    outputSchema: extractPdfOutputSchema
+  },
+  async ({ url }) => {
+    const result = await callRaHApi('/api/extract/pdf', {
+      method: 'POST',
+      body: JSON.stringify({ url })
+    });
+
+    const summary = `Extracted content from: ${result.title || 'PDF document'}`;
+    return {
+      content: [{ type: 'text', text: summary }],
+      structuredContent: {
+        success: true,
+        title: result.title || 'Untitled PDF',
+        content: result.content || '',
+        chunk: result.chunk || '',
+        metadata: result.metadata || {}
+      }
+    };
+  }
+);
+
+// rah_get_context — orientation tool for external agents
+const getContextOutputSchema = {
+  schema: z.object({
+    nodeCount: z.number(),
+    edgeCount: z.number(),
+    dimensionCount: z.number()
+  }),
+  hubNodes: z.array(z.object({
+    id: z.number(),
+    title: z.string(),
+    description: z.string().nullable(),
+    edgeCount: z.number()
+  })),
+  dimensions: z.array(z.object({
+    name: z.string(),
+    nodeCount: z.number(),
+    description: z.string().nullable()
+  })),
+  guides: z.array(z.string())
+};
+
+server.registerTool(
+  'rah_get_context',
+  {
+    title: 'Get RA-H context',
+    description: 'Get orientation context: hub nodes, dimensions, stats, and available guides. Call this first.',
+    inputSchema: {},
+    outputSchema: getContextOutputSchema
+  },
+  async () => {
+    // Fetch hub nodes (top 5 most-connected)
+    const hubResult = await callRaHApi('/api/nodes?sortBy=edges&limit=5', { method: 'GET' });
+    const hubNodes = Array.isArray(hubResult.data) ? hubResult.data.map(n => ({
+      id: n.id,
+      title: n.title,
+      description: n.description ?? null,
+      edgeCount: n.edge_count ?? 0
+    })) : [];
+
+    // Fetch dimensions
+    const dimResult = await callRaHApi('/api/dimensions', { method: 'GET' });
+    const dimensions = Array.isArray(dimResult.data) ? dimResult.data.map(d => ({
+      name: d.name,
+      nodeCount: d.node_count ?? 0,
+      description: d.description ?? null
+    })) : [];
+
+    // Fetch guides
+    const guideResult = await callRaHApi('/api/guides', { method: 'GET' });
+    const guides = Array.isArray(guideResult.data) ? guideResult.data.map(g => g.name) : [];
+
+    // Get counts
+    const nodeCount = hubNodes.length > 0 ? undefined : 0;
+    const stats = {
+      nodeCount: nodeCount ?? hubNodes.reduce((_, n) => 0, 0),
+      edgeCount: 0,
+      dimensionCount: dimensions.length
+    };
+
+    // Try to get actual counts from a stats endpoint or compute
+    try {
+      const countResult = await callRaHApi('/api/nodes?limit=1', { method: 'GET' });
+      if (countResult.total !== undefined) {
+        stats.nodeCount = countResult.total;
+      }
+    } catch { /* use defaults */ }
+
+    const summary = `Knowledge graph: ${stats.dimensionCount} dimensions, ${hubNodes.length} hub nodes. ${guides.length} guides available.`;
+
+    return {
+      content: [{ type: 'text', text: summary }],
+      structuredContent: {
+        schema: stats,
+        hubNodes,
+        dimensions,
+        guides
       }
     };
   }
