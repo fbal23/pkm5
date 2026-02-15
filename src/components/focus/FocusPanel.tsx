@@ -2610,7 +2610,7 @@ export default function FocusPanel({ openTabs, activeTab, onTabSelect, onNodeCli
                       }}>
                         {/* Sync to Source button - left side */}
                         <div>
-                          {nodesData[activeTab]?.chunk && (
+                          {nodesData[activeTab]?.notes && (
                             <button
                               onClick={() => setShowSyncConfirm(true)}
                               disabled={notesSaving || syncing}
