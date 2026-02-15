@@ -70,7 +70,8 @@ export interface NodeFilters {
   search?: string;           // Text search in title/content
   limit?: number;
   offset?: number;
-  sortBy?: 'updated' | 'edges';  // Sort by updated_at or edge count
+  sortBy?: 'updated' | 'edges' | 'created';  // Sort by updated_at, edge count, or created_at
+  dimensionsMatch?: 'any' | 'all';  // 'any' = OR (default), 'all' = AND
 }
 
 export interface ChunkData {

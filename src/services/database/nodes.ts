@@ -10,7 +10,7 @@ export class NodeService {
   // PostgreSQL path removed in SQLite-only consolidation
 
   private async getNodesSQLite(filters: NodeFilters = {}): Promise<Node[]> {
-    const { dimensions, search, limit = 100, offset = 0, sortBy } = filters;
+    const { dimensions, search, limit = 100, offset = 0, sortBy, dimensionsMatch = 'any' } = filters;
     const sqlite = getSQLiteClient();
     
     // Use nodes_v view for array-like dimensions behavior (exclude embedding BLOB for performance)
@@ -28,12 +28,23 @@ export class NodeService {
 
     // Filter by dimensions (SQLite JOIN with node_dimensions)
     if (dimensions && dimensions.length > 0) {
-      query += ` AND EXISTS (
-        SELECT 1 FROM node_dimensions nd 
-        WHERE nd.node_id = n.id 
-        AND nd.dimension IN (${dimensions.map(() => '?').join(',')})
-      )`;
-      params.push(...dimensions);
+      if (dimensionsMatch === 'all' && dimensions.length > 1) {
+        // AND logic: node must have ALL specified dimensions
+        query += ` AND (
+          SELECT COUNT(DISTINCT nd.dimension) FROM node_dimensions nd
+          WHERE nd.node_id = n.id
+          AND nd.dimension IN (${dimensions.map(() => '?').join(',')})
+        ) = ?`;
+        params.push(...dimensions, dimensions.length);
+      } else {
+        // OR logic: node must have at least one of the specified dimensions
+        query += ` AND EXISTS (
+          SELECT 1 FROM node_dimensions nd
+          WHERE nd.node_id = n.id
+          AND nd.dimension IN (${dimensions.map(() => '?').join(',')})
+        )`;
+        params.push(...dimensions);
+      }
     }
 
     // Text search in title, description, and content (SQLite LIKE with COLLATE NOCASE)
@@ -62,6 +73,8 @@ export class NodeService {
     } else if (sortBy === 'edges') {
       // Sort by edge count (most connected first)
       query += ' ORDER BY edge_count DESC, n.updated_at DESC';
+    } else if (sortBy === 'created') {
+      query += ' ORDER BY n.created_at DESC';
     } else {
       query += ' ORDER BY n.updated_at DESC';
     }

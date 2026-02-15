@@ -25,10 +25,24 @@ export async function GET(request: NextRequest) {
       filters.dimensions = dimensionsParam.split(',').map(dim => dim.trim()).filter(Boolean);
     }
 
-    // Handle sortBy parameter
+    // Handle dimensionsMatch parameter (any|all)
+    const dimensionsMatchParam = searchParams.get('dimensionsMatch');
+    if (dimensionsMatchParam === 'all') {
+      filters.dimensionsMatch = 'all';
+    }
+
+    // Handle sortBy parameter (sortBy=edges|updated|created)
     const sortByParam = searchParams.get('sortBy');
-    if (sortByParam === 'edges' || sortByParam === 'updated') {
+    if (sortByParam === 'edges' || sortByParam === 'updated' || sortByParam === 'created') {
       filters.sortBy = sortByParam;
+    }
+
+    // Also support sort=created_at|updated_at with order=asc|desc (used by feed)
+    const sortParam = searchParams.get('sort');
+    if (sortParam === 'created_at') {
+      filters.sortBy = 'created';
+    } else if (sortParam === 'updated_at') {
+      filters.sortBy = 'updated';
     }
 
     const nodes = await nodeService.getNodes(filters);
