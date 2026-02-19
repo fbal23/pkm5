@@ -132,22 +132,29 @@ export async function POST(request: NextRequest) {
       console.warn(`[DescriptionQuality] Weak description for node "${body.title}": "${nodeDescription}"`);
     }
 
-    // Auto-assign locked dimensions + keyword dimensions for all new nodes
-    const { locked, keywords } = await DimensionService.assignDimensions({
-      title: body.title,
-      notes: rawNotes || undefined,
-      link: body.link,
-      description: nodeDescription
-    });
+    let finalDimensions: string[];
 
-    // Ensure keyword dimensions exist in the database (create if new)
-    for (const keyword of keywords) {
-      await DimensionService.ensureKeywordDimension(keyword);
+    if (body.skip_dimensions) {
+      // Caller manages dimensions explicitly — skip AI assignment
+      finalDimensions = trimmedProvidedDimensions;
+    } else {
+      // Auto-assign locked dimensions + keyword dimensions for all new nodes
+      const { locked, keywords } = await DimensionService.assignDimensions({
+        title: body.title,
+        notes: rawNotes || undefined,
+        link: body.link,
+        description: nodeDescription
+      });
+
+      // Ensure keyword dimensions exist in the database (create if new)
+      for (const keyword of keywords) {
+        await DimensionService.ensureKeywordDimension(keyword);
+      }
+
+      // Combine provided, locked, and keyword dimensions, remove duplicates
+      finalDimensions = [...new Set([...trimmedProvidedDimensions, ...locked, ...keywords])]
+        .slice(0, 8); // max 8 total
     }
-
-    // Combine provided, locked, and keyword dimensions, remove duplicates
-    const finalDimensions = [...new Set([...trimmedProvidedDimensions, ...locked, ...keywords])]
-      .slice(0, 8); // max 8 total
     const rawChunk = typeof body.chunk === 'string' ? body.chunk : null;
     let chunkToStore = rawChunk;
     let chunkStatus: Node['chunk_status'];

@@ -16,12 +16,13 @@
  *                         (default: notes,clippings,references,daily)
  *   --include-root-docs   Also import root-level .md files from vault
  *   --skip-edges          Skip edge creation (Pass 2)
+ *   --clear-previous      Delete all previously imported nodes before running
  *   --dry-run             Print what would be created; no API calls
  *   --delay <ms>          Delay between node API calls in ms (default: 150)
  */
 
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
-import { join, basename, extname } from 'path';
+import { join, basename, extname, relative } from 'path';
 import matter from 'gray-matter';
 import { parseArgs } from 'util';
 
@@ -32,12 +33,13 @@ import { parseArgs } from 'util';
 interface ParsedNote {
   filePath: string;
   slug: string;          // filename without .md, used for wikilink resolution
+  sourceDir: string;     // vault subdirectory name (notes, clippings, references, daily, root)
   title: string;
   type: string;          // RA-OS node type
   notes: string;         // markdown body (displayed in UI)
   chunk: string;         // same body, for embedding
   eventDate?: string;    // ISO date
-  dimensions: string[];  // tags + domain
+  dimensions: string[];  // source dir + obsidian tags
   metadata: Record<string, unknown>;
   wikilinks: string[];   // resolved slugs found in body + frontmatter
 }
@@ -53,8 +55,9 @@ interface MigrationStats {
   nodesCreated: number;
   nodesSkipped: number;
   nodesFailed: number;
+  nodesDeleted: number;
   edgesCreated: number;
-  edgesSkipped: number;   // already existed
+  edgesSkipped: number;
   edgesFailed: number;
   unresolvedWikilinks: string[];
 }
@@ -65,7 +68,6 @@ interface MigrationStats {
 
 /** Convert a file slug to a human-readable title */
 function slugToTitle(slug: string): string {
-  // Strip trailing date suffix like -2026-02-11
   const withoutDate = slug.replace(/-\d{4}-\d{2}-\d{2}$/, '');
   return withoutDate
     .split('-')
@@ -75,8 +77,6 @@ function slugToTitle(slug: string): string {
 
 /** Strip [[wikilink]] and [[slug|label]] syntax from a title string */
 function stripWikilinks(text: string): string {
-  // [[slug|label]] → label
-  // [[slug]]       → slug (humanised)
   return text
     .replace(/\[\[([^\]|\\]+)[\\|]([^\]]+)\]\]/g, (_, _slug, label) => label.trim())
     .replace(/\[\[([^\]]+)\]\]/g, (_, slug) => slugToTitle(slug))
@@ -89,22 +89,14 @@ function extractH1(body: string): string | null {
   return match ? match[1].trim() : null;
 }
 
-/**
- * Normalise a wikilink target to a slug:
- *   "EIT Water"  → "eit-water"
- *   "hero-prins" → "hero-prins"
- */
+/** Normalise a wikilink target to a slug */
 function wikilinkToSlug(target: string): string {
   return target.trim().toLowerCase().replace(/\s+/g, '-');
 }
 
-/**
- * Extract all wikilink targets from a string.
- * Handles:  [[slug]]  [[slug|label]]  [[slug\|label]]
- */
+/** Extract all wikilink targets from a string */
 function extractWikilinks(text: string): string[] {
   const slugs: string[] = [];
-  // Match [[...]] — capture everything up to first | or \| or ]]
   const re = /\[\[([^\]|\\]+?)(?:[\\|][^\]]+?)?\]\]/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
@@ -114,11 +106,7 @@ function extractWikilinks(text: string): string[] {
   return slugs;
 }
 
-/**
- * Extract wikilinks from a frontmatter value that may be:
- *   - a string: "[[slug|Label]]"
- *   - an array: ["[[slug|Label]]", ...]
- */
+/** Extract wikilinks from a frontmatter value (string or string[]) */
 function extractFrontmatterWikilinks(value: unknown): string[] {
   if (typeof value === 'string') return extractWikilinks(value);
   if (Array.isArray(value)) {
@@ -130,11 +118,11 @@ function extractFrontmatterWikilinks(value: unknown): string[] {
 /** Map Obsidian frontmatter `type` to a RA-OS node type */
 function mapType(obsidianType: string | undefined): string {
   switch (obsidianType) {
-    case 'person':     return 'person';
-    case 'org':        return 'org';
-    case 'task':       return 'task';
-    case 'idea':       return 'idea';
-    default:           return 'note';
+    case 'person': return 'person';
+    case 'org':    return 'org';
+    case 'task':   return 'task';
+    case 'idea':   return 'idea';
+    default:       return 'note';
   }
 }
 
@@ -145,7 +133,7 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // File parsing
 // ---------------------------------------------------------------------------
 
-function parseMarkdownFile(filePath: string): ParsedNote | null {
+function parseMarkdownFile(filePath: string, vaultPath: string): ParsedNote | null {
   let raw: string;
   try {
     raw = readFileSync(filePath, 'utf-8');
@@ -157,12 +145,15 @@ function parseMarkdownFile(filePath: string): ParsedNote | null {
   try {
     parsed = matter(raw);
   } catch {
-    // Malformed YAML frontmatter — treat the whole file as plain body, no frontmatter
     parsed = { data: {}, content: raw, matter: '', stringify: () => raw } as unknown as matter.GrayMatterFile<string>;
   }
   const { data: fm, content: body } = parsed;
 
   const slug = basename(filePath, '.md');
+
+  // Source directory — first path component relative to vault root
+  const rel = relative(vaultPath, filePath);
+  const sourceDir = rel.includes('/') ? rel.split('/')[0] : 'root';
 
   // --- Title ---
   let title: string;
@@ -189,37 +180,31 @@ function parseMarkdownFile(filePath: string): ParsedNote | null {
     eventDate = String(fm.due);
   } else if (fm.date) {
     eventDate = String(fm.date);
-  } else if (fm.created && (type === 'note') && slug.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    // Daily note
+  } else if (fm.created && type === 'note' && slug.match(/^\d{4}-\d{2}-\d{2}$/)) {
     eventDate = String(fm.created);
   }
 
   // --- Dimensions ---
-  const dimensions: string[] = [];
-  if (typeof fm.domain === 'string' && fm.domain) {
-    dimensions.push(fm.domain.toLowerCase().replace(/\s+/g, '-'));
-  }
+  // Always start with the source directory as the primary tag.
+  // Also include any tags explicitly set in Obsidian frontmatter.
+  // AI-assigned dimensions are skipped (skip_dimensions: true sent to API).
+  const dimensions: string[] = [sourceDir];
+
   if (Array.isArray(fm.tags)) {
     for (const t of fm.tags) {
       if (typeof t === 'string' && t) dimensions.push(t.toLowerCase());
     }
   }
-  // Add obsidian type as a dimension for easy filtering
-  if (typeof fm.type === 'string' && fm.type) {
-    dimensions.push(fm.type.toLowerCase());
-  }
 
-  // --- Metadata (store full frontmatter) ---
+  // --- Metadata ---
   const metadata: Record<string, unknown> = {
     source: 'obsidian_import',
     obsidian: { ...fm },
     imported_at: new Date().toISOString(),
   };
 
-  // --- Wikilinks (body + frontmatter relational fields) ---
+  // --- Wikilinks ---
   const wikilinks = new Set<string>(extractWikilinks(body));
-
-  // Frontmatter fields that can contain wikilinks
   for (const field of ['attendees', 'org', 'capture-note']) {
     if (fm[field] !== undefined) {
       for (const s of extractFrontmatterWikilinks(fm[field])) {
@@ -227,13 +212,12 @@ function parseMarkdownFile(filePath: string): ParsedNote | null {
       }
     }
   }
-
-  // Remove self-reference
   wikilinks.delete(slug);
 
   return {
     filePath,
     slug,
+    sourceDir,
     title,
     type,
     notes: body.trim(),
@@ -252,26 +236,20 @@ function parseMarkdownFile(filePath: string): ParsedNote | null {
 function discoverFiles(vaultPath: string, dirs: string[], includeRootDocs: boolean): string[] {
   const files: string[] = [];
 
-  // Subdirectories
   for (const dir of dirs) {
     const dirPath = join(vaultPath, dir);
     if (!existsSync(dirPath)) {
       console.warn(`  [WARN] Directory not found, skipping: ${dirPath}`);
       continue;
     }
-    const entries = readdirSync(dirPath);
-    for (const entry of entries) {
-      if (extname(entry) === '.md') {
-        files.push(join(dirPath, entry));
-      }
+    for (const entry of readdirSync(dirPath)) {
+      if (extname(entry) === '.md') files.push(join(dirPath, entry));
     }
   }
 
-  // Root-level docs
   if (includeRootDocs) {
     const SKIP_ROOT = new Set(['README.md', 'CLAUDE.md', 'CHANGELOG.md', 'hook.md']);
-    const entries = readdirSync(vaultPath);
-    for (const entry of entries) {
+    for (const entry of readdirSync(vaultPath)) {
       if (
         extname(entry) === '.md' &&
         !SKIP_ROOT.has(entry) &&
@@ -289,14 +267,59 @@ function discoverFiles(vaultPath: string, dirs: string[], includeRootDocs: boole
 // API calls
 // ---------------------------------------------------------------------------
 
-async function createNode(
-  note: ParsedNote,
-  baseUrl: string,
-  dryRun: boolean
-): Promise<number | null> {
+async function clearPreviousImport(baseUrl: string, dryRun: boolean): Promise<number> {
+  console.log('▶ Clearing previous Obsidian import…');
+
+  // Fetch all nodes (paginate if needed)
+  let offset = 0;
+  const limit = 200;
+  const toDelete: number[] = [];
+
+  while (true) {
+    const res = await fetch(`${baseUrl}/api/nodes?limit=${limit}&offset=${offset}`);
+    const json = await res.json() as { success: boolean; data?: Array<{ id: number; metadata?: string }> };
+    if (!json.success || !json.data?.length) break;
+
+    for (const node of json.data) {
+      let meta: Record<string, unknown> = {};
+      if (typeof node.metadata === 'string') {
+        try { meta = JSON.parse(node.metadata); } catch { /* ignore */ }
+      } else if (node.metadata && typeof node.metadata === 'object') {
+        meta = node.metadata as Record<string, unknown>;
+      }
+      if (meta.source === 'obsidian_import') toDelete.push(node.id);
+    }
+
+    if (json.data.length < limit) break;
+    offset += limit;
+  }
+
+  console.log(`  Found ${toDelete.length} previously imported nodes to delete`);
+
   if (dryRun) {
-    console.log(`  [DRY-RUN] Would create node: "${note.title}" (${note.type})`);
-    return Math.floor(Math.random() * 100000); // fake ID for dry-run edge simulation
+    console.log('  [DRY-RUN] Would delete them — skipping\n');
+    return toDelete.length;
+  }
+
+  let deleted = 0;
+  for (const id of toDelete) {
+    const res = await fetch(`${baseUrl}/api/nodes/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      deleted++;
+    } else {
+      console.warn(`  [WARN] Failed to delete node ${id}`);
+    }
+    await sleep(50);
+  }
+
+  console.log(`  Deleted ${deleted} nodes\n`);
+  return deleted;
+}
+
+async function createNode(note: ParsedNote, baseUrl: string, dryRun: boolean): Promise<number | null> {
+  if (dryRun) {
+    console.log(`  [DRY-RUN] Would create node: "${note.title}" (${note.type}) [${note.dimensions.join(', ')}]`);
+    return Math.floor(Math.random() * 100000);
   }
 
   const body: Record<string, unknown> = {
@@ -306,6 +329,7 @@ async function createNode(
     chunk: note.chunk,
     dimensions: note.dimensions,
     metadata: note.metadata,
+    skip_dimensions: true,   // use only the dimensions we pass; skip AI assignment
   };
   if (note.eventDate) body.event_date = note.eventDate;
 
@@ -321,21 +345,15 @@ async function createNode(
   }
 
   const json = await res.json() as { success: boolean; data?: { id: number }; error?: string };
-  if (!json.success || !json.data?.id) {
-    throw new Error(json.error ?? 'No node ID returned');
-  }
+  if (!json.success || !json.data?.id) throw new Error(json.error ?? 'No node ID returned');
   return json.data.id;
 }
 
 async function createEdge(
-  fromId: number,
-  toId: number,
-  explanation: string,
-  baseUrl: string,
-  dryRun: boolean
-): Promise<'created' | 'exists' | 'error'> {
+  fromId: number, toId: number, explanation: string, baseUrl: string, dryRun: boolean
+): Promise<'created' | 'exists'> {
   if (dryRun) {
-    console.log(`  [DRY-RUN] Would create edge: ${fromId} → ${toId} (${explanation})`);
+    console.log(`  [DRY-RUN] Would create edge: ${fromId} → ${toId}`);
     return 'created';
   }
 
@@ -360,54 +378,92 @@ async function createEdge(
 }
 
 // ---------------------------------------------------------------------------
+// Edge explanation builder
+// ---------------------------------------------------------------------------
+
+function buildEdgeExplanation(note: ParsedNote, targetSlug: string, targetTitle: string): string {
+  const fm = note.metadata.obsidian as Record<string, unknown>;
+
+  const attendees = fm.attendees as unknown;
+  if (attendees) {
+    const attendeeSlugs = extractFrontmatterWikilinks(attendees);
+    if (attendeeSlugs.includes(targetSlug)) {
+      return `${targetTitle} attended "${note.title}"`;
+    }
+  }
+
+  if (note.type === 'person' && fm.org) {
+    const orgSlugs = extractFrontmatterWikilinks(fm.org);
+    if (orgSlugs.includes(targetSlug)) {
+      return `${note.title} is a member of ${targetTitle}`;
+    }
+  }
+
+  return `"${note.title}" references ${targetTitle}`;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 async function main() {
   const { values: args } = parseArgs({
     options: {
-      vault:              { type: 'string' },
-      'base-url':         { type: 'string', default: 'http://localhost:3000' },
-      dirs:               { type: 'string', default: 'notes,clippings,references,daily' },
-      'include-root-docs':{ type: 'boolean', default: false },
-      'skip-edges':       { type: 'boolean', default: false },
-      'dry-run':          { type: 'boolean', default: false },
-      delay:              { type: 'string', default: '150' },
+      vault:               { type: 'string' },
+      'base-url':          { type: 'string', default: 'http://localhost:3000' },
+      dirs:                { type: 'string', default: 'notes,clippings,references,daily' },
+      'include-root-docs': { type: 'boolean', default: false },
+      'skip-edges':        { type: 'boolean', default: false },
+      'clear-previous':    { type: 'boolean', default: false },
+      'dry-run':           { type: 'boolean', default: false },
+      delay:               { type: 'string', default: '150' },
     },
     strict: false,
   });
 
   const vaultPath = args.vault as string | undefined;
-  if (!vaultPath) {
-    console.error('Error: --vault <path> is required');
-    process.exit(1);
-  }
+  if (!vaultPath) { console.error('Error: --vault <path> is required'); process.exit(1); }
   if (!existsSync(vaultPath as string)) {
-    console.error(`Error: vault path does not exist: ${vaultPath}`);
-    process.exit(1);
+    console.error(`Error: vault path does not exist: ${vaultPath}`); process.exit(1);
   }
 
-  const resolvedVault = vaultPath as string;
-  const baseUrl    = (args['base-url'] as string).replace(/\/$/, '');
-  const dirs       = (args.dirs as string).split(',').map(d => d.trim()).filter(Boolean);
-  const includeRoot = Boolean(args['include-root-docs']);
-  const skipEdges  = Boolean(args['skip-edges']);
-  const dryRun     = Boolean(args['dry-run']);
-  const delay      = parseInt(args.delay as string, 10) || 150;
+  const resolvedVault  = vaultPath as string;
+  const baseUrl        = (args['base-url'] as string).replace(/\/$/, '');
+  const dirs           = (args.dirs as string).split(',').map(d => d.trim()).filter(Boolean);
+  const includeRoot    = Boolean(args['include-root-docs']);
+  const skipEdges      = Boolean(args['skip-edges']);
+  const clearPrevious  = Boolean(args['clear-previous']);
+  const dryRun         = Boolean(args['dry-run']);
+  const delay          = parseInt(args.delay as string, 10) || 150;
 
   console.log('\n═══════════════════════════════════════════════════════');
   console.log(' Obsidian → RA-OS Migration');
   console.log('═══════════════════════════════════════════════════════');
-  console.log(`  Vault:       ${resolvedVault}`);
-  console.log(`  Target:      ${baseUrl}`);
-  console.log(`  Dirs:        ${dirs.join(', ')}${includeRoot ? ' + root docs' : ''}`);
-  console.log(`  Skip edges:  ${skipEdges}`);
-  console.log(`  Dry run:     ${dryRun}`);
-  console.log(`  API delay:   ${delay}ms`);
+  console.log(`  Vault:          ${resolvedVault}`);
+  console.log(`  Target:         ${baseUrl}`);
+  console.log(`  Dirs:           ${dirs.join(', ')}${includeRoot ? ' + root docs' : ''}`);
+  console.log(`  Tags:           source directory + obsidian frontmatter tags`);
+  console.log(`  Clear previous: ${clearPrevious}`);
+  console.log(`  Skip edges:     ${skipEdges}`);
+  console.log(`  Dry run:        ${dryRun}`);
+  console.log(`  API delay:      ${delay}ms`);
   console.log('═══════════════════════════════════════════════════════\n');
 
+  const stats: MigrationStats = {
+    filesScanned: 0, nodesCreated: 0, nodesSkipped: 0, nodesFailed: 0,
+    nodesDeleted: 0, edgesCreated: 0, edgesSkipped: 0, edgesFailed: 0,
+    unresolvedWikilinks: [],
+  };
+
   // ------------------------------------------------------------------
-  // Discover + parse all files
+  // Optional: clear previous import
+  // ------------------------------------------------------------------
+  if (clearPrevious) {
+    stats.nodesDeleted = await clearPreviousImport(baseUrl, dryRun);
+  }
+
+  // ------------------------------------------------------------------
+  // Discover + parse
   // ------------------------------------------------------------------
   console.log('▶ Discovering files…');
   const filePaths = discoverFiles(resolvedVault, dirs, includeRoot);
@@ -416,7 +472,7 @@ async function main() {
   const notes: ParsedNote[] = [];
   let parseErrors = 0;
   for (const fp of filePaths) {
-    const parsed = parseMarkdownFile(fp);
+    const parsed = parseMarkdownFile(fp, resolvedVault);
     if (parsed) {
       notes.push(parsed);
     } else {
@@ -424,24 +480,22 @@ async function main() {
       parseErrors++;
     }
   }
+  stats.filesScanned = notes.length;
   console.log(`  Parsed: ${notes.length} notes (${parseErrors} parse errors)\n`);
+
+  // Print tag preview by directory
+  const dirCounts = new Map<string, number>();
+  for (const n of notes) dirCounts.set(n.sourceDir, (dirCounts.get(n.sourceDir) ?? 0) + 1);
+  console.log('  Tags that will be applied:');
+  for (const [dir, count] of [...dirCounts.entries()].sort()) {
+    console.log(`    "${dir}" → ${count} nodes`);
+  }
+  console.log();
 
   // ------------------------------------------------------------------
   // Pass 1 — Create nodes
   // ------------------------------------------------------------------
   console.log('▶ Pass 1 — Creating nodes…');
-  const stats: MigrationStats = {
-    filesScanned: notes.length,
-    nodesCreated: 0,
-    nodesSkipped: 0,
-    nodesFailed: 0,
-    edgesCreated: 0,
-    edgesSkipped: 0,
-    edgesFailed: 0,
-    unresolvedWikilinks: [],
-  };
-
-  // slug → created node (for wikilink resolution in pass 2)
   const slugMap = new Map<string, CreatedNode>();
 
   for (let i = 0; i < notes.length; i++) {
@@ -453,7 +507,7 @@ async function main() {
       if (nodeId !== null) {
         slugMap.set(note.slug, { nodeId, title: note.title, slug: note.slug });
         stats.nodesCreated++;
-        console.log(`  ${progress} ✓ "${note.title}" (${note.type}) → id:${nodeId}`);
+        console.log(`  ${progress} ✓ "${note.title}" [${note.dimensions.join(', ')}] → id:${nodeId}`);
       }
     } catch (err) {
       stats.nodesFailed++;
@@ -466,25 +520,20 @@ async function main() {
   console.log(`\n  Pass 1 complete: ${stats.nodesCreated} created, ${stats.nodesFailed} failed\n`);
 
   // ------------------------------------------------------------------
-  // Pass 2 — Create edges from wikilinks
+  // Pass 2 — Edges
   // ------------------------------------------------------------------
   if (!skipEdges) {
     console.log('▶ Pass 2 — Creating edges from wikilinks…');
-
-    // Deduplicate edges: track (from,to) pairs we've already submitted
     const edgesAttempted = new Set<string>();
 
     for (const note of notes) {
       const fromNode = slugMap.get(note.slug);
-      if (!fromNode) continue; // node wasn't created, skip
-
-      if (note.wikilinks.length === 0) continue;
+      if (!fromNode || note.wikilinks.length === 0) continue;
 
       for (const targetSlug of note.wikilinks) {
         const toNode = slugMap.get(targetSlug);
 
         if (!toNode) {
-          // Only log each unresolved slug once
           if (!stats.unresolvedWikilinks.includes(targetSlug)) {
             stats.unresolvedWikilinks.push(targetSlug);
           }
@@ -526,6 +575,7 @@ async function main() {
   console.log('\n═══════════════════════════════════════════════════════');
   console.log(' Migration Summary');
   console.log('═══════════════════════════════════════════════════════');
+  if (clearPrevious) console.log(`  Nodes deleted (prev): ${stats.nodesDeleted}`);
   console.log(`  Files scanned:        ${stats.filesScanned}`);
   console.log(`  Nodes created:        ${stats.nodesCreated}`);
   console.log(`  Nodes failed:         ${stats.nodesFailed}`);
@@ -541,38 +591,9 @@ async function main() {
       console.log(`    [[${slug}]]`);
     }
     console.log('\n  Tip: unresolved links point to files outside the scanned dirs.');
-    console.log('  Re-run with a broader --dirs value to resolve more of them.');
   }
 
   console.log('\n  Done.\n');
-}
-
-// ---------------------------------------------------------------------------
-// Edge explanation builder
-// ---------------------------------------------------------------------------
-
-function buildEdgeExplanation(note: ParsedNote, targetSlug: string, targetTitle: string): string {
-  const fm = note.metadata.obsidian as Record<string, unknown>;
-
-  // Attendees field → person attended this meeting
-  const attendees = fm.attendees as unknown;
-  if (attendees) {
-    const attendeeSlugs = extractFrontmatterWikilinks(attendees);
-    if (attendeeSlugs.includes(targetSlug)) {
-      return `${targetTitle} attended "${note.title}"`;
-    }
-  }
-
-  // Org field on a person → member of org
-  if (note.type === 'person' && fm.org) {
-    const orgSlugs = extractFrontmatterWikilinks(fm.org);
-    if (orgSlugs.includes(targetSlug)) {
-      return `${note.title} is a member of ${targetTitle}`;
-    }
-  }
-
-  // Default
-  return `"${note.title}" references ${targetTitle}`;
 }
 
 main().catch(err => {
