@@ -18,7 +18,8 @@
     "sqlite:restore": "bash scripts/database/sqlite-restore.sh",
     "test": "vitest run",
     "test:watch": "vitest",
-    "evals": "RAH_EVALS_LOG=1 tsx tests/evals/runner.ts"
+    "evals": "RAH_EVALS_LOG=1 tsx tests/evals/runner.ts",
+    "migrate:obsidian": "tsx scripts/migrate-obsidian.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.7",
