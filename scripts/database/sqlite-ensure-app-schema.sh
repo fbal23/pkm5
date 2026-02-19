@@ -312,16 +312,6 @@ CREATE TABLE dimensions (
 SQL
 fi
 
-if has_table dimensions; then
-  echo "Seeding default locked dimensions..."
-  for dimension in research ideas projects memory preferences; do
-    "$SQLITE_BIN" "$DB_PATH" <<SQL
-INSERT INTO dimensions (name, is_priority, updated_at)
-VALUES ('$dimension', 1, datetime('now'))
-ON CONFLICT(name) DO UPDATE SET is_priority = 1, updated_at = datetime('now');
-SQL
-  done
-fi
 
 echo "Refreshing helper view nodes_v..."
 "$SQLITE_BIN" "$DB_PATH" "DROP VIEW IF EXISTS nodes_v;"

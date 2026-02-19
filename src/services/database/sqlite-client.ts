@@ -592,22 +592,7 @@ class SQLiteClient {
           );
         `);
         
-        // Seed default locked dimensions
-        const defaultDimensions = ['research', 'ideas', 'projects', 'memory', 'preferences'];
-        const insertDimension = this.db.prepare(`
-          INSERT INTO dimensions (name, is_priority, updated_at)
-          VALUES (?, 1, datetime('now'))
-          ON CONFLICT(name) DO UPDATE SET is_priority = 1, updated_at = datetime('now')
-        `);
-        
-        for (const dimension of defaultDimensions) {
-          try {
-            insertDimension.run(dimension);
-          } catch (e) {
-            console.warn(`Failed to seed dimension '${dimension}':`, e);
-          }
-        }
-        console.log('Dimensions table created and seeded with default locked dimensions');
+        console.log('Dimensions table created');
       } else {
         // Check if existing dimensions table has description column
         const dimensionCols = this.db.prepare('PRAGMA table_info(dimensions)').all() as Array<{ name: string }>;
