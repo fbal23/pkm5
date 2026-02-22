@@ -39,9 +39,9 @@ export function getDatabasePath(): string {
     return envPath;
   }
   
-  // Default path: ~/Library/Application Support/RA-H/db/rah.sqlite
+  // Default path: ~/Library/Application Support/PKM5/db/pkm5.sqlite
   const homeDir = os.homedir();
-  return path.join(homeDir, 'Library', 'Application Support', 'RA-H', 'db', 'rah.sqlite');
+  return path.join(homeDir, 'Library', 'Application Support', 'PKM5', 'db', 'pkm5.sqlite');
 }
 
 /**

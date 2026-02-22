@@ -24,7 +24,7 @@ interface LeftToolbarProps {
   slotBType: PaneType | null;
 }
 
-// Map pane types to their icons (chat removed in rah-light, guides moved to settings)
+// Map pane types to their icons (chat removed in pkm5-light, guides moved to settings)
 const PANE_TYPE_ICONS: Record<string, typeof LayoutList> = {
   views: LayoutList,
   map: Map,

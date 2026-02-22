@@ -1,11 +1,11 @@
 #!/opt/homebrew/bin/python3
 """
-Paperless-ngx → RA-H full ingestion pipeline.
+Paperless-ngx → PKM5 full ingestion pipeline.
 
 Modes:
-  ingest   — create RA-H nodes for Paperless docs that have no linked node yet
+  ingest   — create PKM5 nodes for Paperless docs that have no linked node yet
   enrich   — fetch full OCR text for nodes that have a paperless_id but no OCR content
-  orphans  — list Paperless docs with no linked RA-H node (read-only report)
+  orphans  — list Paperless docs with no linked PKM5 node (read-only report)
   all      — run ingest + enrich (default)
 
 Usage:
@@ -14,7 +14,7 @@ Usage:
 Requirements:
     pip install requests
     Paperless token at ~/.config/pkm/paperless_token
-    RA-H running at http://localhost:3000 (for ingest mode — node/edge creation)
+    PKM5 running at http://localhost:3000 (for ingest mode — node/edge creation)
     SSH access to maci (for tunnel to Paperless at maci:8000)
 """
 
@@ -36,8 +36,8 @@ import requests
 # Config
 # ---------------------------------------------------------------------------
 
-RAH_DB = Path.home() / "Library" / "Application Support" / "RA-H" / "db" / "rah.sqlite"
-RAH_API = "http://localhost:3000"
+PKM5_DB = Path.home() / "Library" / "Application Support" / "PKM5" / "db" / "pkm5.sqlite"
+PKM5_API = "http://localhost:3000"
 PAPERLESS_TUNNEL_PORT = 18000  # local port → maci:8000 via SSH
 PAPERLESS_BASE = f"http://localhost:{PAPERLESS_TUNNEL_PORT}"
 TOKEN_FILE = Path.home() / ".config" / "pkm" / "paperless_token"
@@ -126,15 +126,15 @@ def infer_domain_from_tags(tag_ids: list[int], tag_map: dict[int, str]) -> str |
 
 
 # ---------------------------------------------------------------------------
-# RA-H SQLite helpers (reads)
+# PKM5 SQLite helpers (reads)
 # ---------------------------------------------------------------------------
 
-def rah_db() -> sqlite3.Connection:
-    return sqlite3.connect(RAH_DB)
+def pkm5_db() -> sqlite3.Connection:
+    return sqlite3.connect(PKM5_DB)
 
 
 def get_linked_paperless_ids(db: sqlite3.Connection) -> dict[int, int]:
-    """Return {paperless_id: node_id} for all RA-H nodes that reference Paperless."""
+    """Return {paperless_id: node_id} for all PKM5 nodes that reference Paperless."""
     cur = db.execute("""
         SELECT id,
                COALESCE(
@@ -208,18 +208,18 @@ def get_nodes_needing_enrichment(db: sqlite3.Connection) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# RA-H HTTP API helpers (writes — requires RA-H server running at :3000)
+# PKM5 HTTP API helpers (writes — requires PKM5 server running at :3000)
 # ---------------------------------------------------------------------------
 
-def rah_api_available() -> bool:
+def pkm5_api_available() -> bool:
     try:
-        r = requests.get(f"{RAH_API}/api/dimensions", timeout=5)
+        r = requests.get(f"{PKM5_API}/api/dimensions", timeout=5)
         return r.status_code < 500
     except Exception:
         return False
 
 
-def create_rah_node(
+def create_pkm5_node(
     title: str,
     dimensions: list[str],
     content: str,
@@ -235,7 +235,7 @@ def create_rah_node(
         "notes": content,
         "metadata": metadata,
     }
-    r = requests.post(f"{RAH_API}/api/nodes", json=payload, timeout=30)
+    r = requests.post(f"{PKM5_API}/api/nodes", json=payload, timeout=30)
     r.raise_for_status()
     body = r.json()
     node_id = (body.get("data") or body).get("id")
@@ -243,12 +243,12 @@ def create_rah_node(
     return node_id
 
 
-def create_rah_edge(from_id: int, to_id: int, relationship: str, dry_run: bool) -> None:
+def create_pkm5_edge(from_id: int, to_id: int, relationship: str, dry_run: bool) -> None:
     if dry_run:
         print(f"  [dry-run] would create edge {from_id} → {to_id} ({relationship!r})")
         return
     payload = {"from_node_id": from_id, "to_node_id": to_id, "relationship": relationship}
-    r = requests.post(f"{RAH_API}/api/edges", json=payload, timeout=15)
+    r = requests.post(f"{PKM5_API}/api/edges", json=payload, timeout=15)
     r.raise_for_status()
     print(f"  Edge {from_id} → {to_id} ({relationship!r})")
 
@@ -298,10 +298,10 @@ def enrich_node(db: sqlite3.Connection, node: dict, token: str, dry_run: bool, f
 # ---------------------------------------------------------------------------
 
 def mode_orphans(docs: list[dict], linked: dict[int, int], tag_map: dict, correspondent_map: dict) -> None:
-    """Print Paperless docs with no RA-H node."""
+    """Print Paperless docs with no PKM5 node."""
     orphans = [d for d in docs if d["id"] not in linked]
     if not orphans:
-        print("No orphan documents — all Paperless docs are linked to RA-H nodes.")
+        print("No orphan documents — all Paperless docs are linked to PKM5 nodes.")
         return
 
     print(f"\nOrphan documents ({len(orphans)} of {len(docs)} total):\n")
@@ -324,10 +324,10 @@ def mode_ingest(
     db: sqlite3.Connection,
     dry_run: bool,
 ) -> int:
-    """Create RA-H nodes for unlinked Paperless docs. Returns count created."""
+    """Create PKM5 nodes for unlinked Paperless docs. Returns count created."""
     orphans = [d for d in docs if d["id"] not in linked]
     if not orphans:
-        print("All Paperless docs are already linked to RA-H nodes.")
+        print("All Paperless docs are already linked to PKM5 nodes.")
         return 0
 
     print(f"\nIngesting {len(orphans)} unlinked document(s)...\n")
@@ -368,14 +368,14 @@ def mode_ingest(
             dimensions.append(domain)
         dimensions.append("pending")
 
-        node_id = create_rah_node(title, dimensions, notes, metadata, dry_run)
+        node_id = create_pkm5_node(title, dimensions, notes, metadata, dry_run)
 
         if node_id and not dry_run:
             # Edge to correspondent person/org node
             if corr_name:
                 person_id = find_person_node(db, corr_name)
                 if person_id:
-                    create_rah_edge(node_id, person_id, f"from correspondent {corr_name}", dry_run)
+                    create_pkm5_edge(node_id, person_id, f"from correspondent {corr_name}", dry_run)
                 else:
                     print(f"  No person/org node found for correspondent {corr_name!r} — skipping edge")
             created += 1
@@ -391,7 +391,7 @@ def mode_enrich(
     dry_run: bool,
     force: bool,
 ) -> int:
-    """Enrich RA-H nodes with full OCR content. Returns count enriched."""
+    """Enrich PKM5 nodes with full OCR content. Returns count enriched."""
     nodes = get_nodes_needing_enrichment(db)
     if not force:
         nodes = [n for n in nodes if ENRICHED_MARKER not in n["notes"]]
@@ -414,7 +414,7 @@ def mode_enrich(
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Paperless-ngx → RA-H ingestion pipeline")
+    parser = argparse.ArgumentParser(description="Paperless-ngx → PKM5 ingestion pipeline")
     parser.add_argument(
         "--mode",
         choices=["ingest", "enrich", "orphans", "all"],
@@ -430,11 +430,11 @@ def main() -> None:
     do_enrich = args.mode in ("enrich", "all")
     do_orphans = args.mode == "orphans"
 
-    # Ingest requires RA-H API
+    # Ingest requires PKM5 API
     if do_ingest and not args.dry_run:
-        if not rah_api_available():
-            print("ERROR: RA-H server not reachable at http://localhost:3000")
-            print("Start it with: cd ra-h_os && npm run dev")
+        if not pkm5_api_available():
+            print("ERROR: PKM5 server not reachable at http://localhost:3000")
+            print("Start it with: cd pkm5 && npm run dev")
             print("Or use --mode enrich (which uses direct SQLite and doesn't need the server)")
             sys.exit(1)
 
@@ -446,7 +446,7 @@ def main() -> None:
     )
     time.sleep(2.0)
 
-    db = sqlite3.connect(RAH_DB)
+    db = sqlite3.connect(PKM5_DB)
 
     def cleanup(sig=None, frame=None):
         tunnel.terminate()
@@ -462,7 +462,7 @@ def main() -> None:
         correspondent_map = fetch_all_correspondents(token)
         docs = fetch_all_documents(token)
         linked = get_linked_paperless_ids(db)
-        print(f"  {len(docs)} Paperless docs, {len(linked)} already linked to RA-H nodes")
+        print(f"  {len(docs)} Paperless docs, {len(linked)} already linked to PKM5 nodes")
 
         ingested = 0
         enriched = 0
@@ -478,7 +478,7 @@ def main() -> None:
 
         # Summary
         print("\n" + "─" * 50)
-        print("Paperless → RA-H pipeline complete")
+        print("Paperless → PKM5 pipeline complete")
         if do_ingest:
             label = "[dry-run] " if args.dry_run else ""
             print(f"  {label}Nodes created: {ingested}")

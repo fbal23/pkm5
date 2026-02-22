@@ -1,4 +1,4 @@
-# RA-H Open Source Porting Notes (2025-12-09)
+# PKM5 Open Source Porting Notes (2025-12-09)
 
 ---
 
@@ -83,7 +83,7 @@ Current docs are technically solid but missing contributor-facing content:
 ### 🏗️ RECOMMENDED FILE STRUCTURE
 
 ```
-ra-h_os/
+pkm5/
 ├── README.md              ✅ exists
 ├── LICENSE                ✅ exists (MIT)
 ├── CONTRIBUTING.md        ❌ create
@@ -164,7 +164,7 @@ For a project of this size with a private upstream, a **BDFL (Benevolent Dictato
 
 ## Agent Handover
 
-**What is this repo?** This is `ra-h_os`, the open source mirror of the private `ra-h` application. It's a BYO-key (bring your own API keys) version without Mac packaging, Supabase auth, or subscription features.
+**What is this repo?** This is `pkm5`, the open source mirror of the private `pkm5` application. It's a BYO-key (bring your own API keys) version without Mac packaging, Supabase auth, or subscription features.
 
 **Quick context:**
 - Read `CLAUDE.md` for system overview
@@ -173,19 +173,19 @@ For a project of this size with a private upstream, a **BDFL (Benevolent Dictato
 
 **Current status:** Initial commit complete (2025-12-15). Repo is currently private on GitHub. Before making public, we need a more thorough audit to ensure no sensitive data, credentials, or private references remain. Review all docs, scripts, and code comments for anything that shouldn't be public.
 
-**Sync process:** Features are built in the private `ra-h` repo first, then synced here via Step 8 of the workflow (see private repo's `docs/development/process/1_workflow.md`).
+**Sync process:** Features are built in the private `pkm5` repo first, then synced here via Step 8 of the workflow (see private repo's `docs/development/process/1_workflow.md`).
 
 ---
 
-This document captures every change required to bring the private RA-H repo into a runnable, local-only open-source build.
+This document captures every change required to bring the private PKM5 repo into a runnable, local-only open-source build.
 
 ## 1. Repo Copy & Cleanup
-- `rsync` with an allowlist copied only source/docs/scripts into `~/Desktop/dev/ra-h_os`, excluding `.git`, `node_modules`, builds, backups, pgdata, logs, Mac artifacts, and tooling metadata (`.claude`, `.mcp.json`).
+- `rsync` with an allowlist copied only source/docs/scripts into `~/Desktop/dev/pkm5`, excluding `.git`, `node_modules`, builds, backups, pgdata, logs, Mac artifacts, and tooling metadata (`.claude`, `.mcp.json`).
 - Removed leftover build outputs and workflows: `.next/`, `.env*`, `.github/workflows/*`, `.claude/`, `.mcp.json`.
 - Regenerated dependencies locally (`npm install --legacy-peer-deps`) and rebuilt native modules (`npm rebuild better-sqlite3`).
 
 ## 2. Rebrand & Licensing
-- `package.json` renamed to `ra-h-open-source`, version reset to `0.1.0`, `private: false`, scripts force local mode, and Supabase/mac scripts removed.
+- `package.json` renamed to `pkm5-open-source`, version reset to `0.1.0`, `private: false`, scripts force local mode, and Supabase/mac scripts removed.
 - LICENSE switched from PolyForm to MIT; README rewritten for BYO-key locals; `.env.example` now defaults to `NEXT_PUBLIC_DEPLOYMENT_MODE=local` and drops Supabase fields.
 
 ## 3. UI & Runtime Simplification
@@ -201,7 +201,7 @@ This document captures every change required to bring the private RA-H repo into
 ## 5. Backend Removal & BYO Keys End-to-End
 - Removed Supabase token registry, backend fetch helpers, and all Supabase-facing scripts/docs.
 - `RequestContext` now tracks `apiKeys` (OpenAI/Anthropic) for the current request.
-- `useSSEChat` sends those keys with each `/api/rah/chat` call; the API route threads them into `resolveModel`, WiseRAH, and MiniRAH executors so delegations inherit the same BYO credentials.
+- `useSSEChat` sends those keys with each `/api/pkm5/chat` call; the API route threads them into `resolveModel`, WisePKM5, and MiniPKM5 executors so delegations inherit the same BYO credentials.
 - Chat logging/backend usage metadata dropped the Supabase proxies; everything runs directly against user-supplied keys.
 
 ## 6. Testing

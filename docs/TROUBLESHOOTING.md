@@ -40,7 +40,7 @@ npm install -g windows-build-tools
 **Fixes:**
 1. Run the bootstrap script first: `scripts/dev/bootstrap-local.sh`
 2. Check `.env.local` exists (copy from `.env.example` if missing)
-3. Ensure database directory exists: `~/Library/Application Support/RA-H/db/`
+3. Ensure database directory exists: `~/Library/Application Support/PKM5/db/`
 
 ### Vector search returns no results
 
@@ -77,7 +77,7 @@ npm install -g windows-build-tools
 
 **Symptom:** "SQLITE_BUSY" errors
 
-**Fix:** Only run one instance of RA-H at a time. Close any other terminals running the app.
+**Fix:** Only run one instance of PKM5 at a time. Close any other terminals running the app.
 
 ### Missing tables
 
@@ -85,7 +85,7 @@ npm install -g windows-build-tools
 
 **Fix:** Re-run the schema script:
 ```bash
-scripts/database/sqlite-ensure-app-schema.sh ~/Library/Application\ Support/RA-H/db/rah.sqlite
+scripts/database/sqlite-ensure-app-schema.sh ~/Library/Application\ Support/PKM5/db/pkm5.sqlite
 ```
 
 ## Platform-Specific

@@ -1,11 +1,11 @@
-# RA-H MCP Server
+# PKM5 MCP Server
 
-Connect Claude Code and Claude Desktop to your RA-H knowledge base. Direct SQLite access - works without the RA-H app running.
+Connect Claude Code and Claude Desktop to your PKM5 knowledge base. Direct SQLite access - works without the PKM5 app running.
 
 ## Install
 
 ```bash
-npx ra-h-mcp-server
+npx pkm5-mcp-server
 ```
 
 That's it. No manual setup required.
@@ -17,9 +17,9 @@ Add to your Claude config (`~/.claude.json` or Claude Desktop settings):
 ```json
 {
   "mcpServers": {
-    "ra-h": {
+    "pkm5": {
       "command": "npx",
-      "args": ["ra-h-mcp-server"]
+      "args": ["pkm5-mcp-server"]
     }
   }
 }
@@ -30,18 +30,18 @@ Restart Claude. Done.
 ## Requirements
 
 - Node.js 18+
-- Database is created automatically at `~/Library/Application Support/RA-H/db/rah.sqlite` on first connection
+- Database is created automatically at `~/Library/Application Support/PKM5/db/pkm5.sqlite` on first connection
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `RAH_DB_PATH` | ~/Library/Application Support/RA-H/db/rah.sqlite | Database path |
+| `PKM5_DB_PATH` | ~/Library/Application Support/PKM5/db/pkm5.sqlite | Database path |
 
 ## What to Expect
 
 Once connected, Claude will:
-- **Call `rah_get_context` first** to orient itself (stats, hub nodes, dimensions, guides)
+- **Call `pkm5_get_context` first** to orient itself (stats, hub nodes, dimensions, guides)
 - **Proactively capture knowledge** — when a new insight, decision, person, or reference surfaces, it proposes a specific node (title, dimensions, description) so you can approve with minimal friction
 - **Read guides for complex tasks** — system guides (immutable) teach it how your graph works; custom guides teach it your workflows
 - **Search before creating** to avoid duplicates
@@ -50,30 +50,30 @@ Once connected, Claude will:
 
 | Tool | Description |
 |------|-------------|
-| `rah_get_context` | Get graph overview — stats, hub nodes, dimensions, recent activity |
-| `rah_add_node` | Create a new node |
-| `rah_search_nodes` | Search nodes by keyword |
-| `rah_get_nodes` | Load nodes by ID (includes chunk + metadata) |
-| `rah_update_node` | Update an existing node |
-| `rah_create_edge` | Create connection between nodes |
-| `rah_update_edge` | Update an edge explanation |
-| `rah_query_edges` | Find edges for a node |
-| `rah_list_dimensions` | List all dimensions |
-| `rah_create_dimension` | Create a dimension |
-| `rah_update_dimension` | Update/rename a dimension |
-| `rah_delete_dimension` | Delete a dimension |
-| `rah_list_guides` | List available guides (system + custom) |
-| `rah_read_guide` | Read a guide by name |
-| `rah_write_guide` | Create or update a custom guide |
-| `rah_delete_guide` | Delete a custom guide |
-| `rah_search_content` | Search through source content (transcripts, books, articles) |
-| `rah_sqlite_query` | Execute read-only SQL queries (SELECT/WITH/PRAGMA) |
+| `pkm5_get_context` | Get graph overview — stats, hub nodes, dimensions, recent activity |
+| `pkm5_add_node` | Create a new node |
+| `pkm5_search_nodes` | Search nodes by keyword |
+| `pkm5_get_nodes` | Load nodes by ID (includes chunk + metadata) |
+| `pkm5_update_node` | Update an existing node |
+| `pkm5_create_edge` | Create connection between nodes |
+| `pkm5_update_edge` | Update an edge explanation |
+| `pkm5_query_edges` | Find edges for a node |
+| `pkm5_list_dimensions` | List all dimensions |
+| `pkm5_create_dimension` | Create a dimension |
+| `pkm5_update_dimension` | Update/rename a dimension |
+| `pkm5_delete_dimension` | Delete a dimension |
+| `pkm5_list_guides` | List available guides (system + custom) |
+| `pkm5_read_guide` | Read a guide by name |
+| `pkm5_write_guide` | Create or update a custom guide |
+| `pkm5_delete_guide` | Delete a custom guide |
+| `pkm5_search_content` | Search through source content (transcripts, books, articles) |
+| `pkm5_sqlite_query` | Execute read-only SQL queries (SELECT/WITH/PRAGMA) |
 
 ## Guides
 
 Guides are detailed instruction sets that teach Claude how to work with your knowledge base. System guides (schema, creating-nodes, edges, dimensions, extract) are bundled and immutable. You can create up to 10 custom guides for your own workflows.
 
-Guides are stored at `~/Library/Application Support/RA-H/guides/` and shared with the main app.
+Guides are stored at `~/Library/Application Support/PKM5/guides/` and shared with the main app.
 
 ## What's NOT Included
 

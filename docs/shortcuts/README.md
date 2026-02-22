@@ -1,11 +1,11 @@
-# RA-H Capture Shortcuts
+# PKM5 Capture Shortcuts
 
 Three capture integrations for iOS and macOS:
 - **Quick Task** — capture any task or note from iOS/macOS
-- **Email → RA-H** — add emails to the knowledge graph
-- **File → RA-H** — ingest PDFs, markdown, and documents
+- **Email → PKM5** — add emails to the knowledge graph
+- **File → PKM5** — ingest PDFs, markdown, and documents
 
-All shortcuts require RA-H running locally. From iOS, use Tailscale so your phone and MacBook share a VPN network — then replace `localhost` with your Mac's Tailscale IP (e.g. `100.x.x.x`).
+All shortcuts require PKM5 running locally. From iOS, use Tailscale so your phone and MacBook share a VPN network — then replace `localhost` with your Mac's Tailscale IP (e.g. `100.x.x.x`).
 
 ---
 
@@ -20,7 +20,7 @@ Capture any task, idea, or note in a few taps. Supports `domain:X` and `due:YYYY
 
 ### iOS Shortcut
 
-1. Open **Shortcuts** → New Shortcut → name it **"Add to RA-H"**
+1. Open **Shortcuts** → New Shortcut → name it **"Add to PKM5"**
 2. Add these actions:
 
 **Action 1 — Ask for Input**
@@ -73,13 +73,13 @@ Then POST the output directly to `/api/nodes`.
 
 ---
 
-## 2. Email → RA-H (Apple Shortcut)
+## 2. Email → PKM5 (Apple Shortcut)
 
-Adds **"Add to RA-H"** to the Mail share sheet on macOS and iOS.
+Adds **"Add to PKM5"** to the Mail share sheet on macOS and iOS.
 
 ### Setup
 
-1. Open **Shortcuts** → New Shortcut → name it **"Add Email to RA-H"**
+1. Open **Shortcuts** → New Shortcut → name it **"Add Email to PKM5"**
 2. Set **"Receive"** input to **Mail Message** from the share sheet.
 3. Add these actions:
 
@@ -104,21 +104,21 @@ Adds **"Add to RA-H"** to the Mail share sheet on macOS and iOS.
   ```
 
 **Action 3 — Show Notification**
-- Title: **Added to RA-H**
+- Title: **Added to PKM5**
 - Body: [subject variable]
 
 4. Enable **"Show in Share Sheet"**.
 
 ### Usage
 
-- **macOS Mail**: select email → Share → "Add Email to RA-H"
-- **iOS Mail**: open email → tap Share → scroll to "Add Email to RA-H"
+- **macOS Mail**: select email → Share → "Add Email to PKM5"
+- **iOS Mail**: open email → tap Share → scroll to "Add Email to PKM5"
 
 ---
 
-## 3. File → RA-H (macOS Quick Action)
+## 3. File → PKM5 (macOS Quick Action)
 
-Adds **"Add to RA-H"** to Finder's right-click menu.
+Adds **"Add to PKM5"** to Finder's right-click menu.
 
 **Supported formats:** PDF, TXT, Markdown (.md), Word (.docx)
 
@@ -147,17 +147,17 @@ if [ "$HTTP_CODE" -eq 200 ]; then
   TITLE=$(echo "$BODY" | python3 -c \
     "import sys,json; print(json.load(sys.stdin).get('title','$FILENAME'))" 2>/dev/null \
     || echo "$FILENAME")
-  osascript -e "display notification \"$TITLE\" with title \"Added to RA-H\""
+  osascript -e "display notification \"$TITLE\" with title \"Added to PKM5\""
 else
-  osascript -e "display notification \"Failed: HTTP $HTTP_CODE\" with title \"RA-H Error\""
+  osascript -e "display notification \"Failed: HTTP $HTTP_CODE\" with title \"PKM5 Error\""
 fi
 ```
 
-5. Save as **"Add to RA-H"** (saved automatically to `~/Library/Services/`).
+5. Save as **"Add to PKM5"** (saved automatically to `~/Library/Services/`).
 
 ### Usage
 
-Right-click any supported file in Finder → **Services** → **Add to RA-H**
+Right-click any supported file in Finder → **Services** → **Add to PKM5**
 
 If "Services" isn't visible: **System Settings → Keyboard → Keyboard Shortcuts → Services** and enable it.
 
@@ -228,4 +228,4 @@ curl -F "file=@/tmp/test.txt" http://localhost:3000/api/extract/file/upload
 2. Sign in with the same account
 3. Find your MacBook's Tailscale IP: `tailscale ip -4`
 4. In all shortcuts, replace `localhost` with that IP (e.g. `100.x.x.x`)
-5. RA-H must be running on the MacBook (`npm run dev` or production build)
+5. PKM5 must be running on the MacBook (`npm run dev` or production build)

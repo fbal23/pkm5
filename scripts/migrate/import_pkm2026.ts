@@ -2,16 +2,16 @@
 /**
  * import_pkm2026.ts
  *
- * One-time migration: PKM_2026 Obsidian vault → RA-H SQLite
+ * One-time migration: PKM_2026 Obsidian vault → PKM5 SQLite
  *
  * Reads markdown files from PKM_2026 vault, parses YAML frontmatter,
- * and creates RA-H nodes via the HTTP API.
+ * and creates PKM5 nodes via the HTTP API.
  *
  * Usage:
  *   npx ts-node scripts/migrate/import_pkm2026.ts [--dry-run] [--folder notes|references|clippings|daily]
  *
  * Prerequisites:
- *   - RA-H running at http://localhost:3000
+ *   - PKM5 running at http://localhost:3000
  *   - PKM_2026 vault at /Users/balazsfurjes/Cursor files/PKM_2026/
  *
  * What it migrates:
@@ -20,7 +20,7 @@
  *   - clippings/    → clipping nodes
  *   - daily/        → note nodes
  *
- * Wiki-links [[Target]] → RA-H edges (type: related_to, source: migration)
+ * Wiki-links [[Target]] → PKM5 edges (type: related_to, source: migration)
  * Created after all nodes are imported (second pass).
  */
 
@@ -270,7 +270,7 @@ function deriveTitle(file: ParsedFile): string {
 }
 
 // ---------------------------------------------------------------------------
-// RA-H API calls
+// PKM5 API calls
 // ---------------------------------------------------------------------------
 
 async function apiPost(endpoint: string, body: unknown): Promise<{ id: number; [key: string]: unknown }> {
@@ -286,7 +286,7 @@ async function apiPost(endpoint: string, body: unknown): Promise<{ id: number; [
   }
 
   const json = await res.json() as { success?: boolean; data?: { id: number; [key: string]: unknown }; id?: number; [key: string]: unknown };
-  // RA-H API wraps responses in { success, data: { id, ... } }
+  // PKM5 API wraps responses in { success, data: { id, ... } }
   return (json.data ?? json) as { id: number; [key: string]: unknown };
 }
 
@@ -296,19 +296,19 @@ async function apiPost(endpoint: string, body: unknown): Promise<{ id: number; [
 
 async function migrate() {
   console.log(`\n${'='.repeat(60)}`);
-  console.log('PKM_2026 → RA-H Migration');
+  console.log('PKM_2026 → PKM5 Migration');
   console.log(`Mode: ${DRY_RUN ? 'DRY RUN' : 'LIVE'}`);
   console.log(`Folder: ${FOLDER_FILTER || 'all'}`);
   console.log('='.repeat(60));
 
-  // Check RA-H is running
+  // Check PKM5 is running
   if (!DRY_RUN) {
     try {
       const health = await fetch(`${RA_H_API}/health`);
       if (!health.ok) throw new Error('Health check failed');
-      console.log('✓ RA-H API reachable');
+      console.log('✓ PKM5 API reachable');
     } catch (e) {
-      console.error('✗ RA-H API not reachable. Start with: npm run dev');
+      console.error('✗ PKM5 API not reachable. Start with: npm run dev');
       process.exit(1);
     }
   }
@@ -332,7 +332,7 @@ async function migrate() {
     const payload = {
       title,
       dimensions: dims,
-      content: file.content.slice(0, 20000), // RA-H content limit
+      content: file.content.slice(0, 20000), // PKM5 content limit
       description: `Migrated from PKM_2026/${file.folder}/${file.slug}.md`,
       metadata: meta,
     };

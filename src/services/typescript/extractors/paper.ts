@@ -1,5 +1,5 @@
 /**
- * PDF/Paper content extraction for RA-H knowledge management system
+ * PDF/Paper content extraction for PKM5 knowledge management system
  * Extracts text content from PDF files and returns formatted content
  */
 

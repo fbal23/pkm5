@@ -21,7 +21,7 @@ SQLITE_VEC_SOURCE_DIR="${SQLITE_VEC_SOURCE_DIR:-$REPO_ROOT/dist/.deps/sqlite-vec
 SQLITE_VEC_OUTPUT="${SQLITE_VEC_OUTPUT:-$DIST_ROOT/vendor/sqlite-extensions/vec0.dylib}"
 SQLITE_VEC_VENDOR_COPY="${SQLITE_VEC_VENDOR_COPY:-$REPO_ROOT/vendor/sqlite-extensions/vec0.dylib}"
 
-TMP_DIR="$(mktemp -d -t rah-native-XXXX)"
+TMP_DIR="$(mktemp -d -t pkm5-native-XXXX)"
 cleanup() {
   rm -rf "$TMP_DIR"
 }

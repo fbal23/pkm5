@@ -40,8 +40,8 @@ if ! nc -z "${HOST}" "${PORT}" 2>/dev/null; then
 fi
 
 echo "Next.js ready. Launching Tauri shell."
-RAH_ATTACH_DEV_SERVER=true \
-RAH_DEV_SERVER_PORT="${PORT}" \
+PKM5_ATTACH_DEV_SERVER=true \
+PKM5_DEV_SERVER_PORT="${PORT}" \
 PORT="${PORT}" \
 HOST="${HOST}" \
-npm run tauri:dev --workspace @ra-h/mac-shell
+npm run tauri:dev --workspace @pkm5/mac-shell

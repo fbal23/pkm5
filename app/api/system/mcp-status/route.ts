@@ -9,7 +9,7 @@ const STATUS_PATH = path.join(
   os.homedir(),
   'Library',
   'Application Support',
-  'RA-H',
+  'PKM5',
   'config',
   'mcp-status.json'
 );

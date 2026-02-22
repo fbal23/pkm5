@@ -1,16 +1,16 @@
 #!/opt/homebrew/bin/python3
 """
-RA-H Heartbeat — Time-triggered scheduler that surfaces what needs attention.
+PKM5 Heartbeat — Time-triggered scheduler that surfaces what needs attention.
 
-Replaces Atlas-framework/heartbeat.py. Queries RA-H SQLite directly instead
-of scanning Obsidian markdown files. Runs on the local MacBook (where RA-H
+Replaces Atlas-framework/heartbeat.py. Queries PKM5 SQLite directly instead
+of scanning Obsidian markdown files. Runs on the local MacBook (where PKM5
 lives), not on Maci.
 
 Modes:
   morning       7am daily — due tasks, today's meetings, unprocessed clippings
   evening       6pm daily — activity count, prompt /daily-review if missing
   overdue       every 30 min — tasks due today not yet complete
-  weekly        Monday 9am — nudge if last week's review is missing in RA-H
+  weekly        Monday 9am — nudge if last week's review is missing in PKM5
   monthly       1st of month 9am — nudge if last month's review is missing
   quarterly     1st of quarter 9am — nudge if last quarter's review is missing
   card-proposals 5pm daily — flag stale person/org cards as proposal nodes
@@ -41,7 +41,7 @@ from pathlib import Path
 # Config
 # ---------------------------------------------------------------------------
 
-RAH_DB = Path.home() / "Library" / "Application Support" / "RA-H" / "db" / "rah.sqlite"
+PKM5_DB = Path.home() / "Library" / "Application Support" / "PKM5" / "db" / "pkm5.sqlite"
 STATE_FILE = Path.home() / ".config" / "pkm" / "heartbeat_state.json"
 LOG_FILE = Path.home() / ".config" / "pkm" / "heartbeat.log"
 
@@ -62,7 +62,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 def db() -> sqlite3.Connection:
-    con = sqlite3.connect(RAH_DB)
+    con = sqlite3.connect(PKM5_DB)
     con.row_factory = sqlite3.Row
     return con
 
@@ -116,7 +116,7 @@ def notify(message: str, subtitle: str = "", urgent: bool = False) -> None:
 
 
 # ---------------------------------------------------------------------------
-# RA-H queries
+# PKM5 queries
 # ---------------------------------------------------------------------------
 
 def tasks_due_today() -> list[dict]:
@@ -226,7 +226,7 @@ def proposal_already_exists(title: str) -> bool:
 
 
 def create_proposal_node(title: str, notes: str) -> None:
-    """Write a card-update proposal directly to RA-H SQLite."""
+    """Write a card-update proposal directly to PKM5 SQLite."""
     with db() as con:
         now = datetime.utcnow().isoformat()
         cur = con.execute(
@@ -269,7 +269,7 @@ def mode_morning(dry_run: bool) -> int:
     message = " · ".join(parts)
     logger.info(f"Morning brief: {message}")
     if not dry_run:
-        notify(message, subtitle="Open ra-h_os to review")
+        notify(message, subtitle="Open pkm5 to review")
     return 0
 
 
@@ -443,7 +443,7 @@ MODES = {
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="RA-H Heartbeat scheduler")
+    parser = argparse.ArgumentParser(description="PKM5 Heartbeat scheduler")
     parser.add_argument("--mode", required=True, choices=list(MODES))
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()

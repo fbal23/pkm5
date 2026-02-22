@@ -6,7 +6,7 @@ import { scenarios } from '../../tests/evals/scenarios';
 export const dynamic = 'force-dynamic';
 
 export default function EvalsPage() {
-  const evalsEnabled = process.env.RAH_EVALS_LOG === '1' || process.env.RAH_EVALS_LOG === 'true';
+  const evalsEnabled = process.env.PKM5_EVALS_LOG === '1' || process.env.PKM5_EVALS_LOG === 'true';
   if (process.env.NODE_ENV === 'production' || !evalsEnabled) {
     notFound();
   }
@@ -29,7 +29,7 @@ export default function EvalsPage() {
           <div style={{ color: '#444' }}>Trace table on top, full span detail below.</div>
         </div>
         {traces.length === 0 ? (
-          <p>No eval traces found. Run evals with RAH_EVALS_LOG=1.</p>
+          <p>No eval traces found. Run evals with PKM5_EVALS_LOG=1.</p>
         ) : (
           <EvalsClient traces={traces} scenarioList={scenarioList} />
         )}

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Install RA-H heartbeat launchd agents on the local MacBook.
+# Install PKM5 heartbeat launchd agents on the local MacBook.
 # Replaces the old Maci cron-based Atlas-framework heartbeat.
 set -e
 
-SCRIPT="/Users/balazsfurjes/Cursor files/ra-h_os/scripts/heartbeat.py"
+SCRIPT="/Users/balazsfurjes/Cursor files/pkm5/scripts/heartbeat.py"
 AGENTS="$HOME/Library/LaunchAgents"
 PYTHON="/opt/homebrew/bin/python3"
 LOG="/tmp/pkm_heartbeat.log"
@@ -42,7 +42,7 @@ PLIST
   echo "  Loaded: $label"
 }
 
-echo "Installing RA-H heartbeat launchd agents..."
+echo "Installing PKM5 heartbeat launchd agents..."
 
 write_plist "com.pkm.heartbeat.morning" "morning" \
   "<dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>"

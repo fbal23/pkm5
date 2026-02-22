@@ -24,9 +24,9 @@ Extract:
 
 ## Step 2: Resolve delegate
 
-Search RA-H for the person:
+Search PKM5 for the person:
 ```
-rah_search_nodes(query="<delegate name>", dimensions=["person"], limit=2)
+pkm5_search_nodes(query="<delegate name>", dimensions=["person"], limit=2)
 ```
 
 If found: confirm which person.
@@ -35,7 +35,7 @@ If not found: offer to create person stub.
 ## Step 3: Create delegation task node
 
 ```
-rah_add_node:
+pkm5_add_node:
   title: "DELEGATED: <task description>"
   dimensions: ["task", "<domain>", "pending"]
   description: "Delegated to <Name> — expected by <due date>"
@@ -50,7 +50,7 @@ rah_add_node:
 ## Step 4: Create edge
 
 ```
-rah_create_edge(taskId, personId, "delegated to <Name>")
+pkm5_create_edge(taskId, personId, "delegated to <Name>")
 ```
 
 ## Step 5: Confirm
@@ -66,7 +66,7 @@ rah_create_edge(taskId, personId, "delegated to <Name>")
 
 To review all delegated tasks:
 ```
-rah_sqlite_query:
+pkm5_sqlite_query:
 SELECT n.title, json_extract(n.metadata, '$.delegated_to') AS delegate,
   json_extract(n.metadata, '$.due') AS due
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id

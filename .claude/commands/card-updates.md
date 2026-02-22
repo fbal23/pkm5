@@ -1,6 +1,6 @@
 # /card-updates — Review and apply person/org card update proposals
 
-Review proposed updates to person and org entity cards, stored as `proposal` dimension nodes in RA-H, and apply approved ones.
+Review proposed updates to person and org entity cards, stored as `proposal` dimension nodes in PKM5, and apply approved ones.
 
 ## Input
 
@@ -40,17 +40,17 @@ Proposal (ID: N): Update person card for "Name"
 
 Find the target person/org node:
 ```
-rah_search_nodes(query="<target name>", dimensions=["person"/"org"], limit=1)
+pkm5_search_nodes(query="<target name>", dimensions=["person"/"org"], limit=1)
 ```
 
 Apply the update:
 ```
-rah_update_node(targetId, { metadata: <updated fields> })
+pkm5_update_node(targetId, { metadata: <updated fields> })
 ```
 
 Mark proposal as complete:
 ```
-rah_update_node(proposalId, updates={
+pkm5_update_node(proposalId, updates={
   dimensions: ["proposal", "<domain>", "complete"]
 })
 ```

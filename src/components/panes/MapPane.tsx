@@ -585,7 +585,7 @@ function MapPaneInner({
             No nodes to display
           </div>
         ) : (
-          <div className="rah-map-wrapper" style={{ width: '100%', height: '100%' }}>
+          <div className="pkm5-map-wrapper" style={{ width: '100%', height: '100%' }}>
             <ReactFlow
               nodes={rfNodes}
               edges={rfEdges}

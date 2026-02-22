@@ -1,5 +1,5 @@
 /**
- * Universal chunking and embedding service for RA-H knowledge management system
+ * Universal chunking and embedding service for PKM5 knowledge management system
  * Takes a node_id, reads chunk content from nodes table, chunks it, and stores in chunks table
  */
 

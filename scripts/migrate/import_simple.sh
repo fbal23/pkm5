@@ -6,10 +6,10 @@ set -e
 echo "Starting simplified SQLite import..."
 
 # Remove old database
-rm -f rah_trial.db
+rm -f pkm5_trial.db
 
 # Create basic schema first
-sqlite3 rah_trial.db <<'SQL'
+sqlite3 pkm5_trial.db <<'SQL'
 -- Basic settings
 PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
@@ -85,7 +85,7 @@ SQL
 echo "Schema created. Importing data..."
 
 # Import CSVs with proper handling
-sqlite3 rah_trial.db <<'SQL'
+sqlite3 pkm5_trial.db <<'SQL'
 .mode csv
 
 -- Import nodes
@@ -133,7 +133,7 @@ SQL
 # Verify counts
 echo ""
 echo "Verifying import..."
-sqlite3 rah_trial.db <<'SQL'
+sqlite3 pkm5_trial.db <<'SQL'
 .mode list
 SELECT 'Nodes: ' || COUNT(*) FROM nodes;
 SELECT 'Chunks: ' || COUNT(*) FROM chunks;

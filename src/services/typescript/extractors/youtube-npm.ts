@@ -1,5 +1,5 @@
 /**
- * YouTube content extraction for RA-H knowledge management system
+ * YouTube content extraction for PKM5 knowledge management system
  * Uses youtube-transcript npm package - more similar to Python youtube-transcript-api
  */
 

@@ -1,6 +1,6 @@
 # Ralph Autonomous Agent - RA-OS Strip-Down
 
-You are an autonomous coding agent stripping down ra-h_os to create RA-OS — a minimal knowledge graph UI with MCP server.
+You are an autonomous coding agent stripping down pkm5 to create RA-OS — a minimal knowledge graph UI with MCP server.
 
 ## Your Task
 
@@ -63,7 +63,7 @@ When deleting files:
 1. Run `npm run type-check` — must pass
 2. Git commit with message format:
    ```
-   feat(rah-light): [story-id] short description
+   feat(pkm5-light): [story-id] short description
 
    - What was done
    - Files deleted/changed

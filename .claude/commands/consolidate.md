@@ -30,13 +30,13 @@ Present to user: "Found N unprocessed #action items across M nodes. Promote all?
 
 For each action item, create a task node:
 ```
-rah_add_node:
+pkm5_add_node:
   title: "<action text>"
   dimensions: ["task", "<domain>", "pending"]
   metadata: { due: "<parsed date>", source_node: <meeting_id> }
 ```
 
-Create edge: `rah_create_edge(taskId, sourceNodeId, "action item extracted from")`
+Create edge: `pkm5_create_edge(taskId, sourceNodeId, "action item extracted from")`
 
 ## Mode 2: Duplicate detection
 
@@ -50,7 +50,7 @@ WHERE lower(a.title) LIKE '%' || lower(substr(b.title, 1, 20)) || '%'
 LIMIT 20
 ```
 
-Also check via `rah_search_nodes` for ambiguous entity names (people, orgs).
+Also check via `pkm5_search_nodes` for ambiguous entity names (people, orgs).
 
 For each potential duplicate pair, present:
 ```
@@ -63,7 +63,7 @@ Possible duplicate:
 
 **Merge process:**
 1. Keep the node with more content / newer creation date as primary
-2. Append other node's content to primary: `rah_update_node(primaryId, { content: <appended> })`
+2. Append other node's content to primary: `pkm5_update_node(primaryId, { content: <appended> })`
 3. Move all edges from duplicate to primary node
 4. Archive the duplicate: add `archived` dimension
 

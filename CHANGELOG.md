@@ -23,6 +23,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## 2026-02-22
 
-**Outcome:** Completed full PKM migration from Obsidian to RA-H SQLite across all 7 phases: 27 dimensions created, ~210 vault nodes migrated with 250 wiki-link edges, 20 slash commands rewritten for RA-H MCP tools, Atlas memory guide ported, LLM routing (confidential → Maci Ollama) inlined into 3 skills, Paperless full pipeline built (35 nodes enriched with OCR), heartbeat rewritten as direct SQLite queries with launchd deployment, iOS/macOS shortcuts updated for RA-H endpoints.
-**Decision:** Heartbeat moved from Maci cron to MacBook launchd (RA-H SQLite is local). Dashboard decommissioned (all workflows covered by RA-H skills). Atlas-framework retired.
+**Outcome:** Completed full PKM migration from Obsidian to PKM5 SQLite across all 7 phases: 27 dimensions created, ~210 vault nodes migrated with 250 wiki-link edges, 20 slash commands rewritten for PKM5 MCP tools, Atlas memory guide ported, LLM routing (confidential → Maci Ollama) inlined into 3 skills, Paperless full pipeline built (35 nodes enriched with OCR), heartbeat rewritten as direct SQLite queries with launchd deployment, iOS/macOS shortcuts updated for PKM5 endpoints.
+**Decision:** Heartbeat moved from Maci cron to MacBook launchd (PKM5 SQLite is local). Dashboard decommissioned (all workflows covered by PKM5 skills). Atlas-framework retired.
 **Files:** scripts/paperless/ingest.py, scripts/heartbeat.py, scripts/install-heartbeat.sh, .claude/commands/*.md (20 files), .claude/guides/memory.md, docs/shortcuts/README.md, CLAUDE.md, scripts/migrate/import_pkm2026.ts

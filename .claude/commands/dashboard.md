@@ -12,7 +12,7 @@ Parse:
 
 ## Step 1: Fetch data in parallel
 
-Run these queries (use `rah_sqlite_query`):
+Run these queries (use `pkm5_sqlite_query`):
 
 ### Tasks query
 ```sql

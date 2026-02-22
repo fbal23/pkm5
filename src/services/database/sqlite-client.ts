@@ -77,7 +77,7 @@ class SQLiteClient {
   private getSQLiteConfig(): SQLiteConfig {
     const dbPath = process.env.SQLITE_DB_PATH || path.join(
       process.env.HOME || '~', 
-      'Library/Application Support/RA-H/db/rah.sqlite'
+      'Library/Application Support/PKM5/db/pkm5.sqlite'
     );
     
     const vecExtensionPath = process.env.SQLITE_VEC_EXTENSION_PATH || 

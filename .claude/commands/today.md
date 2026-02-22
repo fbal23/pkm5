@@ -138,11 +138,11 @@ Available: ~4.5h | Blocked: 3.5h | Overhead: 1h
 
 Search for existing daily node for today:
 ```
-rah_search_nodes(query="Daily Plan 2026-02-22", dimensions=["note"], limit=1)
+pkm5_search_nodes(query="Daily Plan 2026-02-22", dimensions=["note"], limit=1)
 ```
 
 If exists: ask "Daily note for today already exists. Overwrite / Append / Cancel?"
-If not: create with `rah_add_node(title="Daily Plan — <date>", dimensions=["note", "admin"])`.
+If not: create with `pkm5_add_node(title="Daily Plan — <date>", dimensions=["note", "admin"])`.
 
 ## Weekend mode
 

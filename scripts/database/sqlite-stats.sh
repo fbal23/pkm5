@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DB_PATH=${1:-rah_trial.db}
+DB_PATH=${1:-pkm5_trial.db}
 
 if [ ! -f "$DB_PATH" ]; then
   echo "Error: Database file not found: $DB_PATH" >&2

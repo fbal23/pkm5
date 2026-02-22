@@ -13,9 +13,9 @@ The easiest way is using the npm package:
 ```json
 {
   "mcpServers": {
-    "ra-h": {
+    "pkm5": {
       "command": "npx",
-      "args": ["ra-h-mcp-server"]
+      "args": ["pkm5-mcp-server"]
     }
   }
 }
@@ -39,9 +39,9 @@ If you're developing RA-OS and want to use the local server:
 ```json
 {
   "mcpServers": {
-    "ra-h": {
+    "pkm5": {
       "command": "node",
-      "args": ["/path/to/ra-h_os/apps/mcp-server-standalone/index.js"]
+      "args": ["/path/to/pkm5/apps/mcp-server-standalone/index.js"]
     }
   }
 }
@@ -63,7 +63,7 @@ If you want real-time UI updates when nodes are created:
 ```json
 {
   "mcpServers": {
-    "ra-h": {
+    "pkm5": {
       "url": "http://127.0.0.1:44145/mcp"
     }
   }
@@ -76,22 +76,22 @@ If you want real-time UI updates when nodes are created:
 
 | Tool | Description |
 |------|-------------|
-| `rah_get_context` | Get graph overview — stats, hub nodes, dimensions, recent activity. Called first automatically. |
-| `rah_add_node` | Create a new node (title/content/dimensions) |
-| `rah_search_nodes` | Search existing nodes by keyword |
-| `rah_update_node` | Update an existing node |
-| `rah_get_nodes` | Get nodes by ID |
-| `rah_create_edge` | Create relationship between nodes |
-| `rah_update_edge` | Update an edge explanation |
-| `rah_query_edges` | Query existing edges |
-| `rah_list_dimensions` | List all dimensions |
-| `rah_create_dimension` | Create a new dimension |
-| `rah_update_dimension` | Update/rename dimension |
-| `rah_delete_dimension` | Delete a dimension |
-| `rah_list_guides` | List available guides (system + custom) |
-| `rah_read_guide` | Read a guide by name |
-| `rah_write_guide` | Create or update a custom guide |
-| `rah_delete_guide` | Delete a custom guide |
+| `pkm5_get_context` | Get graph overview — stats, hub nodes, dimensions, recent activity. Called first automatically. |
+| `pkm5_add_node` | Create a new node (title/content/dimensions) |
+| `pkm5_search_nodes` | Search existing nodes by keyword |
+| `pkm5_update_node` | Update an existing node |
+| `pkm5_get_nodes` | Get nodes by ID |
+| `pkm5_create_edge` | Create relationship between nodes |
+| `pkm5_update_edge` | Update an edge explanation |
+| `pkm5_query_edges` | Query existing edges |
+| `pkm5_list_dimensions` | List all dimensions |
+| `pkm5_create_dimension` | Create a new dimension |
+| `pkm5_update_dimension` | Update/rename dimension |
+| `pkm5_delete_dimension` | Delete a dimension |
+| `pkm5_list_guides` | List available guides (system + custom) |
+| `pkm5_read_guide` | Read a guide by name |
+| `pkm5_write_guide` | Create or update a custom guide |
+| `pkm5_delete_guide` | Delete a custom guide |
 
 ---
 
@@ -99,7 +99,7 @@ If you want real-time UI updates when nodes are created:
 
 Once connected, the MCP server instructs Claude to:
 
-1. **Call `rah_get_context` first** to orient itself (hub nodes, dimensions, stats, available guides)
+1. **Call `pkm5_get_context` first** to orient itself (hub nodes, dimensions, stats, available guides)
 2. **Proactively capture knowledge** — when a new insight, decision, person, or reference surfaces, it proposes a specific node (title, dimensions, description) so you can approve with minimal friction
 3. **Read guides for complex tasks** — system guides (immutable) teach it how your graph works; custom guides teach it your workflows
 4. **Search before creating** to avoid duplicates
@@ -114,8 +114,8 @@ Once connected, you can ask your AI assistant:
 
 ```
 "What's in my knowledge graph?"
-"Search RA-H for what I wrote about product strategy"
-"Add this conversation summary to RA-H as a new node"
+"Search PKM5 for what I wrote about product strategy"
+"Add this conversation summary to PKM5 as a new node"
 "Find all nodes with the 'research' dimension"
 "Create an edge between node 123 and node 456"
 ```
@@ -136,7 +136,7 @@ Once connected, you can ask your AI assistant:
 
 - The MCP server only binds to `127.0.0.1` — localhost only
 - No authentication required (local access only)
-- All data persisted to `~/Library/Application Support/RA-H/db/rah.sqlite`
+- All data persisted to `~/Library/Application Support/PKM5/db/pkm5.sqlite`
 
 ---
 
@@ -152,7 +152,7 @@ npm run dev
 ### "Tools not showing" (npm package)
 
 1. Make sure Node.js 18+ is installed: `node --version`
-2. Try running manually: `npx ra-h-mcp-server`
+2. Try running manually: `npx pkm5-mcp-server`
 3. Restart Claude Code
 
 ### "Connection refused" (HTTP method)

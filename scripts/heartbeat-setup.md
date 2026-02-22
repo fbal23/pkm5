@@ -1,14 +1,14 @@
 # Heartbeat Setup
 
-The RA-H heartbeat runs **locally on the MacBook** (not Maci) because it queries
-`~/Library/Application Support/RA-H/db/rah.sqlite` directly.
+The PKM5 heartbeat runs **locally on the MacBook** (not Maci) because it queries
+`~/Library/Application Support/PKM5/db/pkm5.sqlite` directly.
 
 Use **launchd** instead of cron — it handles sleep/wake correctly on macOS.
 
 ## Script
 
 ```
-ra-h_os/scripts/heartbeat.py
+pkm5/scripts/heartbeat.py
 ```
 
 Modes: `morning`, `evening`, `overdue`, `weekly`, `monthly`, `quarterly`, `card-proposals`
@@ -16,7 +16,7 @@ Modes: `morning`, `evening`, `overdue`, `weekly`, `monthly`, `quarterly`, `card-
 ## Quick install
 
 ```bash
-cd /Users/balazsfurjes/Cursor\ files/ra-h_os
+cd /Users/balazsfurjes/Cursor\ files/pkm5
 bash scripts/install-heartbeat.sh
 ```
 
@@ -36,7 +36,7 @@ Create each plist in `~/Library/LaunchAgents/` and load with `launchctl load`.
   <key>ProgramArguments</key>
   <array>
     <string>/opt/homebrew/bin/python3</string>
-    <string>/Users/balazsfurjes/Cursor files/ra-h_os/scripts/heartbeat.py</string>
+    <string>/Users/balazsfurjes/Cursor files/pkm5/scripts/heartbeat.py</string>
     <string>--mode</string><string>morning</string>
   </array>
   <key>StartCalendarInterval</key>
@@ -59,7 +59,7 @@ Create each plist in `~/Library/LaunchAgents/` and load with `launchctl load`.
   <key>ProgramArguments</key>
   <array>
     <string>/opt/homebrew/bin/python3</string>
-    <string>/Users/balazsfurjes/Cursor files/ra-h_os/scripts/heartbeat.py</string>
+    <string>/Users/balazsfurjes/Cursor files/pkm5/scripts/heartbeat.py</string>
     <string>--mode</string><string>evening</string>
   </array>
   <key>StartCalendarInterval</key>
@@ -82,7 +82,7 @@ Create each plist in `~/Library/LaunchAgents/` and load with `launchctl load`.
   <key>ProgramArguments</key>
   <array>
     <string>/opt/homebrew/bin/python3</string>
-    <string>/Users/balazsfurjes/Cursor files/ra-h_os/scripts/heartbeat.py</string>
+    <string>/Users/balazsfurjes/Cursor files/pkm5/scripts/heartbeat.py</string>
     <string>--mode</string><string>overdue</string>
   </array>
   <key>StartCalendarInterval</key>
@@ -135,7 +135,7 @@ Create each plist in `~/Library/LaunchAgents/` and load with `launchctl load`.
   <key>ProgramArguments</key>
   <array>
     <string>/opt/homebrew/bin/python3</string>
-    <string>/Users/balazsfurjes/Cursor files/ra-h_os/scripts/heartbeat.py</string>
+    <string>/Users/balazsfurjes/Cursor files/pkm5/scripts/heartbeat.py</string>
     <string>--mode</string><string>card-proposals</string>
   </array>
   <key>StartCalendarInterval</key>
@@ -177,5 +177,5 @@ This leaves the vdirsyncer calendar sync cron in place.
 ## Test a mode
 
 ```bash
-python /Users/balazsfurjes/Cursor\ files/ra-h_os/scripts/heartbeat.py --mode morning --dry-run
+python /Users/balazsfurjes/Cursor\ files/pkm5/scripts/heartbeat.py --mode morning --dry-run
 ```

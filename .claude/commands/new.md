@@ -1,6 +1,6 @@
 # /new — Create a linked entity from natural language
 
-Parse natural language and create a typed node in RA-H with appropriate dimensions, metadata, and edges to related nodes. More thorough than `/quick` — supports all entity types.
+Parse natural language and create a typed node in PKM5 with appropriate dimensions, metadata, and edges to related nodes. More thorough than `/quick` — supports all entity types.
 
 ## Input
 
@@ -35,7 +35,7 @@ Before creating, search for:
 - Matching org (if `org:X` given) → get org node ID
 - Matching person (if `person` type and person name given)
 
-Use `rah_search_nodes` with relevant dimensions.
+Use `pkm5_search_nodes` with relevant dimensions.
 
 ## Step 3: Create the node
 
@@ -78,9 +78,9 @@ metadata: { source, from, subject }
 
 ## Step 4: Create edges
 
-- Task → Project: `rah_create_edge(taskId, projectId, "is part of project")`
-- Person → Org: `rah_create_edge(personId, orgId, "works at")`
-- Commitment → relevant org/person: `rah_create_edge(commitmentId, orgId/personId, "committed to")`
+- Task → Project: `pkm5_create_edge(taskId, projectId, "is part of project")`
+- Person → Org: `pkm5_create_edge(personId, orgId, "works at")`
+- Commitment → relevant org/person: `pkm5_create_edge(commitmentId, orgId/personId, "committed to")`
 
 ## Step 5: Confirm
 

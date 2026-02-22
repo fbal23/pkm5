@@ -1,6 +1,6 @@
 # /quick — Ultra-fast task capture
 
-Parse minimal natural language input and immediately create a task node in RA-H. No questions, no confirmation — just capture.
+Parse minimal natural language input and immediately create a task node in PKM5. No questions, no confirmation — just capture.
 
 ## Input
 
@@ -32,12 +32,12 @@ Extract:
 
 ## Step 2: Search for existing node (dedup)
 
-Run `rah_search_nodes` with the title text, dimensions `["task"]`. If a very close match exists (same title), warn:
+Run `pkm5_search_nodes` with the title text, dimensions `["task"]`. If a very close match exists (same title), warn:
 > "Similar task found: '<existing title>'. Created anyway (ID: N)."
 
 ## Step 3: Create node
 
-Call `rah_add_node`:
+Call `pkm5_add_node`:
 - `title`: parsed title
 - `dimensions`: `["task", "<domain>", "pending"]`
 - `description`: "<title> — captured via /quick"
@@ -58,5 +58,5 @@ If a project name was given but no matching project node found, note:
 ## Edge cases
 
 - No title: prompt "What's the task?"
-- Unrecognised domain: use as-is (dimensions are freeform strings in RA-H)
+- Unrecognised domain: use as-is (dimensions are freeform strings in PKM5)
 - Date parsing fails: create without due date, note "Could not parse date '<raw>'"

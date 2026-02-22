@@ -24,11 +24,11 @@ export function getOpenAiKey(): string | undefined {
  */
 export function isFirstRun(): boolean {
   if (typeof window === 'undefined') return false;
-  return !localStorage.getItem('ra-h-first-run-complete');
+  return !localStorage.getItem('pkm5-first-run-complete');
 }
 
 export function markFirstRunComplete(): void {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('ra-h-first-run-complete', 'true');
+    localStorage.setItem('pkm5-first-run-complete', 'true');
   }
 }

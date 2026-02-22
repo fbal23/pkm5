@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Restore RA-H SQLite database from a backup snapshot
+# Restore PKM5 SQLite database from a backup snapshot
 
 if [ $# -lt 1 ]; then
   echo "Usage: $0 <backup.sqlite>" >&2
@@ -23,7 +23,7 @@ if [ -z "${DB_PATH}" ] && [ -f ".env.local" ]; then
   DB_PATH=$(grep -E '^SQLITE_DB_PATH=' .env.local | sed 's/^SQLITE_DB_PATH=//' | sed 's/^"\(.*\)"$/\1/') || true
 fi
 if [ -z "${DB_PATH}" ]; then
-  DB_PATH="$HOME/Library/Application Support/RA-H/db/rah.sqlite"
+  DB_PATH="$HOME/Library/Application Support/PKM5/db/pkm5.sqlite"
 fi
 
 DB_DIR="$(dirname "$DB_PATH")"
@@ -41,7 +41,7 @@ if [ "$ICHECK" != "ok" ]; then
 fi
 
 TS=$(date +"%Y%m%d_%H%M%S")
-SAFE_COPY="$DB_DIR/rah_pre_restore_${TS}.sqlite"
+SAFE_COPY="$DB_DIR/pkm5_pre_restore_${TS}.sqlite"
 echo "Creating safety copy: $SAFE_COPY"
 cp -f "$DB_PATH" "$SAFE_COPY" 2>/dev/null || true
 

@@ -28,8 +28,8 @@
 
 ```bash
 # Clone
-git clone https://github.com/bradwmorris/ra-h_os.git
-cd ra-h_os
+git clone https://github.com/bradwmorris/pkm5.git
+cd pkm5
 
 # Install
 npm install
@@ -47,9 +47,9 @@ Add to your `~/.claude.json`:
 ```json
 {
   "mcpServers": {
-    "ra-h": {
+    "pkm5": {
       "command": "npx",
-      "args": ["ra-h-mcp-server"]
+      "args": ["pkm5-mcp-server"]
     }
   }
 }
@@ -59,4 +59,4 @@ Works without RA-OS running. See [MCP docs](./8_mcp.md) for alternatives.
 
 ## Questions?
 
-Open an issue on [GitHub](https://github.com/bradwmorris/ra-h_os).
+Open an issue on [GitHub](https://github.com/bradwmorris/pkm5).

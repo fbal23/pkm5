@@ -9,7 +9,7 @@ const MAX_USER_GUIDES = 10;
 // Where guides live on disk (shared with the app)
 const GUIDES_DIR = path.join(
   os.homedir(),
-  'Library', 'Application Support', 'RA-H', 'guides'
+  'Library', 'Application Support', 'PKM5', 'guides'
 );
 
 // System guides bundled with this package

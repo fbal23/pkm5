@@ -9,7 +9,7 @@ echo "Starting PostgreSQL data export..."
 mkdir -p tmp/migrate
 
 # Database connection string
-DB_URL="postgresql://rah_user:rah_password@localhost:5432/rah_db"
+DB_URL="postgresql://pkm5_user:pkm5_password@localhost:5432/pkm5_db"
 
 # Export nodes
 echo "Exporting nodes..."

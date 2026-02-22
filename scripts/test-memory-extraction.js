@@ -8,7 +8,7 @@ const OpenAI = require('openai');
 const path = require('path');
 const os = require('os');
 
-const dbPath = path.join(os.homedir(), 'Library/Application Support/RA-H/db/rah.sqlite');
+const dbPath = path.join(os.homedir(), 'Library/Application Support/PKM5/db/pkm5.sqlite');
 const db = new Database(dbPath);
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });

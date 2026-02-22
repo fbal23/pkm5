@@ -4,7 +4,7 @@ This is **RA-OS** — a minimal, local-first knowledge graph UI with MCP server 
 
 ## What is RA-OS?
 
-RA-OS is a stripped-down version of [RA-H](https://ra-h.app) focused on:
+RA-OS is a stripped-down version of [PKM5](https://pkm5.app) focused on:
 
 - **2-panel UI** for browsing and editing your knowledge graph
 - **MCP server** so external AI agents (like Claude Code) can access your notes
@@ -21,9 +21,9 @@ RA-OS intentionally excludes:
 - Auth/subscription system
 - Desktop packaging (Tauri)
 
-## Relationship to RA-H
+## Relationship to PKM5
 
-This repo (`ra-h_os`) is derived from the private `ra-h` repository. Shared features (database, UI components, MCP server) are synced from private to public.
+This repo (`pkm5`) is derived from the private `pkm5` repository. Shared features (database, UI components, MCP server) are synced from private to public.
 
 ## Getting Started
 

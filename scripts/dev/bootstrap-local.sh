@@ -33,7 +33,7 @@ else
 fi
 
 SQLITE_DB_PATH_LINE=$(grep -E '^SQLITE_DB_PATH=' "$TARGET_ENV" | tail -n 1 || true)
-DEFAULT_DB_PATH="$HOME/Library/Application Support/RA-H/db/rah.sqlite"
+DEFAULT_DB_PATH="$HOME/Library/Application Support/PKM5/db/pkm5.sqlite"
 if [ -z "$SQLITE_DB_PATH_LINE" ]; then
   SQLITE_DB_PATH="$DEFAULT_DB_PATH"
 else

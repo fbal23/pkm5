@@ -5,7 +5,7 @@
 If you discover a security vulnerability, please report it privately:
 
 1. **Do NOT open a public issue**
-2. Email: security@ra-h.app (or use GitHub Security Advisories)
+2. Email: security@pkm5.app (or use GitHub Security Advisories)
 3. Include: description, steps to reproduce, potential impact
 
 We will respond within 48 hours and work with you on a fix.
@@ -24,7 +24,7 @@ We will respond within 48 hours and work with you on a fix.
 - Clear your browser data to remove stored keys
 
 ### Local Database
-- All data is stored locally in SQLite at `~/Library/Application Support/RA-H/db/rah.sqlite`
+- All data is stored locally in SQLite at `~/Library/Application Support/PKM5/db/pkm5.sqlite`
 - No data is sent to external servers (except AI API calls with your keys)
 - Back up this file to preserve your data
 

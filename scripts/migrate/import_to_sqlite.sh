@@ -7,21 +7,21 @@ echo "Starting SQLite database import..."
 echo "================================"
 
 # Remove old database if exists
-if [ -f "rah_trial.db" ]; then
-    echo "Removing existing rah_trial.db..."
-    rm -f rah_trial.db
+if [ -f "pkm5_trial.db" ]; then
+    echo "Removing existing pkm5_trial.db..."
+    rm -f pkm5_trial.db
 fi
 
 # Create database with schema
 echo "Creating database with optimized schema..."
-sqlite3 rah_trial.db < scripts/migrate/sqlite_schema.sql
+sqlite3 pkm5_trial.db < scripts/migrate/sqlite_schema.sql
 
 # Import CSV files
 echo ""
 echo "Importing data from CSV files..."
 echo "--------------------------------"
 
-sqlite3 rah_trial.db <<'EOF'
+sqlite3 pkm5_trial.db <<'EOF'
 .mode csv
 .headers on
 
@@ -106,7 +106,7 @@ SELECT dimension FROM node_dimensions WHERE node_id = 5 LIMIT 5;
 EOF
 
 echo ""
-echo "✅ SQLite database created successfully: rah_trial.db"
+echo "✅ SQLite database created successfully: pkm5_trial.db"
 echo ""
 echo "Database is ready for testing!"
 echo "Next steps:"

@@ -2,7 +2,7 @@
 
 This is the open source mirror of a private repository. Features are developed privately and synced here.
 
-**Full docs:** [ra-h.app/docs](https://ra-h.app/docs)
+**Full docs:** [pkm5.app/docs](https://pkm5.app/docs)
 
 ## What We Accept
 
@@ -15,8 +15,8 @@ For larger features, open an issue first. Major features are typically implement
 ## Setup
 
 ```bash
-git clone https://github.com/bradwmorris/ra-h_os.git
-cd ra-h_os
+git clone https://github.com/bradwmorris/pkm5.git
+cd pkm5
 npm install
 npm rebuild better-sqlite3
 scripts/dev/bootstrap-local.sh
@@ -52,4 +52,4 @@ By contributing, you agree your work is licensed under [MIT](LICENSE).
 
 ## Questions?
 
-Check [ra-h.app/docs](https://ra-h.app/docs) or open an issue.
+Check [pkm5.app/docs](https://pkm5.app/docs) or open an issue.

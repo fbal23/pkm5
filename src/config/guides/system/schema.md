@@ -108,4 +108,4 @@ ORDER BY c.chunk_idx ASC
 LIMIT 10
 ```
 
-**Use `rah_search_content` to search chunks by keyword, or `rah_sqlite_query` for any read operation not covered by structured tools.**
+**Use `pkm5_search_content` to search chunks by keyword, or `pkm5_sqlite_query` for any read operation not covered by structured tools.**

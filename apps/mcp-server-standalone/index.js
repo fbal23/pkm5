@@ -4,10 +4,10 @@
 // Check Node version early — better-sqlite3 native bindings don't support bleeding-edge Node
 const nodeVersion = parseInt(process.versions.node.split('.')[0], 10);
 if (nodeVersion >= 24) {
-  console.error(`[ra-h-mcp-server] ERROR: Node.js v${process.versions.node} is not supported.`);
-  console.error('[ra-h-mcp-server] better-sqlite3 requires Node 18-22 LTS. Install Node 22:');
-  console.error('[ra-h-mcp-server]   nvm install 22 && nvm use 22');
-  console.error('[ra-h-mcp-server]   or: brew install node@22');
+  console.error(`[pkm5-mcp-server] ERROR: Node.js v${process.versions.node} is not supported.`);
+  console.error('[pkm5-mcp-server] better-sqlite3 requires Node 18-22 LTS. Install Node 22:');
+  console.error('[pkm5-mcp-server]   nvm install 22 && nvm use 22');
+  console.error('[pkm5-mcp-server]   or: brew install node@22');
   process.exit(1);
 }
 
@@ -15,12 +15,12 @@ let Database;
 try {
   Database = require('better-sqlite3');
 } catch (err) {
-  console.error('[ra-h-mcp-server] ERROR: Failed to load better-sqlite3 native module.');
-  console.error(`[ra-h-mcp-server] Node version: ${process.versions.node}`);
-  console.error('[ra-h-mcp-server] This usually means the native bindings need rebuilding:');
-  console.error('[ra-h-mcp-server]   npm rebuild better-sqlite3');
-  console.error('[ra-h-mcp-server] Or your Node version is too new. Use Node 18-22 LTS.');
-  console.error('[ra-h-mcp-server] Original error:', err.message);
+  console.error('[pkm5-mcp-server] ERROR: Failed to load better-sqlite3 native module.');
+  console.error(`[pkm5-mcp-server] Node version: ${process.versions.node}`);
+  console.error('[pkm5-mcp-server] This usually means the native bindings need rebuilding:');
+  console.error('[pkm5-mcp-server]   npm rebuild better-sqlite3');
+  console.error('[pkm5-mcp-server] Or your Node version is too new. Use Node 18-22 LTS.');
+  console.error('[pkm5-mcp-server] Original error:', err.message);
   process.exit(1);
 }
 
@@ -36,7 +36,7 @@ const guideService = require('./services/guideService');
 
 // Server info
 const serverInfo = {
-  name: 'ra-h-standalone',
+  name: 'pkm5-standalone',
   version: '1.4.1'
 };
 
@@ -44,10 +44,10 @@ function buildInstructions() {
   const now = new Date().toISOString().split('T')[0];
   return [
     `Today's date: ${now}.`,
-    "RA-H is the user's personal knowledge graph — local SQLite, fully on-device.",
-    'Call rah_get_context first for a quick orientation (stats, hubs, dimensions).',
+    "PKM5 is the user's personal knowledge graph — local SQLite, fully on-device.",
+    'Call pkm5_get_context first for a quick orientation (stats, hubs, dimensions).',
     'For simple tasks (add a node, search), the tool descriptions have everything you need — just execute.',
-    'For complex or ambiguous tasks, also call rah_read_guide("start-here") for full graph understanding.',
+    'For complex or ambiguous tasks, also call pkm5_read_guide("start-here") for full graph understanding.',
     'Knowledge capture: after substantive exchanges, offer to save valuable information.',
     'Triggers: a new insight emerges, a decision is made, a person/entity/concept is discussed in depth, research or references are shared, a connection to existing knowledge surfaces.',
     'When offering, propose a specific node — title, dimensions, and a concrete description (WHAT it is + WHY it matters, no vague "discusses/explores") — so the user can approve with minimal friction.',
@@ -65,7 +65,7 @@ const addNodeInputSchema = {
   content: z.string().max(20000).optional().describe('Node content/notes'),
   link: z.string().url().optional().describe('Source URL'),
   description: z.string().max(2000).optional().describe('One-sentence summary: WHAT this is (explicit, concrete) + WHY it matters. No weak verbs (discusses, explores, examines). Example: "Podcast — Lex Fridman interviews Sam Altman on AGI timelines. First public comments since board drama."'),
-  dimensions: z.array(z.string()).min(1).max(5).describe('1-5 categories. Call rah_list_dimensions first to use existing ones.'),
+  dimensions: z.array(z.string()).min(1).max(5).describe('1-5 categories. Call pkm5_list_dimensions first to use existing ones.'),
   metadata: z.record(z.any()).optional().describe('Additional metadata'),
   chunk: z.string().max(50000).optional().describe('Full source text')
 };
@@ -253,7 +253,7 @@ function isReadOnlyQuery(sql) {
 
 // Log to stderr (stdout is reserved for MCP protocol)
 function log(...args) {
-  console.error('[ra-h-standalone]', ...args);
+  console.error('[pkm5-standalone]', ...args);
 }
 
 async function main() {
@@ -272,10 +272,10 @@ async function main() {
   // ========== CONTEXT TOOL ==========
 
   server.registerTool(
-    'rah_get_context',
+    'pkm5_get_context',
     {
-      title: 'Get RA-H context',
-      description: 'Get knowledge graph overview: stats, hub nodes (most connected), dimensions, recent activity, and available guides. Call this first to orient yourself. For deeper understanding, follow up with rah_read_guide("start-here").',
+      title: 'Get PKM5 context',
+      description: 'Get knowledge graph overview: stats, hub nodes (most connected), dimensions, recent activity, and available guides. Call this first to orient yourself. For deeper understanding, follow up with pkm5_read_guide("start-here").',
       inputSchema: {}
     },
     async () => {
@@ -306,10 +306,10 @@ async function main() {
   // ========== NODE TOOLS ==========
 
   server.registerTool(
-    'rah_add_node',
+    'pkm5_add_node',
     {
-      title: 'Add RA-H node',
-      description: 'Create a new node. Always search first (rah_search_nodes) to avoid duplicates. Title: max 160 chars, clear and descriptive. Use "link" ONLY for external content (URL, video, article) — omit for synthesis/ideas derived from existing nodes. "content" = your notes/analysis. "chunk" = verbatim source text. "description" = one-sentence summary for search. Assign 1-5 dimensions — call rah_list_dimensions first to use existing ones.',
+      title: 'Add PKM5 node',
+      description: 'Create a new node. Always search first (pkm5_search_nodes) to avoid duplicates. Title: max 160 chars, clear and descriptive. Use "link" ONLY for external content (URL, video, article) — omit for synthesis/ideas derived from existing nodes. "content" = your notes/analysis. "chunk" = verbatim source text. "description" = one-sentence summary for search. Assign 1-5 dimensions — call pkm5_list_dimensions first to use existing ones.',
       // Note: MCP schema uses "content" for external API compat; mapped to "notes" internally
       inputSchema: addNodeInputSchema
     },
@@ -344,9 +344,9 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_search_nodes',
+    'pkm5_search_nodes',
     {
-      title: 'Search RA-H nodes',
+      title: 'Search PKM5 nodes',
       description: 'Search nodes by keyword across title, description, and content fields. Multi-word queries find nodes containing all words (not exact phrases). Returns up to 25 results (default 10). Call before creating nodes to check for duplicates. Optionally filter by dimensions.',
       // Note: searches across title, description, and notes columns
       inputSchema: searchNodesInputSchema
@@ -498,10 +498,10 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_get_nodes',
+    'pkm5_get_nodes',
     {
-      title: 'Get RA-H nodes by ID',
-      description: 'Load full node records by their IDs (max 10 per call). Chunks over 10K chars are truncated — check chunk_truncated and chunk_length fields. For full text, use rah_search_content to search or rah_sqlite_query with substr() to read sections.',
+      title: 'Get PKM5 nodes by ID',
+      description: 'Load full node records by their IDs (max 10 per call). Chunks over 10K chars are truncated — check chunk_truncated and chunk_length fields. For full text, use pkm5_search_content to search or pkm5_sqlite_query with substr() to read sections.',
       inputSchema: getNodesInputSchema
     },
     async ({ nodeIds }) => {
@@ -547,9 +547,9 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_update_node',
+    'pkm5_update_node',
     {
-      title: 'Update RA-H node',
+      title: 'Update PKM5 node',
       description: 'Update an existing node. Content is APPENDED to existing notes (not replaced). Dimensions are REPLACED entirely with the new array. Title, description, and link are overwritten.',
       inputSchema: updateNodeInputSchema
     },
@@ -581,9 +581,9 @@ async function main() {
   // ========== EDGE TOOLS ==========
 
   server.registerTool(
-    'rah_create_edge',
+    'pkm5_create_edge',
     {
-      title: 'Create RA-H edge',
+      title: 'Create PKM5 edge',
       description: 'Connect two nodes with an edge. Edges are the most valuable part of the graph — they represent understanding, not proximity. Direction matters: reads as sourceId → [explanation] → targetId. The explanation should read as a sentence (e.g. "invented this technique", "contradicts the claim in").',
       inputSchema: createEdgeInputSchema
     },
@@ -607,9 +607,9 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_update_edge',
+    'pkm5_update_edge',
     {
-      title: 'Update RA-H edge',
+      title: 'Update PKM5 edge',
       description: 'Update an edge explanation. Use when a connection needs a better or corrected explanation.',
       inputSchema: updateEdgeInputSchema
     },
@@ -628,9 +628,9 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_query_edges',
+    'pkm5_query_edges',
     {
-      title: 'Query RA-H edges',
+      title: 'Query PKM5 edges',
       description: 'Find edges/connections. Optionally filter by nodeId to see all connections for a specific node. Returns up to 50 edges (default 25) with edge IDs, connected node IDs, and explanations.',
       inputSchema: queryEdgesInputSchema
     },
@@ -659,9 +659,9 @@ async function main() {
   // ========== DIMENSION TOOLS ==========
 
   server.registerTool(
-    'rah_list_dimensions',
+    'pkm5_list_dimensions',
     {
-      title: 'List RA-H dimensions',
+      title: 'List PKM5 dimensions',
       description: 'Get all dimensions with node counts.',
       inputSchema: listDimensionsInputSchema
     },
@@ -679,9 +679,9 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_create_dimension',
+    'pkm5_create_dimension',
     {
-      title: 'Create RA-H dimension',
+      title: 'Create PKM5 dimension',
       description: 'Create a new dimension/category. Use lowercase, singular form (e.g. "biology" not "Biology" or "biologies"). Set isPriority=true to lock it for automatic assignment to new nodes. Always include a description.',
       inputSchema: createDimensionInputSchema
     },
@@ -704,9 +704,9 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_update_dimension',
+    'pkm5_update_dimension',
     {
-      title: 'Update RA-H dimension',
+      title: 'Update PKM5 dimension',
       description: 'Update or rename a dimension.',
       inputSchema: updateDimensionInputSchema
     },
@@ -731,9 +731,9 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_delete_dimension',
+    'pkm5_delete_dimension',
     {
-      title: 'Delete RA-H dimension',
+      title: 'Delete PKM5 dimension',
       description: 'Delete a dimension and remove it from all nodes.',
       inputSchema: deleteDimensionInputSchema
     },
@@ -753,9 +753,9 @@ async function main() {
   // ========== GUIDE TOOLS ==========
 
   server.registerTool(
-    'rah_list_guides',
+    'pkm5_list_guides',
     {
-      title: 'List RA-H guides',
+      title: 'List PKM5 guides',
       description: 'List all guides — system guides (immutable reference docs) and user-created guides (custom workflows and preferences). Read "start-here" first for orientation.',
       inputSchema: {}
     },
@@ -773,17 +773,17 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_read_guide',
+    'pkm5_read_guide',
     {
-      title: 'Read RA-H guide',
-      description: 'Read a guide by name. Returns full markdown with procedural instructions. Read "start-here" for master orientation. Call rah_list_guides to see all available guides.',
+      title: 'Read PKM5 guide',
+      description: 'Read a guide by name. Returns full markdown with procedural instructions. Read "start-here" for master orientation. Call pkm5_list_guides to see all available guides.',
       inputSchema: readGuideInputSchema
     },
     async ({ name }) => {
       const guide = guideService.readGuide(name);
 
       if (!guide) {
-        throw new Error(`Guide "${name}" not found. Call rah_list_guides to see available guides.`);
+        throw new Error(`Guide "${name}" not found. Call pkm5_list_guides to see available guides.`);
       }
 
       return {
@@ -794,9 +794,9 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_write_guide',
+    'pkm5_write_guide',
     {
-      title: 'Write RA-H guide',
+      title: 'Write PKM5 guide',
       description: 'Create or update a custom guide. System guides cannot be modified. Content should be markdown with YAML frontmatter (name, description).',
       inputSchema: writeGuideInputSchema
     },
@@ -819,9 +819,9 @@ async function main() {
   );
 
   server.registerTool(
-    'rah_delete_guide',
+    'pkm5_delete_guide',
     {
-      title: 'Delete RA-H guide',
+      title: 'Delete PKM5 guide',
       description: 'Delete a custom guide. System guides cannot be deleted.',
       inputSchema: deleteGuideInputSchema
     },
@@ -846,10 +846,10 @@ async function main() {
   // ========== CONTENT SEARCH TOOL ==========
 
   server.registerTool(
-    'rah_search_content',
+    'pkm5_search_content',
     {
-      title: 'Search RA-H source content',
-      description: 'Search through source content (transcripts, books, articles) stored as chunks. Use when you need to find specific text within a node\'s full source material. For node-level search (titles, descriptions), use rah_search_nodes instead.',
+      title: 'Search PKM5 source content',
+      description: 'Search through source content (transcripts, books, articles) stored as chunks. Use when you need to find specific text within a node\'s full source material. For node-level search (titles, descriptions), use pkm5_search_nodes instead.',
       inputSchema: searchContentInputSchema
     },
     async ({ query: searchQuery, node_id, limit = 5 }) => {
@@ -859,7 +859,7 @@ async function main() {
       const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='chunks'").get();
       if (!tableCheck) {
         return {
-          content: [{ type: 'text', text: 'No chunks table found. Source content has not been chunked yet. Use rah_get_nodes to read the raw chunk field instead.' }],
+          content: [{ type: 'text', text: 'No chunks table found. Source content has not been chunked yet. Use pkm5_get_nodes to read the raw chunk field instead.' }],
           structuredContent: { count: 0, chunks: [], note: 'chunks table does not exist' }
         };
       }
@@ -961,7 +961,7 @@ async function main() {
   // ========== SQL QUERY TOOL ==========
 
   server.registerTool(
-    'rah_sqlite_query',
+    'pkm5_sqlite_query',
     {
       title: 'Execute read-only SQL',
       description: 'Execute read-only SQL queries against the knowledge graph database. Tables: nodes, edges, dimensions, node_dimensions, chunks. Use PRAGMA table_info(tablename) for schema. Only SELECT/WITH/PRAGMA allowed.',
@@ -1020,6 +1020,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('[ra-h-standalone] Fatal error:', error);
+  console.error('[pkm5-standalone] Fatal error:', error);
   process.exit(1);
 });

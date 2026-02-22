@@ -38,7 +38,7 @@ type EvalChatLog = {
   error?: string | null;
 };
 
-const EVALS_LOG_FLAG = process.env.RAH_EVALS_LOG;
+const EVALS_LOG_FLAG = process.env.PKM5_EVALS_LOG;
 const EVALS_LOG_ENABLED = EVALS_LOG_FLAG === '1' || EVALS_LOG_FLAG === 'true';
 const LOG_DIR = path.join(process.cwd(), 'logs');
 const DB_PATH = path.join(LOG_DIR, 'evals.sqlite');
@@ -46,7 +46,7 @@ const DB_PATH = path.join(LOG_DIR, 'evals.sqlite');
 let evalsDb: Database.Database | null = null;
 
 function shouldLogEvals() {
-  // Log ALL interactions when RAH_EVALS_LOG=1
+  // Log ALL interactions when PKM5_EVALS_LOG=1
   // - Real app interactions: scenario_id will be NULL
   // - Synthetic scenarios: scenario_id will be set
   return EVALS_LOG_ENABLED;

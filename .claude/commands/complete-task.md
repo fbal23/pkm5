@@ -1,6 +1,6 @@
 # /complete-task — Mark a task as complete
 
-Find a task in RA-H and mark it complete. Optionally record a completion note.
+Find a task in PKM5 and mark it complete. Optionally record a completion note.
 
 ## Input
 
@@ -15,9 +15,9 @@ Examples:
 
 ## Step 1: Resolve the task
 
-If ID given: `rah_get_nodes([<id>])` to confirm it's a task node.
+If ID given: `pkm5_get_nodes([<id>])` to confirm it's a task node.
 
-If title given: `rah_search_nodes` with query = title text, dimensions = `["task"]`. Show top matches if ambiguous:
+If title given: `pkm5_search_nodes` with query = title text, dimensions = `["task"]`. Show top matches if ambiguous:
 
 ```
 Found multiple matches:
@@ -29,14 +29,14 @@ Which one? (enter ID or number, or 'cancel')
 
 ## Step 2: Update the node
 
-Call `rah_update_node`:
+Call `pkm5_update_node`:
 - Add `complete` dimension, remove `pending` dimension
 - `metadata`: add `completed_at: <today ISO date>`
 - Optionally append completion note to `content`
 
 Dimensions update: `["task", "<domain>", "complete"]` (removes `pending`)
 
-**Note**: RA-H `updateNode` replaces dimensions array. Reconstruct dimensions from existing node: keep all non-status dimensions, replace `pending` with `complete`.
+**Note**: PKM5 `updateNode` replaces dimensions array. Reconstruct dimensions from existing node: keep all non-status dimensions, replace `pending` with `complete`.
 
 ## Step 3: Confirm
 

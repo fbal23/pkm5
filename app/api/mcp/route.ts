@@ -1,14 +1,14 @@
 /**
- * RA-H Remote MCP Endpoint
+ * PKM5 Remote MCP Endpoint
  *
  * A stateless MCP server for Vercel/serverless deployments.
- * Exposes rah_* tools for external agents to query (and optionally modify) the knowledge graph.
+ * Exposes pkm5_* tools for external agents to query (and optionally modify) the knowledge graph.
  *
  * Environment variables:
  *   MCP_ALLOW_WRITES=true  - Enable write tools (add_node, create_edge, etc.)
  *
  * Usage:
- *   claude mcp add --transport http my-rah https://my-deployment.vercel.app/api/mcp
+ *   claude mcp add --transport http my-pkm5 https://my-deployment.vercel.app/api/mcp
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -25,21 +25,21 @@ export const maxDuration = 30;
 const ALLOW_WRITES = process.env.MCP_ALLOW_WRITES === 'true';
 
 const SERVER_INFO = {
-  name: 'ra-h-mcp',
+  name: 'pkm5-mcp',
   version: '1.0.0',
 };
 
 function buildInstructions(): string {
   const lines = [
-    'RA-H Knowledge Graph - a local-first research workspace.',
-    'Use rah_search_nodes to find content by keyword.',
-    'Use rah_get_nodes to load full node content by ID.',
-    'Use rah_query_edges to explore connections between nodes.',
-    'Use rah_list_dimensions to see content categories.',
+    'PKM5 Knowledge Graph - a local-first research workspace.',
+    'Use pkm5_search_nodes to find content by keyword.',
+    'Use pkm5_get_nodes to load full node content by ID.',
+    'Use pkm5_query_edges to explore connections between nodes.',
+    'Use pkm5_list_dimensions to see content categories.',
   ];
 
   if (ALLOW_WRITES) {
-    lines.push('Write operations are enabled. Use rah_add_node to create new nodes.');
+    lines.push('Write operations are enabled. Use pkm5_add_node to create new nodes.');
   } else {
     lines.push('This is a read-only endpoint.');
   }
@@ -48,9 +48,9 @@ function buildInstructions(): string {
 }
 
 /**
- * Create a fresh MCP server instance with rah_* tools
+ * Create a fresh MCP server instance with pkm5_* tools
  */
-function createRAHServer(): McpServer {
+function createPKM5Server(): McpServer {
   const server = new McpServer(SERVER_INFO, {
     instructions: buildInstructions(),
     capabilities: { tools: {} },
@@ -60,11 +60,11 @@ function createRAHServer(): McpServer {
   // READ TOOLS (always enabled)
   // ─────────────────────────────────────────────────────────────────────────────
 
-  // rah_search_nodes - Full-text search
+  // pkm5_search_nodes - Full-text search
   server.registerTool(
-    'rah_search_nodes',
+    'pkm5_search_nodes',
     {
-      title: 'Search RA-H nodes',
+      title: 'Search PKM5 nodes',
       description: 'Search the knowledge graph by keyword. Returns matching nodes with title, description, dimensions.',
       inputSchema: {
         query: z.string().min(1).max(400).describe('Search query (keywords)'),
@@ -105,11 +105,11 @@ function createRAHServer(): McpServer {
     }
   );
 
-  // rah_get_nodes - Load full node content by ID
+  // pkm5_get_nodes - Load full node content by ID
   server.registerTool(
-    'rah_get_nodes',
+    'pkm5_get_nodes',
     {
-      title: 'Get RA-H nodes by ID',
+      title: 'Get PKM5 nodes by ID',
       description: 'Load full content of specific nodes by their IDs.',
       inputSchema: {
         nodeIds: z.array(z.number().int().positive()).min(1).max(10).describe('Node IDs to load (max 10)'),
@@ -154,11 +154,11 @@ function createRAHServer(): McpServer {
     }
   );
 
-  // rah_query_edges - Find connections
+  // pkm5_query_edges - Find connections
   server.registerTool(
-    'rah_query_edges',
+    'pkm5_query_edges',
     {
-      title: 'Query RA-H edges',
+      title: 'Query PKM5 edges',
       description: 'Find connections (edges) between nodes. Use nodeId to get all connections for a specific node.',
       inputSchema: {
         nodeId: z.number().int().positive().optional().describe('Find edges connected to this node'),
@@ -203,11 +203,11 @@ function createRAHServer(): McpServer {
     }
   );
 
-  // rah_list_dimensions - List all dimensions
+  // pkm5_list_dimensions - List all dimensions
   server.registerTool(
-    'rah_list_dimensions',
+    'pkm5_list_dimensions',
     {
-      title: 'List RA-H dimensions',
+      title: 'List PKM5 dimensions',
       description: 'List all dimensions (categories/tags) in the knowledge graph with node counts.',
       inputSchema: {},
     },
@@ -255,11 +255,11 @@ function createRAHServer(): McpServer {
   // ─────────────────────────────────────────────────────────────────────────────
 
   if (ALLOW_WRITES) {
-    // rah_add_node
+    // pkm5_add_node
     server.registerTool(
-      'rah_add_node',
+      'pkm5_add_node',
       {
-        title: 'Add RA-H node',
+        title: 'Add PKM5 node',
         description: 'Create a new node in the knowledge graph.',
         inputSchema: {
           title: z.string().min(1).max(160).describe('Node title'),
@@ -303,11 +303,11 @@ function createRAHServer(): McpServer {
       }
     );
 
-    // rah_update_node
+    // pkm5_update_node
     server.registerTool(
-      'rah_update_node',
+      'pkm5_update_node',
       {
-        title: 'Update RA-H node',
+        title: 'Update PKM5 node',
         description: 'Update an existing node. Content is APPENDED, dimensions are replaced.',
         inputSchema: {
           id: z.number().int().positive().describe('Node ID to update'),
@@ -338,11 +338,11 @@ function createRAHServer(): McpServer {
       }
     );
 
-    // rah_create_edge
+    // pkm5_create_edge
     server.registerTool(
-      'rah_create_edge',
+      'pkm5_create_edge',
       {
-        title: 'Create RA-H edge',
+        title: 'Create PKM5 edge',
         description: 'Create a connection between two nodes.',
         inputSchema: {
           fromNodeId: z.number().int().positive().describe('Source node ID'),
@@ -376,11 +376,11 @@ function createRAHServer(): McpServer {
       }
     );
 
-    // rah_update_edge
+    // pkm5_update_edge
     server.registerTool(
-      'rah_update_edge',
+      'pkm5_update_edge',
       {
-        title: 'Update RA-H edge',
+        title: 'Update PKM5 edge',
         description: 'Update an existing edge explanation.',
         inputSchema: {
           id: z.number().int().positive().describe('Edge ID to update'),
@@ -408,11 +408,11 @@ function createRAHServer(): McpServer {
       }
     );
 
-    // rah_create_dimension
+    // pkm5_create_dimension
     server.registerTool(
-      'rah_create_dimension',
+      'pkm5_create_dimension',
       {
-        title: 'Create RA-H dimension',
+        title: 'Create PKM5 dimension',
         description: 'Create a new dimension (category/tag) for organizing nodes.',
         inputSchema: {
           name: z.string().min(1).describe('Dimension name'),
@@ -439,11 +439,11 @@ function createRAHServer(): McpServer {
       }
     );
 
-    // rah_update_dimension
+    // pkm5_update_dimension
     server.registerTool(
-      'rah_update_dimension',
+      'pkm5_update_dimension',
       {
-        title: 'Update RA-H dimension',
+        title: 'Update PKM5 dimension',
         description: 'Update dimension properties (rename, description, priority).',
         inputSchema: {
           name: z.string().min(1).describe('Current dimension name'),
@@ -481,11 +481,11 @@ function createRAHServer(): McpServer {
       }
     );
 
-    // rah_delete_dimension
+    // pkm5_delete_dimension
     server.registerTool(
-      'rah_delete_dimension',
+      'pkm5_delete_dimension',
       {
-        title: 'Delete RA-H dimension',
+        title: 'Delete PKM5 dimension',
         description: 'Delete a dimension and remove it from all nodes.',
         inputSchema: {
           name: z.string().min(1).describe('Dimension name to delete'),
@@ -517,7 +517,7 @@ function createRAHServer(): McpServer {
  */
 export async function POST(req: NextRequest) {
   try {
-    const server = createRAHServer();
+    const server = createPKM5Server();
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });
@@ -569,13 +569,13 @@ export async function OPTIONS() {
  * GET returns server info
  */
 export async function GET() {
-  const tools = ['rah_search_nodes', 'rah_get_nodes', 'rah_query_edges', 'rah_list_dimensions'];
+  const tools = ['pkm5_search_nodes', 'pkm5_get_nodes', 'pkm5_query_edges', 'pkm5_list_dimensions'];
 
   if (ALLOW_WRITES) {
     tools.push(
-      'rah_add_node', 'rah_update_node',
-      'rah_create_edge', 'rah_update_edge',
-      'rah_create_dimension', 'rah_update_dimension', 'rah_delete_dimension'
+      'pkm5_add_node', 'pkm5_update_node',
+      'pkm5_create_edge', 'pkm5_update_edge',
+      'pkm5_create_dimension', 'pkm5_update_dimension', 'pkm5_delete_dimension'
     );
   }
 
@@ -583,10 +583,10 @@ export async function GET() {
     {
       name: SERVER_INFO.name,
       version: SERVER_INFO.version,
-      description: 'RA-H Knowledge Graph - Remote MCP Server',
+      description: 'PKM5 Knowledge Graph - Remote MCP Server',
       writesEnabled: ALLOW_WRITES,
       tools,
-      usage: 'claude mcp add --transport http my-rah https://your-deployment.vercel.app/api/mcp',
+      usage: 'claude mcp add --transport http my-pkm5 https://your-deployment.vercel.app/api/mcp',
     },
     {
       headers: { 'Access-Control-Allow-Origin': '*' },

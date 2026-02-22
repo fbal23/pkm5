@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { upsertEvalComment } from '@/services/evals/evalsStore';
 
 export async function POST(request: NextRequest) {
-  const evalsEnabled = process.env.RAH_EVALS_LOG === '1' || process.env.RAH_EVALS_LOG === 'true';
+  const evalsEnabled = process.env.PKM5_EVALS_LOG === '1' || process.env.PKM5_EVALS_LOG === 'true';
   if (process.env.NODE_ENV === 'production' || !evalsEnabled) {
     return new Response('Not Found', { status: 404 });
   }

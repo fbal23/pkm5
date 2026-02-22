@@ -1,5 +1,5 @@
 /**
- * Node metadata embedding service for RA-H knowledge management system
+ * Node metadata embedding service for PKM5 knowledge management system
  * Embeds node metadata (title, content, dimensions, AI analysis) into nodes.embedding field
  */
 

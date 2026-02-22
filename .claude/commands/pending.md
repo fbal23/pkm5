@@ -1,6 +1,6 @@
 # /pending — List all pending tasks
 
-List all pending tasks from RA-H, optionally filtered by domain or project.
+List all pending tasks from PKM5, optionally filtered by domain or project.
 
 ## Input
 
@@ -16,7 +16,7 @@ Parse:
 Run SQL to fetch tasks grouped by urgency:
 
 ```
-rah_sqlite_query:
+pkm5_sqlite_query:
 SELECT
   n.id,
   n.title,

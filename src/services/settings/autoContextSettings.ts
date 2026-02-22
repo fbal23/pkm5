@@ -16,23 +16,23 @@ const DEFAULT_SETTINGS: AutoContextSettings = {
 let bootstrapAttempted = false;
 
 function resolveBaseConfigDir(): string {
-  const override = process.env.RAH_CONFIG_DIR;
+  const override = process.env.PKM5_CONFIG_DIR;
   if (override && override.trim().length > 0) {
     return override;
   }
 
   const home = os.homedir();
   if (process.platform === 'darwin') {
-    return path.join(home, 'Library', 'Application Support', 'RA-H');
+    return path.join(home, 'Library', 'Application Support', 'PKM5');
   }
 
   if (process.platform === 'win32') {
     const roaming = process.env.APPDATA || path.join(home, 'AppData', 'Roaming');
-    return path.join(roaming, 'RA-H');
+    return path.join(roaming, 'PKM5');
   }
 
   const xdgConfig = process.env.XDG_CONFIG_HOME || path.join(home, '.config');
-  return path.join(xdgConfig, 'ra-h');
+  return path.join(xdgConfig, 'pkm5');
 }
 
 function getSettingsDir(): string {

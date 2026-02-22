@@ -14,46 +14,46 @@ RA-OS provides 14 MCP tools for external agents:
 
 | Tool | Description |
 |------|-------------|
-| `rah_add_node` | Create a new knowledge node |
-| `rah_search_nodes` | Search nodes by title, content, or dimensions |
-| `rah_update_node` | Update an existing node |
-| `rah_get_nodes` | Get nodes by ID array |
+| `pkm5_add_node` | Create a new knowledge node |
+| `pkm5_search_nodes` | Search nodes by title, content, or dimensions |
+| `pkm5_update_node` | Update an existing node |
+| `pkm5_get_nodes` | Get nodes by ID array |
 
 ### Edge Operations
 
 | Tool | Description |
 |------|-------------|
-| `rah_create_edge` | Create relationship between nodes |
-| `rah_query_edges` | Query existing edges |
-| `rah_update_edge` | Update edge metadata |
+| `pkm5_create_edge` | Create relationship between nodes |
+| `pkm5_query_edges` | Query existing edges |
+| `pkm5_update_edge` | Update edge metadata |
 
 ### Dimension Operations
 
 | Tool | Description |
 |------|-------------|
-| `rah_create_dimension` | Create a new dimension tag |
-| `rah_update_dimension` | Update dimension description |
-| `rah_delete_dimension` | Delete a dimension |
+| `pkm5_create_dimension` | Create a new dimension tag |
+| `pkm5_update_dimension` | Update dimension description |
+| `pkm5_delete_dimension` | Delete a dimension |
 
 ### Search
 
 | Tool | Description |
 |------|-------------|
-| `rah_search_embeddings` | Semantic search across chunk embeddings |
+| `pkm5_search_embeddings` | Semantic search across chunk embeddings |
 
 ### Guides
 
 | Tool | Description |
 |------|-------------|
-| `rah_list_guides` | List all available guides |
-| `rah_read_guide` | Read a specific guide's content |
-| `rah_write_guide` | Create or update a guide |
+| `pkm5_list_guides` | List all available guides |
+| `pkm5_read_guide` | Read a specific guide's content |
+| `pkm5_write_guide` | Create or update a guide |
 
 ---
 
 ## Tool Schemas
 
-### rah_add_node
+### pkm5_add_node
 
 ```typescript
 {
@@ -66,7 +66,7 @@ RA-OS provides 14 MCP tools for external agents:
 }
 ```
 
-### rah_search_nodes
+### pkm5_search_nodes
 
 ```typescript
 {
@@ -76,7 +76,7 @@ RA-OS provides 14 MCP tools for external agents:
 }
 ```
 
-### rah_update_node
+### pkm5_update_node
 
 ```typescript
 {
@@ -90,7 +90,7 @@ RA-OS provides 14 MCP tools for external agents:
 }
 ```
 
-### rah_create_edge
+### pkm5_create_edge
 
 ```typescript
 {
@@ -100,7 +100,7 @@ RA-OS provides 14 MCP tools for external agents:
 }
 ```
 
-### rah_search_embeddings
+### pkm5_search_embeddings
 
 ```typescript
 {
@@ -119,7 +119,7 @@ Guides are markdown documents stored in `src/config/guides/` that help external 
 
 ### Why Guides?
 
-When an external agent (like Claude Code) connects to RA-H via MCP, it has access to tools but lacks context about:
+When an external agent (like Claude Code) connects to PKM5 via MCP, it has access to tools but lacks context about:
 - How your knowledge base is organized
 - What dimensions mean in your system
 - Best practices for creating/linking nodes

@@ -1,6 +1,6 @@
 "use client";
 
-// Stub type for delegation (delegation system removed in rah-light)
+// Stub type for delegation (delegation system removed in pkm5-light)
 type AgentDelegation = {
   id: number;
   sessionId: string;
@@ -25,7 +25,7 @@ export default function QuickAddStatus({ delegations, onDelegationClick }: Quick
   const handleClearCompleted = async () => {
     for (const delegation of completedDelegations) {
       try {
-        await fetch(`/api/rah/delegations/${delegation.sessionId}`, { method: 'DELETE' });
+        await fetch(`/api/pkm5/delegations/${delegation.sessionId}`, { method: 'DELETE' });
       } catch (error) {
         console.error('Failed to delete delegation:', error);
       }

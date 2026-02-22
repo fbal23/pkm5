@@ -17,7 +17,7 @@ const MAX_USER_GUIDES = 10;
 
 const GUIDES_DIR = path.join(
   os.homedir(),
-  'Library/Application Support/RA-H/guides'
+  'Library/Application Support/PKM5/guides'
 );
 
 const SYSTEM_GUIDES_DIR = path.join(

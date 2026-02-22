@@ -1,10 +1,10 @@
 {
-  "name": "ra-h-mcp-server",
+  "name": "pkm5-mcp-server",
   "version": "1.4.2",
-  "description": "Connect Claude Code/Desktop to your RA-H knowledge base. Direct SQLite access - no web app required.",
+  "description": "Connect Claude Code/Desktop to your PKM5 knowledge base. Direct SQLite access - no web app required.",
   "main": "index.js",
   "bin": {
-    "ra-h-mcp-server": "./index.js"
+    "pkm5-mcp-server": "./index.js"
   },
   "scripts": {
     "start": "node index.js"
@@ -17,8 +17,8 @@
     "knowledge-base",
     "knowledge-management",
     "sqlite",
-    "ra-h",
-    "rah",
+    "pkm5",
+    "pkm5",
     "pkm",
     "second-brain"
   ],
@@ -26,11 +26,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bradwmorris/ra-h"
+    "url": "https://github.com/bradwmorris/pkm5"
   },
-  "homepage": "https://ra-h.app",
+  "homepage": "https://pkm5.app",
   "bugs": {
-    "url": "https://github.com/bradwmorris/ra-h/issues"
+    "url": "https://github.com/bradwmorris/pkm5/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

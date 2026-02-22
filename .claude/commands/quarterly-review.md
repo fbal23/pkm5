@@ -57,7 +57,7 @@ Ask the user:
 ## Step 6: Create quarterly review node
 
 ```
-rah_add_node:
+pkm5_add_node:
   title: "Quarterly Review — 2026-Q1"
   dimensions: ["note", "admin"]
   content: |
@@ -98,7 +98,7 @@ rah_add_node:
 
 ## Step 7: Memory guide update
 
-Review all insight nodes created this quarter. For durable ones, add to `rah_write_guide("memory", <updated>)` under relevant sections (Domain Dynamics, Relationships, Workflow Patterns, etc.).
+Review all insight nodes created this quarter. For durable ones, add to `pkm5_write_guide("memory", <updated>)` under relevant sections (Domain Dynamics, Relationships, Workflow Patterns, etc.).
 
 Archive insight nodes that proved wrong or irrelevant: add `archived` dimension.
 

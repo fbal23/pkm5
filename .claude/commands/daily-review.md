@@ -12,7 +12,7 @@ Arguments: `$ARGUMENTS`
 ## Step 1: Load today's daily node
 
 ```
-rah_search_nodes(query="Daily Plan <date>", dimensions=["note"], limit=1)
+pkm5_search_nodes(query="Daily Plan <date>", dimensions=["note"], limit=1)
 ```
 
 If not found: "No daily note for <date>. Run `/today` first."
@@ -41,7 +41,7 @@ Classify:
 ## Step 3: Check git activity across projects
 
 ```bash
-git -C "/Users/balazsfurjes/Cursor files/ra-h_os" log --oneline --since="<date> 00:00" --until="<date> 23:59" --author="$(git config user.email)"
+git -C "/Users/balazsfurjes/Cursor files/pkm5" log --oneline --since="<date> 00:00" --until="<date> 23:59" --author="$(git config user.email)"
 ```
 
 Run for all active project repos. Summarise commits by repo.
@@ -57,7 +57,7 @@ Run for all active project repos. Summarise commits by repo.
 |--------|------|--------|
 | ✓ Done | Review HAC26 proposal | HAC26 |
 | ✗ Missed | Update BIO-RED tables | BIO-RED |
-| + Unplanned | Fix RA-H MCP server error | AI_development |
+| + Unplanned | Fix PKM5 MCP server error | AI_development |
 
 Completed: N/M planned | Unplanned completions: N
 ```
@@ -67,12 +67,12 @@ Completed: N/M planned | Unplanned completions: N
 For each incomplete planned task:
 > "Mark 'Update BIO-RED tables' as: [c]omplete / [p]ostpone (new due?) / [s]kip"
 
-For postponed tasks: `rah_update_node(id, updates={ metadata: { due: "<new date>" } })`
+For postponed tasks: `pkm5_update_node(id, updates={ metadata: { due: "<new date>" } })`
 
 ## Step 6: Append review section to daily node
 
 ```
-rah_update_node(id=dailyNodeId, updates={
+pkm5_update_node(id=dailyNodeId, updates={
   content: <append>
 
 ---
@@ -88,7 +88,7 @@ rah_update_node(id=dailyNodeId, updates={
 - + <unplanned completion>
 
 ### Cross-Project Activity
-- ra-h_os: N commits (feat: ..., fix: ...)
+- pkm5: N commits (feat: ..., fix: ...)
 
 ### Discipline Check
 - Focus maintained: yes/no
@@ -105,7 +105,7 @@ rah_update_node(id=dailyNodeId, updates={
 Present memory candidates identified:
 > "Worth adding to memory: '<insight>'. Save as insight node? (yes/no/edit)"
 
-If yes: `rah_add_node(title="<insight>", dimensions=["insight", "<domain>"])`
+If yes: `pkm5_add_node(title="<insight>", dimensions=["insight", "<domain>"])`
 
 ## Step 8: Random revisit (serendipity)
 

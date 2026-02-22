@@ -1,7 +1,7 @@
 import React from 'react';
 import { Node } from '@/types/database';
 
-// Stub type for delegation (delegation system removed in rah-light)
+// Stub type for delegation (delegation system removed in pkm5-light)
 export type AgentDelegation = {
   id: number;
   sessionId: string;
@@ -14,7 +14,7 @@ export type AgentDelegation = {
   updatedAt: string;
 };
 
-// The four pane types (chat removed in rah-light, guides moved to settings)
+// The four pane types (chat removed in pkm5-light, guides moved to settings)
 export type PaneType = 'node' | 'dimensions' | 'map' | 'views' | 'table';
 
 // State for each slot
@@ -66,7 +66,7 @@ export interface HighlightedPassage {
   selectedText: string;
 }
 
-// ChatPaneProps removed in rah-light
+// ChatPaneProps removed in pkm5-light
 
 // DimensionsPane specific props
 export interface DimensionsPaneProps extends BasePaneProps {

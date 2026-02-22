@@ -372,7 +372,7 @@ export default function ViewsOverlay({ onNodeClick, onNodeOpenInOtherPane, refre
         draggable
         onDragStart={(e) => {
           const title = node.title || 'Untitled';
-          e.dataTransfer.setData('application/x-rah-node', JSON.stringify({ id: node.id, title }));
+          e.dataTransfer.setData('application/x-pkm5-node', JSON.stringify({ id: node.id, title }));
           e.dataTransfer.setData('application/node-info', JSON.stringify({ id: node.id, title, dimensions: node.dimensions || [] }));
           e.dataTransfer.setData('text/plain', `[NODE:${node.id}:"${title}"]`);
         }}
@@ -423,7 +423,7 @@ export default function ViewsOverlay({ onNodeClick, onNodeOpenInOtherPane, refre
                 e.stopPropagation();
                 setReorderDragIndex(index);
                 e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('application/x-rah-reorder', String(index));
+                e.dataTransfer.setData('application/x-pkm5-reorder', String(index));
               }}
               onDragEnd={() => {
                 setReorderDragIndex(null);

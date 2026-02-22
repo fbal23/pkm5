@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Ralph Autonomous Agent Loop for RA-H
+# Ralph Autonomous Agent Loop for PKM5
 # Usage: ./ralph/ralph.sh [max_iterations]
 #
 # Runs Claude Code in a loop to implement user stories from prd.json

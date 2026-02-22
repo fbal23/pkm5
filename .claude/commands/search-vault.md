@@ -1,6 +1,6 @@
 # /search-vault — Semantic search across the knowledge graph
 
-Search the RA-H knowledge graph using natural language. Handles confidential content routing.
+Search the PKM5 knowledge graph using natural language. Handles confidential content routing.
 
 ## Input
 
@@ -16,11 +16,11 @@ Example: `/search-vault HAC26 proposal deadline domain:HAC26 limit:5`
 
 ## Step 1: Keyword search
 
-Use `rah_search_nodes` with the query. Pass domain and type as dimension filters if specified.
+Use `pkm5_search_nodes` with the query. Pass domain and type as dimension filters if specified.
 
 ## Step 2: Content search (optional)
 
-If keyword search returns fewer than 3 results, also run `rah_search_content` with the same query to search across node chunks.
+If keyword search returns fewer than 3 results, also run `pkm5_search_content` with the same query to search across node chunks.
 
 ## Step 3: Apply LLM routing policy per result
 

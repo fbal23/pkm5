@@ -2,7 +2,7 @@
 
 ## Logging System
 
-RA-H uses a **trigger-based logging system** that automatically captures all database activity in the `logs` table.
+PKM5 uses a **trigger-based logging system** that automatically captures all database activity in the `logs` table.
 
 ### What Gets Logged
 
@@ -122,7 +122,7 @@ LIMIT 100
 **Settings → Analytics panel shows:**
 - Total tokens used (all time)
 - Total cost (USD)
-- Breakdown by agent (ra-h, ra-h-easy, mini-rah, wise-rah)
+- Breakdown by agent (pkm5, pkm5-easy, mini-pkm5, wise-pkm5)
 - Breakdown by conversation thread
 - Average cost per chat
 

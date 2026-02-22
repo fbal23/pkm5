@@ -1,4 +1,4 @@
-# RA-H OS
+# PKM5 OS
 
 ```
  ██████╗  █████╗       ██╗  ██╗
@@ -15,7 +15,7 @@
 
 > **Currently macOS only.** Linux and Windows support is coming. If you want to run it on Linux/Windows now, see [instructions at the bottom](#linuxwindows).
 
-**Full documentation:** [ra-h.app/docs/open-source](https://ra-h.app/docs/open-source)
+**Full documentation:** [pkm5.app/docs/open-source](https://pkm5.app/docs/open-source)
 
 ---
 
@@ -40,8 +40,8 @@ Your data stays on your machine. Nothing is sent anywhere unless you configure a
 ## Install
 
 ```bash
-git clone https://github.com/bradwmorris/ra-h_os.git
-cd ra-h_os
+git clone https://github.com/bradwmorris/pkm5.git
+cd pkm5
 npm install
 npm rebuild better-sqlite3
 ./scripts/dev/bootstrap-local.sh
@@ -72,9 +72,9 @@ Get a key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys
 ## Where Your Data Lives
 
 ```
-~/Library/Application Support/RA-H/db/rah.sqlite   # macOS
-~/.local/share/RA-H/db/rah.sqlite                  # Linux
-%APPDATA%/RA-H/db/rah.sqlite                       # Windows
+~/Library/Application Support/PKM5/db/pkm5.sqlite   # macOS
+~/.local/share/PKM5/db/pkm5.sqlite                  # Linux
+%APPDATA%/PKM5/db/pkm5.sqlite                       # Windows
 ```
 
 This is a standard SQLite file. You can:
@@ -91,9 +91,9 @@ Add to your `~/.claude.json`:
 ```json
 {
   "mcpServers": {
-    "ra-h": {
+    "pkm5": {
       "command": "npx",
-      "args": ["ra-h-mcp-server"]
+      "args": ["pkm5-mcp-server"]
     }
   }
 }
@@ -101,44 +101,44 @@ Add to your `~/.claude.json`:
 
 Restart Claude Code fully (**Cmd+Q on Mac**, not just closing the window).
 
-**Verify it worked:** Ask Claude "Do you have rah_ tools available?" — you should see tools like `rah_add_node`, `rah_search_nodes`, etc.
+**Verify it worked:** Ask Claude "Do you have pkm5_ tools available?" — you should see tools like `pkm5_add_node`, `pkm5_search_nodes`, etc.
 
 **For contributors** testing local changes, use the local path instead:
 ```json
 {
   "mcpServers": {
-    "ra-h": {
+    "pkm5": {
       "command": "node",
-      "args": ["/absolute/path/to/ra-h_os/apps/mcp-server-standalone/index.js"]
+      "args": ["/absolute/path/to/pkm5/apps/mcp-server-standalone/index.js"]
     }
   }
 }
 ```
 
-**What happens:** Once connected, Claude calls `rah_get_context` first to orient itself (stats, hub nodes, dimensions, available guides). It proactively captures knowledge — when a new insight, decision, person, or reference surfaces, it proposes a specific node (title, dimensions, description) so you can approve with minimal friction. For complex tasks it reads guides to understand your graph conventions and custom workflows.
+**What happens:** Once connected, Claude calls `pkm5_get_context` first to orient itself (stats, hub nodes, dimensions, available guides). It proactively captures knowledge — when a new insight, decision, person, or reference surfaces, it proposes a specific node (title, dimensions, description) so you can approve with minimal friction. For complex tasks it reads guides to understand your graph conventions and custom workflows.
 
 Available tools:
 
 | Tool | What it does |
 |------|--------------|
-| `rah_get_context` | Get graph overview — stats, hub nodes, dimensions, recent activity |
-| `rah_search_nodes` | Find nodes by keyword |
-| `rah_add_node` | Create a new node |
-| `rah_get_nodes` | Fetch nodes by ID |
-| `rah_update_node` | Edit an existing node |
-| `rah_create_edge` | Link two nodes together |
-| `rah_update_edge` | Update an edge explanation |
-| `rah_query_edges` | Find connections |
-| `rah_list_dimensions` | List all tags/categories |
-| `rah_create_dimension` | Create a new dimension |
-| `rah_update_dimension` | Update/rename a dimension |
-| `rah_delete_dimension` | Delete a dimension |
-| `rah_list_guides` | List available guides (system + custom) |
-| `rah_read_guide` | Read a guide by name |
-| `rah_write_guide` | Create or update a custom guide |
-| `rah_delete_guide` | Delete a custom guide |
-| `rah_search_content` | Search through source content (transcripts, books, articles) |
-| `rah_sqlite_query` | Run read-only SQL queries (SELECT/WITH/PRAGMA) |
+| `pkm5_get_context` | Get graph overview — stats, hub nodes, dimensions, recent activity |
+| `pkm5_search_nodes` | Find nodes by keyword |
+| `pkm5_add_node` | Create a new node |
+| `pkm5_get_nodes` | Fetch nodes by ID |
+| `pkm5_update_node` | Edit an existing node |
+| `pkm5_create_edge` | Link two nodes together |
+| `pkm5_update_edge` | Update an edge explanation |
+| `pkm5_query_edges` | Find connections |
+| `pkm5_list_dimensions` | List all tags/categories |
+| `pkm5_create_dimension` | Create a new dimension |
+| `pkm5_update_dimension` | Update/rename a dimension |
+| `pkm5_delete_dimension` | Delete a dimension |
+| `pkm5_list_guides` | List available guides (system + custom) |
+| `pkm5_read_guide` | Read a guide by name |
+| `pkm5_write_guide` | Create or update a custom guide |
+| `pkm5_delete_guide` | Delete a custom guide |
+| `pkm5_search_content` | Search through source content (transcripts, books, articles) |
+| `pkm5_sqlite_query` | Run read-only SQL queries (SELECT/WITH/PRAGMA) |
 
 **Example prompts for Claude Code:**
 - "What's in my knowledge graph?"
@@ -154,7 +154,7 @@ Query your database directly:
 
 ```bash
 # Open the database
-sqlite3 ~/Library/Application\ Support/RA-H/db/rah.sqlite
+sqlite3 ~/Library/Application\ Support/PKM5/db/pkm5.sqlite
 
 # List all nodes
 SELECT id, title, created_at FROM nodes ORDER BY created_at DESC LIMIT 10;
@@ -170,7 +170,7 @@ JOIN nodes n2 ON e.to_node_id = n2.id
 LIMIT 10;
 ```
 
-See [ra-h.app/docs/open-source](https://ra-h.app/docs/open-source) for full schema documentation.
+See [pkm5.app/docs/open-source](https://pkm5.app/docs/open-source) for full schema documentation.
 
 ---
 
@@ -210,6 +210,6 @@ Without sqlite-vec, everything works except semantic/vector search.
 
 ## More
 
-- **Full docs:** [ra-h.app/docs/open-source](https://ra-h.app/docs/open-source)
-- **Issues:** [github.com/bradwmorris/ra-h_os/issues](https://github.com/bradwmorris/ra-h_os/issues)
+- **Full docs:** [pkm5.app/docs/open-source](https://pkm5.app/docs/open-source)
+- **Issues:** [github.com/bradwmorris/pkm5/issues](https://github.com/bradwmorris/pkm5/issues)
 - **License:** MIT

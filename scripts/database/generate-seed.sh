@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-OUTPUT_PATH="${1:-$REPO_ROOT/dist/resources/rah_seed.sqlite}"
+OUTPUT_PATH="${1:-$REPO_ROOT/dist/resources/pkm5_seed.sqlite}"
 SQLITE_SCRIPT="$REPO_ROOT/scripts/database/sqlite-ensure-app-schema.sh"
 
 if [ ! -x "$SQLITE_SCRIPT" ]; then

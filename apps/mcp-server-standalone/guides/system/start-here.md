@@ -17,7 +17,7 @@ Every piece of knowledge is a node. Key fields:
 - **content** — Your notes, analysis, commentary. This is where synthesis lives.
 - **chunk** — Verbatim source text (transcript, article body, full quote). Kept separate from your analysis in content.
 - **link** — ONLY for external content (URLs, YouTube, articles, PDFs). Omit for ideas, synthesis, or anything derived from existing nodes.
-- **dimensions** — 1–5 categories. Always call rah_list_dimensions first and use existing ones.
+- **dimensions** — 1–5 categories. Always call pkm5_list_dimensions first and use existing ones.
 
 Two types of nodes:
 - **External content** (has link) — articles, videos, papers, tweets. The link points to the source.
@@ -44,7 +44,7 @@ Categories that organize nodes. Two kinds:
 
 ## Key Conventions
 
-1. **Search before creating** — always call rah_search_nodes to check for duplicates
+1. **Search before creating** — always call pkm5_search_nodes to check for duplicates
 2. **Content appends, dimensions replace** — when updating a node, new content is added below existing content; dimensions are fully replaced with the new array
 3. **Hub nodes** are the most-connected nodes — they represent the user's major themes and interests
 4. **Proactively save valuable information** — when you spot something worth preserving in a conversation, offer to add it
@@ -52,9 +52,9 @@ Categories that organize nodes. Two kinds:
 
 ## Guides
 
-There are two kinds of guides available via rah_list_guides:
+There are two kinds of guides available via pkm5_list_guides:
 
-- **System guides (immutable)** — reference documentation maintained by RA-H. Cover schema, node creation, edges, dimensions, and content extraction. Always available, cannot be modified.
-- **User guides (custom)** — created by the user for their own workflows, preferences, and procedures. Can be created, edited, and deleted via rah_write_guide / rah_delete_guide.
+- **System guides (immutable)** — reference documentation maintained by PKM5. Cover schema, node creation, edges, dimensions, and content extraction. Always available, cannot be modified.
+- **User guides (custom)** — created by the user for their own workflows, preferences, and procedures. Can be created, edited, and deleted via pkm5_write_guide / pkm5_delete_guide.
 
-Call rah_list_guides to see what's available, then rah_read_guide to load any guide you need.
+Call pkm5_list_guides to see what's available, then pkm5_read_guide to load any guide you need.

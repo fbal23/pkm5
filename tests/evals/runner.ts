@@ -27,12 +27,12 @@ type EvalResult = {
   latencyMs?: number | null;
 };
 
-const BASE_URL = process.env.RAH_EVALS_BASE_URL || 'http://localhost:3000';
-const DATASET_ENV = process.env.RAH_EVALS_DATASET_ID;
+const BASE_URL = process.env.PKM5_EVALS_BASE_URL || 'http://localhost:3000';
+const DATASET_ENV = process.env.PKM5_EVALS_DATASET_ID;
 const LOG_DB_PATH = path.join(process.cwd(), 'logs', 'evals.sqlite');
-const RAH_DB_PATH = process.env.SQLITE_DB_PATH || path.join(
+const PKM5_DB_PATH = process.env.SQLITE_DB_PATH || path.join(
   process.env.HOME || '~',
-  'Library/Application Support/RA-H/db/rah.sqlite'
+  'Library/Application Support/PKM5/db/pkm5.sqlite'
 );
 
 function loadDatasetId() {
@@ -45,8 +45,8 @@ function loadDatasetId() {
 
 function resolveFocusedNodeId(query: Scenario['input']['focusedNodeQuery']): number | null {
   if (!query) return null;
-  if (!fs.existsSync(RAH_DB_PATH)) return null;
-  const db = new Database(RAH_DB_PATH, { readonly: true, fileMustExist: true });
+  if (!fs.existsSync(PKM5_DB_PATH)) return null;
+  const db = new Database(PKM5_DB_PATH, { readonly: true, fileMustExist: true });
   if (query.titleEquals) {
     const row = db.prepare(`
       SELECT id
@@ -183,7 +183,7 @@ async function runScenario(scenario: Scenario, datasetId: string): Promise<EvalR
   const traceId = `eval_${Date.now()}_${randomUUID().slice(0, 8)}`;
   const resolvedFocusedNodeId =
     scenario.input.focusedNodeId ?? resolveFocusedNodeId(scenario.input.focusedNodeQuery);
-  const response = await fetch(`${BASE_URL}/api/rah/chat`, {
+  const response = await fetch(`${BASE_URL}/api/pkm5/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -204,7 +204,7 @@ async function runScenario(scenario: Scenario, datasetId: string): Promise<EvalR
     return {
       scenario: scenario.name,
       passed: false,
-      failures: [`HTTP ${response.status} from /api/rah/chat`],
+      failures: [`HTTP ${response.status} from /api/pkm5/chat`],
       warnings: [],
     };
   }

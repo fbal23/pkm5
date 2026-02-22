@@ -47,18 +47,18 @@ erDiagram
 
 ## Why SQLite?
 
-RA-H uses **SQLite** for local-first data ownership. Your knowledge stays on your machine - no cloud dependencies. SQLite provides:
+PKM5 uses **SQLite** for local-first data ownership. Your knowledge stays on your machine - no cloud dependencies. SQLite provides:
 - **Zero configuration** - single file database
 - **sqlite-vec extension** - fast vector similarity search
 - **Full-text search (FTS5)** - Google-like text search
 - **Relational integrity** - foreign keys, triggers, transactions
 - **Portability** - database file migrates with Mac app
 
-**Database Location:** `~/Library/Application Support/RA-H/db/rah.sqlite`
+**Database Location:** `~/Library/Application Support/PKM5/db/pkm5.sqlite`
 
 ## Two-Layer Embedding Architecture
 
-RA-H uses **two types of embeddings** for different search needs:
+PKM5 uses **two types of embeddings** for different search needs:
 
 ### 1. Node-Level Embeddings
 - **Storage:** `nodes.embedding` column (BLOB)
@@ -158,7 +158,7 @@ Explanations must read correctly **FROM → TO**:
 - `source_of`: **FROM** came from / was inspired by **TO**
 
 #### Inference + guardrails
-On edge create and on explanation edits, RA-H:
+On edge create and on explanation edits, PKM5:
 - runs lightweight **heuristics** for common phrases (e.g., “Created by …”, “Part of …”, “Came from …”, “Features …”)
 - otherwise runs an AI classification step to populate `category/type/confidence`
 
@@ -173,7 +173,7 @@ All edge creation funnels through the service layer enforcement:
 - UI (`FocusPanel`) — requires explanation; allows editing explanation (re-infers)
 - REST API `POST /api/edges` — requires `explanation`
 - Tooling (`createEdge` tool) — requires `explanation`
-- MCP (`rah_create_edge`) — requires `explanation`
+- MCP (`pkm5_create_edge`) — requires `explanation`
 - Workflows (e.g. `connect`, `integrate`) — call `createEdge` with `explanation`
 
 ### chunks
@@ -221,7 +221,7 @@ Conversation history with token/cost tracking.
 **Columns:**
 - `id` (INTEGER PK)
 - `chat_type` (TEXT) - Conversation type
-- `helper_name` (TEXT) - Agent key (ra-h, ra-h-easy, mini-rah, wise-rah)
+- `helper_name` (TEXT) - Agent key (pkm5, pkm5-easy, mini-pkm5, wise-pkm5)
 - `agent_type` (TEXT) - Role category (orchestrator, executor, planner)
 - `delegation_id` (INTEGER FK)
 - `user_message` (TEXT)
@@ -235,7 +235,7 @@ Conversation history with token/cost tracking.
 - `idx_chats_thread` - Fast thread retrieval
 
 ### agent_delegations
-Task queue for mini-rah workers.
+Task queue for mini-pkm5 workers.
 
 **Columns:**
 - `id` (INTEGER PK)
@@ -353,7 +353,7 @@ CREATE TABLE schema_version (
 
 ## Seed Database
 
-**Location:** `/dist/resources/rah_seed.sqlite`  
+**Location:** `/dist/resources/pkm5_seed.sqlite`  
 **Purpose:** Ships with Mac app for new users  
 **Contents:** Clean schema, no data, no vec tables (auto-created on first run)  
 **Size:** ~128KB

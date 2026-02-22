@@ -1,8 +1,8 @@
 {
-  "name": "ra-h-open-source",
+  "name": "pkm5-open-source",
   "version": "0.1.0",
   "private": false,
-  "description": "RA-H Open Source – local-first research workspace with BYO API keys",
+  "description": "PKM5 Open Source – local-first research workspace with BYO API keys",
   "license": "MIT",
   "author": "Bradley Morris",
   "scripts": {
@@ -18,7 +18,7 @@
     "sqlite:restore": "bash scripts/database/sqlite-restore.sh",
     "test": "vitest run",
     "test:watch": "vitest",
-    "evals": "RAH_EVALS_LOG=1 tsx tests/evals/runner.ts",
+    "evals": "PKM5_EVALS_LOG=1 tsx tests/evals/runner.ts",
     "migrate:obsidian": "tsx scripts/migrate-obsidian.ts"
   },
   "dependencies": {

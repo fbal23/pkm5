@@ -10,16 +10,16 @@ const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio
 const packageJson = require('../../package.json');
 
 const instructions = [
-  'RA-H is a personal knowledge graph — local-first, vendor-neutral.',
+  'PKM5 is a personal knowledge graph — local-first, vendor-neutral.',
   'Core concepts: nodes (knowledge units), edges (connections with explanations), dimensions (categories).',
-  'Always call rah_get_context first to orient yourself — it returns hub nodes, dimensions, stats, and available guides.',
-  'Search before creating: use rah_search_nodes to check if content already exists.',
+  'Always call pkm5_get_context first to orient yourself — it returns hub nodes, dimensions, stats, and available guides.',
+  'Search before creating: use pkm5_search_nodes to check if content already exists.',
   'Every edge needs an explanation: why does this connection exist?',
   'All data stays local on this device; nothing leaves 127.0.0.1.',
 ].join(' ');
 
 const serverInfo = {
-  name: 'ra-h-local-stdio',
+  name: 'pkm5-local-stdio',
   version: packageJson.version || '0.0.0'
 };
 
@@ -27,7 +27,7 @@ const STATUS_PATH = path.join(
   os.homedir(),
   'Library',
   'Application Support',
-  'RA-H',
+  'PKM5',
   'config',
   'mcp-status.json'
 );
@@ -70,7 +70,7 @@ const searchNodesOutputSchema = {
   )
 };
 
-// rah_update_node schemas
+// pkm5_update_node schemas
 const updateNodeInputSchema = {
   id: z.number().int().positive().describe('The ID of the node to update'),
   updates: z.object({
@@ -88,7 +88,7 @@ const updateNodeOutputSchema = {
   message: z.string()
 };
 
-// rah_get_nodes schemas
+// pkm5_get_nodes schemas
 const getNodesInputSchema = {
   nodeIds: z.array(z.number().int().positive()).min(1).max(10).describe('List of node IDs to load')
 };
@@ -107,7 +107,7 @@ const getNodesOutputSchema = {
   )
 };
 
-// rah_create_edge schemas
+// pkm5_create_edge schemas
 const createEdgeInputSchema = {
   sourceId: z.number().int().positive().describe('Source node ID'),
   targetId: z.number().int().positive().describe('Target node ID'),
@@ -120,7 +120,7 @@ const createEdgeOutputSchema = {
   message: z.string()
 };
 
-// rah_query_edges schemas
+// pkm5_query_edges schemas
 const queryEdgesInputSchema = {
   nodeId: z.number().int().positive().optional().describe('Find edges connected to this node'),
   limit: z.number().min(1).max(50).optional().describe('Max edges to return')
@@ -139,7 +139,7 @@ const queryEdgesOutputSchema = {
   )
 };
 
-// rah_update_edge schemas
+// pkm5_update_edge schemas
 const updateEdgeInputSchema = {
   id: z.number().int().positive().describe('Edge ID to update'),
   explanation: z.string().min(1).optional().describe('New explanation text (will re-infer relationship type)')
@@ -150,7 +150,7 @@ const updateEdgeOutputSchema = {
   message: z.string()
 };
 
-// rah_create_dimension schemas
+// pkm5_create_dimension schemas
 const createDimensionInputSchema = {
   name: z.string().min(1).describe('Dimension name'),
   description: z.string().max(500).optional().describe('Dimension description'),
@@ -163,7 +163,7 @@ const createDimensionOutputSchema = {
   message: z.string()
 };
 
-// rah_update_dimension schemas
+// pkm5_update_dimension schemas
 const updateDimensionInputSchema = {
   name: z.string().min(1).describe('Current dimension name'),
   newName: z.string().optional().describe('New name (for renaming)'),
@@ -177,7 +177,7 @@ const updateDimensionOutputSchema = {
   message: z.string()
 };
 
-// rah_delete_dimension schemas
+// pkm5_delete_dimension schemas
 const deleteDimensionInputSchema = {
   name: z.string().min(1).describe('Dimension name to delete')
 };
@@ -187,7 +187,7 @@ const deleteDimensionOutputSchema = {
   message: z.string()
 };
 
-// rah_search_embeddings schemas
+// pkm5_search_embeddings schemas
 const searchEmbeddingsInputSchema = {
   query: z.string().min(1).describe('Semantic search query'),
   limit: z.number().min(1).max(20).optional().describe('Max results')
@@ -205,7 +205,7 @@ const searchEmbeddingsOutputSchema = {
   )
 };
 
-// rah_extract_url schemas
+// pkm5_extract_url schemas
 const extractUrlInputSchema = {
   url: z.string().url().describe('URL of the webpage to extract content from')
 };
@@ -218,7 +218,7 @@ const extractUrlOutputSchema = {
   metadata: z.record(z.any())
 };
 
-// rah_extract_youtube schemas
+// pkm5_extract_youtube schemas
 const extractYoutubeInputSchema = {
   url: z.string().describe('YouTube video URL to extract transcript from')
 };
@@ -231,7 +231,7 @@ const extractYoutubeOutputSchema = {
   metadata: z.record(z.any())
 };
 
-// rah_extract_pdf schemas
+// pkm5_extract_pdf schemas
 const extractPdfInputSchema = {
   url: z.string().url().describe('URL of the PDF file to extract content from')
 };
@@ -247,7 +247,7 @@ const extractPdfOutputSchema = {
 const server = new McpServer(serverInfo, { instructions });
 
 function logError(...args) {
-  console.error('[ra-h-stdio]', ...args);
+  console.error('[pkm5-stdio]', ...args);
 }
 
 const sanitizeDimensions = (raw) => {
@@ -280,7 +280,7 @@ function readStatusFile() {
 }
 
 async function resolveBaseUrl() {
-  const envTarget = process.env.RAH_MCP_TARGET_URL || process.env.NEXT_PUBLIC_BASE_URL;
+  const envTarget = process.env.PKM5_MCP_TARGET_URL || process.env.NEXT_PUBLIC_BASE_URL;
   if (envTarget && envTarget.trim().length > 0) {
     return envTarget.replace(/\/+$/, '');
   }
@@ -308,17 +308,17 @@ async function callRaHApi(pathname, options = {}) {
 
   const body = await response.json().catch(() => null);
   if (!response.ok || !body || body.success === false) {
-    const errorMessage = body?.error || `RA-H API request failed at ${pathname}`;
+    const errorMessage = body?.error || `PKM5 API request failed at ${pathname}`;
     throw new Error(errorMessage);
   }
   return body;
 }
 
 server.registerTool(
-  'rah_add_node',
+  'pkm5_add_node',
   {
-    title: 'Add RA-H node',
-    description: 'Create a new node in the local RA-H knowledge base.',
+    title: 'Add PKM5 node',
+    description: 'Create a new node in the local PKM5 knowledge base.',
     inputSchema: addNodeInputSchema,
     outputSchema: addNodeOutputSchema
   },
@@ -359,10 +359,10 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_search_nodes',
+  'pkm5_search_nodes',
   {
-    title: 'Search RA-H nodes',
-    description: 'Find existing RA-H entries that mention a topic before adding new ones.',
+    title: 'Search PKM5 nodes',
+    description: 'Find existing PKM5 entries that mention a topic before adding new ones.',
     inputSchema: searchNodesInputSchema,
     outputSchema: searchNodesOutputSchema
   },
@@ -383,7 +383,7 @@ server.registerTool(
     const nodes = Array.isArray(result.data) ? result.data : [];
     const summary =
       nodes.length === 0
-        ? 'No existing RA-H nodes mention that topic yet.'
+        ? 'No existing PKM5 nodes mention that topic yet.'
         : `Found ${nodes.length} node(s) mentioning that topic.`;
 
     return {
@@ -405,9 +405,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_update_node',
+  'pkm5_update_node',
   {
-    title: 'Update RA-H node',
+    title: 'Update PKM5 node',
     description: 'Update an existing node. Content is APPENDED (not replaced). Dimensions are replaced.',
     inputSchema: updateNodeInputSchema,
     outputSchema: updateNodeOutputSchema
@@ -442,9 +442,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_get_nodes',
+  'pkm5_get_nodes',
   {
-    title: 'Get RA-H nodes by ID',
+    title: 'Get PKM5 nodes by ID',
     description: 'Load full node records by their IDs.',
     inputSchema: getNodesInputSchema,
     outputSchema: getNodesOutputSchema
@@ -485,9 +485,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_create_edge',
+  'pkm5_create_edge',
   {
-    title: 'Create RA-H edge',
+    title: 'Create PKM5 edge',
     description: 'Create a connection between two nodes.',
     inputSchema: createEdgeInputSchema,
     outputSchema: createEdgeOutputSchema
@@ -519,9 +519,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_query_edges',
+  'pkm5_query_edges',
   {
-    title: 'Query RA-H edges',
+    title: 'Query PKM5 edges',
     description: 'Find connections between nodes.',
     inputSchema: queryEdgesInputSchema,
     outputSchema: queryEdgesOutputSchema
@@ -553,9 +553,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_update_edge',
+  'pkm5_update_edge',
   {
-    title: 'Update RA-H edge',
+    title: 'Update PKM5 edge',
     description: 'Update an existing edge connection.',
     inputSchema: updateEdgeInputSchema,
     outputSchema: updateEdgeOutputSchema
@@ -583,9 +583,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_create_dimension',
+  'pkm5_create_dimension',
   {
-    title: 'Create RA-H dimension',
+    title: 'Create PKM5 dimension',
     description: 'Create a new dimension/tag for organizing nodes.',
     inputSchema: createDimensionInputSchema,
     outputSchema: createDimensionOutputSchema
@@ -613,9 +613,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_update_dimension',
+  'pkm5_update_dimension',
   {
-    title: 'Update RA-H dimension',
+    title: 'Update PKM5 dimension',
     description: 'Update dimension properties (rename, description, lock/unlock).',
     inputSchema: updateDimensionInputSchema,
     outputSchema: updateDimensionOutputSchema
@@ -649,9 +649,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_delete_dimension',
+  'pkm5_delete_dimension',
   {
-    title: 'Delete RA-H dimension',
+    title: 'Delete PKM5 dimension',
     description: 'Delete a dimension and remove it from all nodes.',
     inputSchema: deleteDimensionInputSchema,
     outputSchema: deleteDimensionOutputSchema
@@ -672,9 +672,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_search_embeddings',
+  'pkm5_search_embeddings',
   {
-    title: 'Semantic search RA-H',
+    title: 'Semantic search PKM5',
     description: 'Search node content using semantic similarity (vector search).',
     inputSchema: searchEmbeddingsInputSchema,
     outputSchema: searchEmbeddingsOutputSchema
@@ -705,7 +705,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_extract_url',
+  'pkm5_extract_url',
   {
     title: 'Extract URL content',
     description: 'Extract content from a webpage URL. Returns title, content, and metadata for creating nodes.',
@@ -733,7 +733,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_extract_youtube',
+  'pkm5_extract_youtube',
   {
     title: 'Extract YouTube transcript',
     description: 'Extract transcript from a YouTube video. Returns title, channel, transcript, and metadata.',
@@ -761,7 +761,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  'rah_extract_pdf',
+  'pkm5_extract_pdf',
   {
     title: 'Extract PDF content',
     description: 'Extract content from a PDF file URL. Returns title, content, and metadata for creating nodes.',
@@ -788,7 +788,7 @@ server.registerTool(
   }
 );
 
-// rah_get_context — orientation tool for external agents
+// pkm5_get_context — orientation tool for external agents
 const getContextOutputSchema = {
   schema: z.object({
     nodeCount: z.number(),
@@ -810,9 +810,9 @@ const getContextOutputSchema = {
 };
 
 server.registerTool(
-  'rah_get_context',
+  'pkm5_get_context',
   {
-    title: 'Get RA-H context',
+    title: 'Get PKM5 context',
     description: 'Get orientation context: hub nodes, dimensions, stats, and available guides. Call this first.',
     inputSchema: {},
     outputSchema: getContextOutputSchema

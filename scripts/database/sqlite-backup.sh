@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# RA-H SQLite backup using VACUUM INTO
+# PKM5 SQLite backup using VACUUM INTO
 # Safer behavior: auto-read .env.local for SQLITE_DB_PATH, verify integrity, print table counts.
 
 # Resolve DB path in this order:
@@ -14,13 +14,13 @@ if [ -z "${DB_PATH}" ] && [ -f ".env.local" ]; then
   DB_PATH=$(grep -E '^SQLITE_DB_PATH=' .env.local | sed 's/^SQLITE_DB_PATH=//' | sed 's/^"\(.*\)"$/\1/') || true
 fi
 if [ -z "${DB_PATH}" ]; then
-  DB_PATH="$HOME/Library/Application Support/RA-H/db/rah.sqlite"
+  DB_PATH="$HOME/Library/Application Support/PKM5/db/pkm5.sqlite"
 fi
 
 # Normalize and validate
 if [ ! -f "$DB_PATH" ]; then
   echo "❌ Error: Resolved DB not found: $DB_PATH" >&2
-  echo "Hint: Set SQLITE_DB_PATH in .env.local or export it inline: SQLITE_DB_PATH=\"/full/path/rah.sqlite\" npm run sqlite:backup" >&2
+  echo "Hint: Set SQLITE_DB_PATH in .env.local or export it inline: SQLITE_DB_PATH=\"/full/path/pkm5.sqlite\" npm run sqlite:backup" >&2
   exit 1
 fi
 
@@ -30,7 +30,7 @@ BACKUP_DIR="$(dirname "$0")/../backups"
 mkdir -p "$BACKUP_DIR"
 
 TS=$(date +"%Y%m%d_%H%M%S")
-BASENAME="rah_backup_${TS}.sqlite"
+BASENAME="pkm5_backup_${TS}.sqlite"
 DEST="$BACKUP_DIR/$BASENAME"
 
 echo "Backing up → $DEST"

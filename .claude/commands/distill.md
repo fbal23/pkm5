@@ -15,9 +15,9 @@ Example: `/distill query:"BIO-RED value chain methodology" domain:BIO-RED`
 
 ## Step 1: Gather source nodes
 
-**By query**: `rah_search_nodes(query=<query>, dimensions=[<domain>], limit=10)`
+**By query**: `pkm5_search_nodes(query=<query>, dimensions=[<domain>], limit=10)`
 
-**By IDs**: `rah_get_nodes([id1, id2, ...])`
+**By IDs**: `pkm5_get_nodes([id1, id2, ...])`
 
 **By domain (recent)**:
 ```sql
@@ -28,7 +28,7 @@ WHERE nd.dimension = '<domain>'
 ORDER BY n.created_at DESC LIMIT 15
 ```
 
-**By guide**: `rah_read_guide("<name>")`
+**By guide**: `pkm5_read_guide("<name>")`
 
 ## Step 2: Display source list
 
@@ -53,7 +53,7 @@ Read the content of all source nodes. Identify:
 ## Step 4: Create distillation node
 
 ```
-rah_add_node:
+pkm5_add_node:
   title: "Distillation: <topic>"
   dimensions: ["idea", "<domain>"]
   content: |
@@ -81,7 +81,7 @@ rah_add_node:
 ## Step 5: Create edges to sources
 
 ```
-rah_create_edge(distillationId, sourceId, "distilled from")
+pkm5_create_edge(distillationId, sourceId, "distilled from")
 ```
 (for each source node)
 
@@ -89,7 +89,7 @@ rah_create_edge(distillationId, sourceId, "distilled from")
 
 > "Should any of these conclusions go into the memory guide? (yes/no)"
 
-If yes: update `rah_write_guide("memory", ...)` with new entry.
+If yes: update `pkm5_write_guide("memory", ...)` with new entry.
 
 ## Edge cases
 

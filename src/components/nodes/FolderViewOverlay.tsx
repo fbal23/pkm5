@@ -293,7 +293,7 @@ export default function FolderViewOverlay({ onClose, onNodeOpen, refreshToken, o
     // Set multiple MIME types for different drop targets
     event.dataTransfer.setData('application/node-info', JSON.stringify(nodeData));
     // For chat input drops - includes title for [NODE:id:"title"] token
-    event.dataTransfer.setData('application/x-rah-node', JSON.stringify({ id: node.id, title: node.title || 'Untitled' }));
+    event.dataTransfer.setData('application/x-pkm5-node', JSON.stringify({ id: node.id, title: node.title || 'Untitled' }));
     // Fallback for browsers/webviews that only support text/plain
     event.dataTransfer.setData('text/plain', `[NODE:${node.id}:"${node.title || 'Untitled'}"]`);
 
@@ -830,7 +830,7 @@ export default function FolderViewOverlay({ onClose, onNodeOpen, refreshToken, o
     const node = nodes.find(n => n.id === nodeId);
     const title = node?.title || 'Untitled';
     // Set MIME types for chat input and folder drops
-    e.dataTransfer.setData('application/x-rah-node', JSON.stringify({ id: nodeId, title }));
+    e.dataTransfer.setData('application/x-pkm5-node', JSON.stringify({ id: nodeId, title }));
     e.dataTransfer.setData('application/node-info', JSON.stringify({ id: nodeId, title, dimensions: node?.dimensions || [] }));
     e.dataTransfer.setData('text/plain', `[NODE:${nodeId}:"${title}"]`);
     // Store in ref for webview compatibility

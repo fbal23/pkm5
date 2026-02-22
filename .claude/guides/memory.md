@@ -5,7 +5,7 @@ description: Curated PKM memory — proven insights, relationship patterns, work
 
 # PKM Memory
 
-Curated knowledge that has been tested and validated through real experience. Only add entries here when the insight has proven durable. Use `rah_add_node` with dimension `insight` for new candidates — promote to this guide after the next weekly review.
+Curated knowledge that has been tested and validated through real experience. Only add entries here when the insight has proven durable. Use `pkm5_add_node` with dimension `insight` for new candidates — promote to this guide after the next weekly review.
 
 ---
 
@@ -77,9 +77,9 @@ Dated insights from specific experiences. What worked, what didn't, and why. Eac
 
 ---
 
-## RA-H Usage Notes
+## PKM5 Usage Notes
 
-- Search this guide: `rah_read_guide("memory")`
-- Add a new candidate insight as a node: `rah_add_node` with dimensions `["insight", "<domain>"]`
-- Promote a node to this guide: edit this guide via `rah_write_guide("memory", <updated content>)`
+- Search this guide: `pkm5_read_guide("memory")`
+- Add a new candidate insight as a node: `pkm5_add_node` with dimensions `["insight", "<domain>"]`
+- Promote a node to this guide: edit this guide via `pkm5_write_guide("memory", <updated content>)`
 - Archive stale insights: remove from this guide + archive the node (add `archived` dimension)

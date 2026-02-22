@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 NODE_VERSION="${NODE_VERSION:-20.11.0}"
-CACHE_ROOT="${NODE_CACHE_DIR:-$HOME/.cache/ra-h/node}"
+CACHE_ROOT="${NODE_CACHE_DIR:-$HOME/.cache/pkm5/node}"
 OUTPUT_ROOT="${NODE_OUTPUT_DIR:-$REPO_ROOT/dist/runtime/node-universal}"
 STAGING_ROOT="${NODE_STAGING_DIR:-$REPO_ROOT/dist/.staging/node-universal}"
 

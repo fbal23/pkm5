@@ -79,7 +79,7 @@ function buildVaultMap(): Map<string, NodeCandidate> {
 }
 
 // ---------------------------------------------------------------------------
-// RA-H API helpers
+// PKM5 API helpers
 // ---------------------------------------------------------------------------
 
 async function searchNodeByTitle(title: string): Promise<number | null> {
@@ -117,20 +117,20 @@ async function createEdge(sourceId: number, targetId: number, explanation: strin
 
 async function main() {
   console.log('\n' + '='.repeat(60));
-  console.log('PKM_2026 → RA-H: Edge creation pass');
+  console.log('PKM_2026 → PKM5: Edge creation pass');
   console.log(`Mode: ${DRY_RUN ? 'DRY RUN' : 'LIVE'}`);
   console.log('='.repeat(60));
 
   if (!DRY_RUN) {
     const health = await fetch(`${RA_H_API}/health`);
-    if (!health.ok) { console.error('RA-H not reachable'); process.exit(1); }
-    console.log('✓ RA-H API reachable');
+    if (!health.ok) { console.error('PKM5 not reachable'); process.exit(1); }
+    console.log('✓ PKM5 API reachable');
   }
 
   const vaultMap = buildVaultMap();
   console.log(`Loaded ${vaultMap.size} vault files`);
 
-  // Cache: target slug → resolved RA-H node ID
+  // Cache: target slug → resolved PKM5 node ID
   const idCache = new Map<string, number | null>();
 
   let edgesCreated = 0;

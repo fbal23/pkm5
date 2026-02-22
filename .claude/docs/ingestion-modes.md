@@ -1,12 +1,12 @@
-# RA-H Ingestion Modes
+# PKM5 Ingestion Modes
 
-All capture paths into the RA-H knowledge graph. Prefer existing tools where available; build new routes only for gaps.
+All capture paths into the PKM5 knowledge graph. Prefer existing tools where available; build new routes only for gaps.
 
 ---
 
 ## Quick Capture
 
-**Tool**: `/quick` skill → `rah_add_node`
+**Tool**: `/quick` skill → `pkm5_add_node`
 **When**: Ultra-fast task capture from natural language
 **Dimensions**: `["task", "<domain>"]`
 
@@ -20,7 +20,7 @@ Creates a node with `metadata.due`, inferred domain, parsed title.
 
 ## Task / Note / Idea Creation
 
-**Tool**: `/new` skill → `rah_add_node` + `rah_create_edge`
+**Tool**: `/new` skill → `pkm5_add_node` + `pkm5_create_edge`
 **When**: Creating any typed entity with relationships
 **Dimensions**: varies by type
 
@@ -32,15 +32,15 @@ Creates a node with `metadata.due`, inferred domain, parsed title.
 
 ## Meeting Notes
 
-**Tool**: `/post-meeting` skill → `rah_add_node` (meeting) + `rah_create_edge` (attendees) + `rah_update_node` (person last_interaction)
+**Tool**: `/post-meeting` skill → `pkm5_add_node` (meeting) + `pkm5_create_edge` (attendees) + `pkm5_update_node` (person last_interaction)
 **When**: After any meeting
 
 ---
 
 ## Email Clippings
 
-**API**: `POST /api/ingest/email` (RA-H HTTP API)
-**Source**: AppleScript Mail rule → HTTP POST to RA-H
+**API**: `POST /api/ingest/email` (PKM5 HTTP API)
+**Source**: AppleScript Mail rule → HTTP POST to PKM5
 **Dimensions**: `["clipping", "<domain>"]`
 
 The AppleScript handler in macOS Mail sends:
@@ -59,9 +59,9 @@ The AppleScript handler in macOS Mail sends:
 
 ## Web Clippings
 
-**Tool**: RA-H's built-in `websiteExtractTool`
+**Tool**: PKM5's built-in `websiteExtractTool`
 **When**: Saving web articles, documentation, research
-**Via**: RA-H chat interface → "Save this page"
+**Via**: PKM5 chat interface → "Save this page"
 
 No additional setup needed.
 
@@ -69,9 +69,9 @@ No additional setup needed.
 
 ## PDF / Document Capture
 
-**Tool**: RA-H's built-in `paperExtractTool`
+**Tool**: PKM5's built-in `paperExtractTool`
 **When**: Saving PDF documents
-**Via**: RA-H chat interface → "Save this PDF"
+**Via**: PKM5 chat interface → "Save this PDF"
 
 No additional setup needed.
 
@@ -79,9 +79,9 @@ No additional setup needed.
 
 ## YouTube
 
-**Tool**: RA-H's built-in `youtubeExtractTool`
+**Tool**: PKM5's built-in `youtubeExtractTool`
 **When**: Saving YouTube videos / transcripts
-**Via**: RA-H chat interface
+**Via**: PKM5 chat interface
 
 No additional setup needed.
 
@@ -90,12 +90,12 @@ No additional setup needed.
 ## Paperless-ngx Documents
 
 **Script**: `scripts/paperless/ingest.py` (Phase 4 — not yet implemented)
-**When**: Syncing Paperless documents to RA-H nodes
+**When**: Syncing Paperless documents to PKM5 nodes
 **Dimensions**: `["clipping", "<domain>"]` + metadata with `paperless_id`
 
 Planned pipeline:
 1. Fetch new documents from Paperless API
-2. Create RA-H node per document
+2. Create PKM5 node per document
 3. Link to person/org/project nodes via edges
 4. Store `paperless_id` in metadata for round-tripping
 
@@ -117,7 +117,7 @@ Planned payload:
 }
 ```
 
-**Status**: iOS Shortcuts currently write markdown to PKM_2026/notes/ via SSH. Repoint to RA-H API endpoint once `/api/capture/quick` is built.
+**Status**: iOS Shortcuts currently write markdown to PKM_2026/notes/ via SSH. Repoint to PKM5 API endpoint once `/api/capture/quick` is built.
 
 ---
 
@@ -137,9 +137,9 @@ New information to capture?
 ├── Task/commitment/idea? → /quick or /new skill
 ├── Meeting just happened? → /post-meeting skill
 ├── Email worth saving? → AppleScript → POST /api/ingest/email
-├── Web article? → RA-H chat → websiteExtractTool
-├── PDF document? → RA-H chat → paperExtractTool
-├── YouTube video? → RA-H chat → youtubeExtractTool
+├── Web article? → PKM5 chat → websiteExtractTool
+├── PDF document? → PKM5 chat → paperExtractTool
+├── YouTube video? → PKM5 chat → youtubeExtractTool
 ├── Paperless doc? → scripts/paperless/ingest.py (Phase 4)
 └── Mobile capture? → iOS Shortcut → POST /api/capture/quick (Phase 2)
 ```

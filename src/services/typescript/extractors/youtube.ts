@@ -1,5 +1,5 @@
 /**
- * YouTube content extraction for RA-H knowledge management system
+ * YouTube content extraction for PKM5 knowledge management system
  * Uses innertube-based transcript extraction via youtube-transcript-plus
  * Falls back to the legacy npm extractor if captions cannot be retrieved
  */

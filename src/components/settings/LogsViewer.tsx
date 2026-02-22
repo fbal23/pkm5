@@ -139,7 +139,7 @@ export default function LogsViewer() {
             <input
               value={inputThreadId}
               onChange={(e) => setInputThreadId(e.target.value)}
-              placeholder="ra-h-node-..."
+              placeholder="pkm5-node-..."
               style={{
                 background: 'rgba(0, 0, 0, 0.3)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',

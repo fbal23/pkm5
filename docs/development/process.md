@@ -1,6 +1,6 @@
 # Development Process (RA-OS)
 
-This repo is the open-source build of RA-H. Keep changes focused, reviewable, and easy to sync upstream.
+This repo is the open-source build of PKM5. Keep changes focused, reviewable, and easy to sync upstream.
 
 ## Branching
 
@@ -11,8 +11,8 @@ This repo is the open-source build of RA-H. Keep changes focused, reviewable, an
 ## Local Setup
 
 ```bash
-git clone https://github.com/bradwmorris/ra-h_os.git
-cd ra-h_os
+git clone https://github.com/bradwmorris/pkm5.git
+cd pkm5
 npm install
 npm rebuild better-sqlite3
 scripts/dev/bootstrap-local.sh
@@ -43,6 +43,6 @@ npm run build
 
 ## Sync Policy (Private Upstream)
 
-- Changes land in `ra-h_os` first.
+- Changes land in `pkm5` first.
 - If a change should exist in the private repo, it will be ported upstream.
 - Public contributions will not be overwritten by syncs.

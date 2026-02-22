@@ -45,7 +45,7 @@ GROUP BY n.id ORDER BY n.created_at DESC LIMIT 10
 ## Step 4: Load relationship edges between orgs
 
 ```
-rah_query_edges(nodeId=<org1_id>)
+pkm5_query_edges(nodeId=<org1_id>)
 ```
 Collect all org-to-org edges in the domain.
 
@@ -81,7 +81,7 @@ Collect all org-to-org edges in the domain.
 
 ## Step 6: Memory check
 
-`rah_read_guide("memory")` — show any Domain Dynamics entries for this domain.
+`pkm5_read_guide("memory")` — show any Domain Dynamics entries for this domain.
 
 ## Edge cases
 

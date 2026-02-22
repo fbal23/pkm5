@@ -50,7 +50,7 @@ GROUP BY n.id ORDER BY n.created_at ASC
 ## Step 5: Scan git history
 
 ```bash
-git -C "/Users/balazsfurjes/Cursor files/ra-h_os" log --oneline \
+git -C "/Users/balazsfurjes/Cursor files/pkm5" log --oneline \
   --since="<monday>" --until="<sunday> 23:59"
 ```
 
@@ -66,7 +66,7 @@ From daily review sections and completed tasks, identify:
 
 ## Step 7: Stale memory check
 
-From `rah_read_guide("memory")`, identify entries that:
+From `pkm5_read_guide("memory")`, identify entries that:
 - Were added >90 days ago
 - Haven't been referenced in any recent node
 - May be outdated
@@ -80,7 +80,7 @@ Flag for review: "These memory entries may be stale: ..."
 ## Step 9: Create weekly summary node
 
 ```
-rah_add_node:
+pkm5_add_node:
   title: "Weekly Review — 2026-W07 (Feb 16–22)"
   dimensions: ["note", "admin"]
   content: |
@@ -99,7 +99,7 @@ rah_add_node:
     - <recurring theme or behaviour>
 
     ## Cross-Project Activity
-    - ra-h_os: N commits (N feat, N fix)
+    - pkm5: N commits (N feat, N fix)
     - BIO-RED: N commits
 
     ## Stale Memory Check
@@ -115,7 +115,7 @@ rah_add_node:
 Present multi-day patterns as memory candidates:
 > "Pattern observed 3x this week: '<pattern>'. Add to memory guide? (yes/no)"
 
-If yes: update `rah_write_guide("memory", <updated content>)` with new entry in relevant section.
+If yes: update `pkm5_write_guide("memory", <updated content>)` with new entry in relevant section.
 
 ## Edge cases
 

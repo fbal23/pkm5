@@ -1,18 +1,18 @@
 {
-  "project": "rah-os",
-  "context": "RA-OS: lightweight 2-panel knowledge graph UI with MCP server. Stripped from ra-h_os — removed chat agents, voice, delegation system, memory pipeline. Kept: nodes/edges/dimensions CRUD, MCP server, workflows, extraction tools, guide system. The goal is a simple UI that technical users can run and connect their own agents to via MCP. Auth/subscription already removed.",
+  "project": "pkm5-os",
+  "context": "RA-OS: lightweight 2-panel knowledge graph UI with MCP server. Stripped from pkm5 — removed chat agents, voice, delegation system, memory pipeline. Kept: nodes/edges/dimensions CRUD, MCP server, workflows, extraction tools, guide system. The goal is a simple UI that technical users can run and connect their own agents to via MCP. Auth/subscription already removed.",
   "phases": {
     "phase1_stripdown": {
       "status": "complete",
-      "description": "Strip ra-h_os to lightweight 2-panel UI + MCP server",
+      "description": "Strip pkm5 to lightweight 2-panel UI + MCP server",
       "stories": [
         {
           "id": "1",
           "title": "Remove agent delegation system",
-          "description": "Delete the agent delegation infrastructure: src/services/agents/delegation.ts, all /api/rah/delegations/ routes, DelegationIndicator.tsx component, and any imports of these in other files. Update any files that import from deleted modules.",
+          "description": "Delete the agent delegation infrastructure: src/services/agents/delegation.ts, all /api/pkm5/delegations/ routes, DelegationIndicator.tsx component, and any imports of these in other files. Update any files that import from deleted modules.",
           "acceptanceCriteria": [
             "src/services/agents/delegation.ts is deleted",
-            "app/api/rah/delegations/ directory is deleted (all routes inside)",
+            "app/api/pkm5/delegations/ directory is deleted (all routes inside)",
             "src/components/agents/DelegationIndicator.tsx is deleted",
             "No remaining imports of 'delegation' from services/agents",
             "npm run type-check passes"
@@ -23,7 +23,7 @@
         {
           "id": "2",
           "title": "Remove voice features",
-          "description": "Delete all voice-related code: hooks (useVoiceSession, useRealtimeVoiceClient, useAssistantTTS, useVoiceInterruption), voice API routes (/api/voice/, /api/realtime/), voice service (src/services/voice/), and remove voice-related UI/props from RAHChat.tsx. Update imports in components that use these.",
+          "description": "Delete all voice-related code: hooks (useVoiceSession, useRealtimeVoiceClient, useAssistantTTS, useVoiceInterruption), voice API routes (/api/voice/, /api/realtime/), voice service (src/services/voice/), and remove voice-related UI/props from PKM5Chat.tsx. Update imports in components that use these.",
           "acceptanceCriteria": [
             "src/components/agents/hooks/useVoiceSession.ts deleted",
             "src/components/agents/hooks/useRealtimeVoiceClient.ts deleted",
@@ -32,31 +32,31 @@
             "app/api/voice/ directory deleted",
             "app/api/realtime/ directory deleted",
             "src/services/voice/ directory deleted",
-            "RAHChat.tsx no longer imports or uses voice hooks",
+            "PKM5Chat.tsx no longer imports or uses voice hooks",
             "npm run type-check passes"
           ],
           "passes": true,
-          "notes": "Deleted all 4 voice hooks, voice API routes (/api/voice/, /api/realtime/), voice service directory. Removed voice stub hooks and voice-related code from RAHChat.tsx and TerminalInput.tsx."
+          "notes": "Deleted all 4 voice hooks, voice API routes (/api/voice/, /api/realtime/), voice service directory. Removed voice stub hooks and voice-related code from PKM5Chat.tsx and TerminalInput.tsx."
         },
         {
           "id": "3",
-          "title": "Remove orchestration tools (delegateToWiseRAH)",
-          "description": "Delete agent orchestration tools that depend on internal agents: src/tools/orchestration/delegateToWiseRAH.ts. Keep workflow tools (getWorkflow, executeWorkflow, editWorkflow, listWorkflows). Update registry.ts to remove references to deleted tools.",
+          "title": "Remove orchestration tools (delegateToWisePKM5)",
+          "description": "Delete agent orchestration tools that depend on internal agents: src/tools/orchestration/delegateToWisePKM5.ts. Keep workflow tools (getWorkflow, executeWorkflow, editWorkflow, listWorkflows). Update registry.ts to remove references to deleted tools.",
           "acceptanceCriteria": [
-            "src/tools/orchestration/delegateToWiseRAH.ts deleted",
-            "src/tools/infrastructure/registry.ts no longer imports delegateToWiseRAH",
+            "src/tools/orchestration/delegateToWisePKM5.ts deleted",
+            "src/tools/infrastructure/registry.ts no longer imports delegateToWisePKM5",
             "npm run type-check passes"
           ],
           "passes": true,
-          "notes": "Deleted delegateToWiseRAH.ts and removed from registry.ts and groups.ts. Also deleted orphaned test scenarios (delegate-wise.ts and delegate-mini.ts) since delegateToMiniRAH was never in the registry."
+          "notes": "Deleted delegateToWisePKM5.ts and removed from registry.ts and groups.ts. Also deleted orphaned test scenarios (delegate-wise.ts and delegate-mini.ts) since delegateToMiniPKM5 was never in the registry."
         },
         {
           "id": "4",
           "title": "Remove chat agent components",
-          "description": "Delete internal chat agent UI components: WiseRAHPanel.tsx, MiniRAHPanel.tsx, AgentsPanel.tsx. These are agent-specific panels. Keep RAHChat.tsx (will be modified later), TerminalInput.tsx, TerminalMessage.tsx (may be reused or deleted later). Update any imports.",
+          "description": "Delete internal chat agent UI components: WisePKM5Panel.tsx, MiniPKM5Panel.tsx, AgentsPanel.tsx. These are agent-specific panels. Keep PKM5Chat.tsx (will be modified later), TerminalInput.tsx, TerminalMessage.tsx (may be reused or deleted later). Update any imports.",
           "acceptanceCriteria": [
-            "src/components/agents/WiseRAHPanel.tsx deleted",
-            "src/components/agents/MiniRAHPanel.tsx deleted",
+            "src/components/agents/WisePKM5Panel.tsx deleted",
+            "src/components/agents/MiniPKM5Panel.tsx deleted",
             "src/components/agents/AgentsPanel.tsx deleted",
             "No remaining imports of these components",
             "npm run type-check passes"
@@ -67,15 +67,15 @@
         {
           "id": "5",
           "title": "Remove chat API route",
-          "description": "Delete the main chat API route /api/rah/chat/route.ts and /api/rah/usage/route.ts since there's no internal chat agent. Keep /api/quick-add/route.ts if it's useful for MCP or simple ingestion.",
+          "description": "Delete the main chat API route /api/pkm5/chat/route.ts and /api/pkm5/usage/route.ts since there's no internal chat agent. Keep /api/quick-add/route.ts if it's useful for MCP or simple ingestion.",
           "acceptanceCriteria": [
-            "app/api/rah/chat/route.ts deleted",
-            "app/api/rah/usage/route.ts deleted",
-            "app/api/rah/ directory can be deleted if empty after this",
+            "app/api/pkm5/chat/route.ts deleted",
+            "app/api/pkm5/usage/route.ts deleted",
+            "app/api/pkm5/ directory can be deleted if empty after this",
             "npm run type-check passes"
           ],
           "passes": true,
-          "notes": "Deleted both routes and the now-empty app/api/rah/ directory. RAHChat.tsx still references the endpoint but will be deleted in Story 7."
+          "notes": "Deleted both routes and the now-empty app/api/pkm5/ directory. PKM5Chat.tsx still references the endpoint but will be deleted in Story 7."
         },
         {
           "id": "6",
@@ -93,17 +93,17 @@
         },
         {
           "id": "7",
-          "title": "Remove RAHChat component",
-          "description": "Delete the main chat interface RAHChat.tsx and its supporting components (TerminalInput.tsx, TerminalMessage.tsx) since there's no chat. Also delete useSSEChat.ts hook. Remove the ReasoningTrace.tsx and ToolDisplay.tsx if they're only used by chat.",
+          "title": "Remove PKM5Chat component",
+          "description": "Delete the main chat interface PKM5Chat.tsx and its supporting components (TerminalInput.tsx, TerminalMessage.tsx) since there's no chat. Also delete useSSEChat.ts hook. Remove the ReasoningTrace.tsx and ToolDisplay.tsx if they're only used by chat.",
           "acceptanceCriteria": [
-            "src/components/agents/RAHChat.tsx deleted",
+            "src/components/agents/PKM5Chat.tsx deleted",
             "src/components/agents/TerminalInput.tsx deleted",
             "src/components/agents/TerminalMessage.tsx deleted",
             "src/components/agents/hooks/useSSEChat.ts deleted",
             "npm run type-check passes"
           ],
           "passes": true,
-          "notes": "Deleted all chat components: RAHChat.tsx, TerminalInput.tsx, TerminalMessage.tsx, useSSEChat.ts, ReasoningTrace.tsx, ToolDisplay.tsx. Simplified WorkflowsPane to show MCP integration message instead of chat."
+          "notes": "Deleted all chat components: PKM5Chat.tsx, TerminalInput.tsx, TerminalMessage.tsx, useSSEChat.ts, ReasoningTrace.tsx, ToolDisplay.tsx. Simplified WorkflowsPane to show MCP integration message instead of chat."
         },
         {
           "id": "8",
@@ -179,7 +179,7 @@
             "npm run type-check passes"
           ],
           "passes": true,
-          "notes": "Removed 3 extraction tools (rah_extract_url, rah_extract_youtube, rah_extract_pdf) that called non-existent API endpoints. MCP servers now expose 11 working tools: node CRUD (add, search, update, get), edge CRUD (create, query, update), dimension CRUD (create, update, delete), semantic search. Both servers updated consistently."
+          "notes": "Removed 3 extraction tools (pkm5_extract_url, pkm5_extract_youtube, pkm5_extract_pdf) that called non-existent API endpoints. MCP servers now expose 11 working tools: node CRUD (add, search, update, get), edge CRUD (create, query, update), dimension CRUD (create, update, delete), semantic search. Both servers updated consistently."
         },
         {
           "id": "14",
@@ -224,7 +224,7 @@
           "acceptanceCriteria": [
             "apps/mcp-server-standalone/ exists with index.js entry point",
             "Server reads directly from SQLite database",
-            "rah_read_guide and rah_write_guide tools available",
+            "pkm5_read_guide and pkm5_write_guide tools available",
             "System guides served from bundled markdown files",
             "Custom guides stored in user data directory",
             "Guide frontmatter parsed (name, description, immutable)"
@@ -243,7 +243,7 @@
             "MCP instructions reference start-here guide"
           ],
           "passes": true,
-          "notes": "Added start-here.md as the master onboarding guide. All tool descriptions enriched with constraints and patterns. rah_get_context now includes instruction to read start-here guide on first connection."
+          "notes": "Added start-here.md as the master onboarding guide. All tool descriptions enriched with constraints and patterns. pkm5_get_context now includes instruction to read start-here guide on first connection."
         },
         {
           "id": "18",
@@ -270,7 +270,7 @@
             "System guides cannot be deleted"
           ],
           "passes": true,
-          "notes": "Ported full implementation from ra-h: GuideCard component, system/custom filtering, Lock and Trash2 icons, delete handler with confirmation, usage counter. Added DELETE route to API using existing deleteGuide service function."
+          "notes": "Ported full implementation from pkm5: GuideCard component, system/custom filtering, Lock and Trash2 icons, delete handler with confirmation, usage counter. Added DELETE route to API using existing deleteGuide service function."
         }
       ]
     }

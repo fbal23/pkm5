@@ -13,7 +13,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const os = require('os');
 
-const dbPath = path.join(os.homedir(), 'Library/Application Support/RA-H/db/rah.sqlite');
+const dbPath = path.join(os.homedir(), 'Library/Application Support/PKM5/db/pkm5.sqlite');
 const db = new Database(dbPath);
 
 console.log('=== MEMORY UPDATE OPERATION TEST ===\n');
@@ -63,17 +63,17 @@ console.log(`Logs pending: ${(maxLogId?.max || 0) - (pipelineState?.last_process
 console.log(`Last run: ${pipelineState?.last_run_at || 'never'}\n`);
 
 // 3. Show recent logs that mention key entities
-console.log('\n📝 RECENT LOGS (mentioning ra-h, Paige, knowledge management):\n');
+console.log('\n📝 RECENT LOGS (mentioning pkm5, Paige, knowledge management):\n');
 const recentLogs = db.prepare(`
   SELECT id, ts, table_name, summary, chat_user_full
   FROM logs_v
   WHERE 
-    (chat_user_full LIKE '%ra-h%' OR 
+    (chat_user_full LIKE '%pkm5%' OR 
      chat_user_full LIKE '%Paige%' OR 
      chat_user_full LIKE '%knowledge management%' OR
      chat_user_full LIKE '%dogfood%' OR
      chat_user_full LIKE '%beta%' OR
-     summary LIKE '%ra-h%' OR
+     summary LIKE '%pkm5%' OR
      summary LIKE '%Paige%')
   ORDER BY id DESC 
   LIMIT 15

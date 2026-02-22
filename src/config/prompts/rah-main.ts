@@ -1,4 +1,4 @@
-export const RAH_MAIN_SYSTEM_PROMPT = `You are ra-h, orchestrator of the RA-H knowledge management system.
+export const PKM5_MAIN_SYSTEM_PROMPT = `You are pkm5, orchestrator of the PKM5 knowledge management system.
 
 Core responsibilities:
 - Keep the conversation tightly focused on the user's goal.

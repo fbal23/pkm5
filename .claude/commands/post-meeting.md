@@ -1,4 +1,4 @@
-# /post-meeting — Process meeting notes into RA-H nodes
+# /post-meeting — Process meeting notes into PKM5 nodes
 
 Extract attendees, decisions, action items, and key discussion from raw meeting notes. Create a meeting node with attendee edges. Update person/org cards.
 
@@ -9,7 +9,7 @@ Arguments: `$ARGUMENTS`
 Options:
 - No args → prompt for meeting notes (paste or describe)
 - Path to a notes file
-- `latest` → check for most recently modified clipping node in RA-H
+- `latest` → check for most recently modified clipping node in PKM5
 
 ## Step 1: Get meeting content
 
@@ -32,7 +32,7 @@ From the raw content, identify:
 
 ## Step 3: Resolve attendees
 
-For each attendee name, `rah_search_nodes(query="<name>", dimensions=["person"], limit=2)`.
+For each attendee name, `pkm5_search_nodes(query="<name>", dimensions=["person"], limit=2)`.
 
 Report:
 - Resolved (ID: N): Name — Role at Org
@@ -40,14 +40,14 @@ Report:
 
 Create person stubs for unresolved attendees:
 ```
-rah_add_node(title="<Name>", dimensions=["person", "<domain>"],
+pkm5_add_node(title="<Name>", dimensions=["person", "<domain>"],
   metadata={ cited: 1, last: "<meeting date>", org: "<inferred org>" })
 ```
 
 ## Step 4: Create meeting node
 
 ```
-rah_add_node:
+pkm5_add_node:
   title: "<Meeting Title>"
   dimensions: ["meeting", "<domain>"]
   content: |
@@ -77,14 +77,14 @@ rah_add_node:
 
 For each resolved person node:
 ```
-rah_create_edge(meetingId, personId, "attended by <Name>")
+pkm5_create_edge(meetingId, personId, "attended by <Name>")
 ```
 
 ## Step 6: Update person/org nodes
 
 For each resolved person:
 ```
-rah_update_node(id=personId, updates={
+pkm5_update_node(id=personId, updates={
   metadata: {
     ...existing_metadata,
     last: "<meeting date>",
@@ -95,7 +95,7 @@ rah_update_node(id=personId, updates={
 
 For the org (if one org involved):
 ```
-rah_update_node(id=orgId, updates={
+pkm5_update_node(id=orgId, updates={
   metadata: { last: "<meeting date>" }
 })
 ```
@@ -105,7 +105,7 @@ rah_update_node(id=orgId, updates={
 Review decisions and observations. If any insight warrants memory:
 > "Worth adding to memory: '<insight>'. Save as insight node? (yes/no)"
 
-If yes: `rah_add_node(title="<insight>", dimensions=["insight", "<domain>"], description="<insight>")`
+If yes: `pkm5_add_node(title="<insight>", dimensions=["insight", "<domain>"], description="<insight>")`
 
 ## Step 8: Summary
 
@@ -129,7 +129,7 @@ Before extracting structured data, determine confidentiality using this priority
 |-----------|---------------|------------|
 | User explicitly says "confidential" or "private" | Confidential | 1.0 |
 | Meeting involves board-level decisions, HR matters, legal issues, personal grievances, or compensation | Confidential | 0.9 |
-| Meeting domain has past confidential meetings (check RA-H for `domain + meeting + confidential:true`) | Confidential | 0.7 |
+| Meeting domain has past confidential meetings (check PKM5 for `domain + meeting + confidential:true`) | Confidential | 0.7 |
 | Participants are all internal (same org) and topic is operational | Public | 0.7 |
 | No signal | Public (default) | 0.5 |
 
@@ -156,7 +156,7 @@ Ask once if unclear: "Should this meeting be stored as confidential? (yes/no)"
 If the user later wants to analyse a confidential meeting node, direct them to:
 ```bash
 # Get node content
-sqlite3 ~/Library/Application\ Support/RA-H/db/rah.sqlite \
+sqlite3 ~/Library/Application\ Support/PKM5/db/pkm5.sqlite \
   "SELECT notes FROM nodes WHERE id = <node_id>"
 
 # Analyse locally (Maci, requires Tailscale)

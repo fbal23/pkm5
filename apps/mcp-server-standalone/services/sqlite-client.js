@@ -7,21 +7,21 @@ const os = require('node:os');
 
 /**
  * Get the database path.
- * Priority: RAH_DB_PATH env var > default app data location
+ * Priority: PKM5_DB_PATH env var > default app data location
  */
 function getDatabasePath() {
-  if (process.env.RAH_DB_PATH) {
-    return process.env.RAH_DB_PATH;
+  if (process.env.PKM5_DB_PATH) {
+    return process.env.PKM5_DB_PATH;
   }
 
-  // Default: ~/Library/Application Support/RA-H/db/rah.sqlite
+  // Default: ~/Library/Application Support/PKM5/db/pkm5.sqlite
   return path.join(
     os.homedir(),
     'Library',
     'Application Support',
-    'RA-H',
+    'PKM5',
     'db',
-    'rah.sqlite'
+    'pkm5.sqlite'
   );
 }
 
@@ -42,7 +42,7 @@ function initDatabase() {
   if (!fs.existsSync(dbPath)) {
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
     db = new Database(dbPath);
-    console.error('[RA-H] Creating new database at:', dbPath);
+    console.error('[PKM5] Creating new database at:', dbPath);
 
     // Create core schema
     db.exec(`
@@ -101,7 +101,7 @@ function initDatabase() {
       INSERT OR IGNORE INTO dimensions (name, is_priority) VALUES ('preferences', 1);
     `);
 
-    console.error('[RA-H] Database created successfully');
+    console.error('[PKM5] Database created successfully');
   } else {
     db = new Database(dbPath);
   }

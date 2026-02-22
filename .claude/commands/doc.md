@@ -1,14 +1,14 @@
 # /doc — Search and manage Paperless-ngx documents
 
-Search for documents in Paperless-ngx, show their linked RA-H nodes, and trigger ingestion.
+Search for documents in Paperless-ngx, show their linked PKM5 nodes, and trigger ingestion.
 
 ## Input
 
 Arguments: `$ARGUMENTS`
 
 - Search text → search Paperless for matching documents (Mode 1)
-- `ingest` → ingest unlinked Paperless docs into RA-H (Mode 2)
-- `orphans` → list Paperless docs with no RA-H node (Mode 3)
+- `ingest` → ingest unlinked Paperless docs into PKM5 (Mode 2)
+- `orphans` → list Paperless docs with no PKM5 node (Mode 3)
 - `enrich` → fetch OCR content for nodes missing it (Mode 4)
 
 ## Setup check
@@ -33,7 +33,7 @@ curl -s "http://localhost:18000/api/documents/?search=<query>&page_size=10" \
   -H "Authorization: Token $TOKEN" | jq '.results[] | {id, title, created, correspondent}'
 ```
 
-For each result, also find linked RA-H nodes:
+For each result, also find linked PKM5 nodes:
 ```sql
 SELECT n.id, n.title, GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
@@ -50,20 +50,20 @@ Display:
 Date: 2026-01-15 | Correspondent: EIT Water
 Tags: budget, Q1
 
-Linked RA-H nodes:
+Linked PKM5 nodes:
   · [project] EIT Water Q1 Budget (ID: 87)
   · [clipping] Budget email thread (ID: 91)
 
 ---
 ```
 
-If no RA-H nodes found for a document, note: "Not yet ingested — run `/doc ingest` to link"
+If no PKM5 nodes found for a document, note: "Not yet ingested — run `/doc ingest` to link"
 
 ## Mode 2: Ingest new documents
 
 Run the ingestion script:
 ```bash
-cd /Users/balazsfurjes/Cursor\ files/ra-h_os
+cd /Users/balazsfurjes/Cursor\ files/pkm5
 python scripts/paperless/ingest.py --mode ingest
 ```
 
@@ -73,7 +73,7 @@ python scripts/paperless/ingest.py --mode ingest --dry-run
 ```
 
 The script:
-- Finds Paperless docs with no linked RA-H node
+- Finds Paperless docs with no linked PKM5 node
 - Creates `clipping` nodes with domain inferred from `domain:` tags
 - Fetches OCR content and stores it in the node
 - Creates edges to correspondent person/org nodes
@@ -84,7 +84,7 @@ The script:
 python scripts/paperless/ingest.py --mode orphans
 ```
 
-Shows a table of all Paperless docs with no RA-H node, grouped by domain/correspondent.
+Shows a table of all Paperless docs with no PKM5 node, grouped by domain/correspondent.
 
 ## Mode 4: Enrich with OCR content
 
@@ -92,7 +92,7 @@ Shows a table of all Paperless docs with no RA-H node, grouped by domain/corresp
 python scripts/paperless/ingest.py --mode enrich
 ```
 
-Fetches full OCR text for existing RA-H nodes that have a `paperless_id` but no OCR content yet.
+Fetches full OCR text for existing PKM5 nodes that have a `paperless_id` but no OCR content yet.
 
 Use `--force` to re-fetch even if already enriched.
 
@@ -107,4 +107,4 @@ python scripts/paperless/ingest.py --mode all
 - Paperless unreachable: script exits with clear error + instructions to check Docker on Maci
 - No token: reads from `~/.config/pkm/paperless_token` or falls back to hardcoded value
 - Document already linked: skipped automatically (no duplicates)
-- RA-H not running: ingest mode exits with instructions to start `npm run dev`; enrich mode uses direct SQLite and works without the server
+- PKM5 not running: ingest mode exits with instructions to start `npm run dev`; enrich mode uses direct SQLite and works without the server

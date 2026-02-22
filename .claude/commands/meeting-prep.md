@@ -22,9 +22,9 @@ Confirm: "Preparing for meeting with: **Name1, Name2**. Correct?"
 
 ## Step 2: Resolve participants
 
-For each participant name, search RA-H:
+For each participant name, search PKM5:
 ```
-rah_search_nodes(query="<name>", dimensions=["person"], limit=3)
+pkm5_search_nodes(query="<name>", dimensions=["person"], limit=3)
 ```
 
 Report:
@@ -37,7 +37,7 @@ For unresolved, offer: "Create person stub for **Name**?" → if yes, use `/new 
 
 For each resolved participant, get their org from `metadata.org`:
 ```
-rah_search_nodes(query="<org name>", dimensions=["org"], limit=1)
+pkm5_search_nodes(query="<org name>", dimensions=["org"], limit=1)
 ```
 
 Load the org node content for context.
@@ -59,17 +59,17 @@ ORDER BY due ASC NULLS LAST
 ```
 
 ### Past meetings with these participants
-Use `rah_search_nodes` with query = participant names, dimensions = `["meeting"]`.
+Use `pkm5_search_nodes` with query = participant names, dimensions = `["meeting"]`.
 Cross-reference edges: find meetings where attendees include these person node IDs.
 
 ### Related tasks
 ```
-rah_search_nodes(query="<participant names> OR <org name>", dimensions=["task"], limit=5)
+pkm5_search_nodes(query="<participant names> OR <org name>", dimensions=["task"], limit=5)
 ```
 
 ### Memory mentions
 ```
-rah_read_guide("memory")
+pkm5_read_guide("memory")
 ```
 Scan for mentions of participant names / org names.
 

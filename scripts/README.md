@@ -1,6 +1,6 @@
-# RA-H Scripts
+# PKM5 Scripts
 
-Utility scripts for managing the RA-H knowledge management system.
+Utility scripts for managing the PKM5 knowledge management system.
 
 ## Directory Structure
 
@@ -23,12 +23,12 @@ scripts/
 npm run backup
 ```
 - Creates timestamped backup in `/backups/` folder
-- Example: `rah_backup_20250902_102846.sql`
+- Example: `pkm5_backup_20250902_102846.sql`
 - Includes all nodes, chunks, edges, dimensions
 
 ### Restore from Backup
 ```bash
-npm run restore backups/rah_backup_20250902_102846.sql
+npm run restore backups/pkm5_backup_20250902_102846.sql
 ```
 - ⚠️ **WARNING**: Replaces entire database
 - Requires confirmation before proceeding

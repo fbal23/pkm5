@@ -10,7 +10,7 @@ const execAsync = promisify(exec);
 function getDatabasePath(): string {
   return process.env.SQLITE_DB_PATH || path.join(
     process.env.HOME || '~',
-    'Library/Application Support/RA-H/db/rah.sqlite'
+    'Library/Application Support/PKM5/db/pkm5.sqlite'
   );
 }
 

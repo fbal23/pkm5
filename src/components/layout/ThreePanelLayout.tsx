@@ -6,9 +6,9 @@ import SearchModal from '../nodes/SearchModal';
 import { Node } from '@/types/database';
 import { DatabaseEvent } from '@/services/events';
 import { usePersistentState } from '@/hooks/usePersistentState';
-// ChatMessage import removed - chat disabled in rah-light
+// ChatMessage import removed - chat disabled in pkm5-light
 
-// Stub type for delegation (delegation system removed in rah-light)
+// Stub type for delegation (delegation system removed in pkm5-light)
 type AgentDelegation = {
   id: number;
   sessionId: string;
@@ -34,7 +34,7 @@ export interface PendingNode {
 import LeftToolbar from './LeftToolbar';
 import SplitHandle from './SplitHandle';
 
-// Pane components (ChatPane removed in rah-light, GuidesPane moved to settings)
+// Pane components (ChatPane removed in pkm5-light, GuidesPane moved to settings)
 import { NodePane, DimensionsPane, MapPane, ViewsPane, TablePane } from '../panes';
 import QuickAddInput from '../agents/QuickAddInput';
 import type { PaneType, SlotState, PaneAction } from '../panes/types';
@@ -44,13 +44,13 @@ export default function ThreePanelLayout() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Slot states - the core of the flexible pane system
-  // Default: Feed on left, closed on right (chat removed in rah-light)
+  // Default: Feed on left, closed on right (chat removed in pkm5-light)
   const [slotA, setSlotA] = usePersistentState<SlotState | null>('ui.slotA.v4', {
     type: 'views',
   });
 
   // SlotB can be null (closed) or a SlotState
-  // Default: closed (chat removed in rah-light)
+  // Default: closed (chat removed in pkm5-light)
   const [slotB, setSlotB] = usePersistentState<SlotState | null>('ui.slotB.v4', null);
 
   // SlotB width as percentage (when open)
@@ -184,7 +184,7 @@ export default function ThreePanelLayout() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openTabsKey, focusPanelRefresh]);
 
-  // Delegations loading removed (delegation system removed in rah-light)
+  // Delegations loading removed (delegation system removed in pkm5-light)
 
   // Refresh all panes
   const handleRefreshAll = useCallback(() => {
@@ -207,7 +207,7 @@ export default function ThreePanelLayout() {
         if (slotB) {
           setSlotB(null);
         } else {
-          // Open with node pane by default (chat removed in rah-light)
+          // Open with node pane by default (chat removed in pkm5-light)
           setSlotB({ type: 'node', nodeTabs: [], activeNodeTab: null });
         }
       }
@@ -220,7 +220,7 @@ export default function ThreePanelLayout() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
         // Don't prevent default - browser may want this for new window
         // Only handle if we're focused in the app
-        if (document.activeElement?.closest('[data-rah-app]')) {
+        if (document.activeElement?.closest('[data-pkm5-app]')) {
           e.preventDefault();
           setShowAddStuff(true);
         }
@@ -289,7 +289,7 @@ export default function ThreePanelLayout() {
 
             case 'AGENT_DELEGATION_CREATED':
             case 'AGENT_DELEGATION_UPDATED':
-              // Delegation events ignored (delegation system removed in rah-light)
+              // Delegation events ignored (delegation system removed in pkm5-light)
               break;
 
             case 'GUIDE_UPDATED':
@@ -703,7 +703,7 @@ export default function ThreePanelLayout() {
 
   const handleSlotDragOver = useCallback((e: React.DragEvent, slot: 'A' | 'B') => {
     // Check if this is a tab or node being dragged
-    if (e.dataTransfer.types.includes('application/x-rah-tab') ||
+    if (e.dataTransfer.types.includes('application/x-pkm5-tab') ||
         e.dataTransfer.types.includes('application/node-info')) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
@@ -719,7 +719,7 @@ export default function ThreePanelLayout() {
     setDragOverSlot(null);
 
     // Try tab data first, then node data from sidebar
-    let tabData = e.dataTransfer.getData('application/x-rah-tab');
+    let tabData = e.dataTransfer.getData('application/x-pkm5-tab');
     if (!tabData) {
       tabData = e.dataTransfer.getData('application/node-info');
     }
@@ -827,7 +827,7 @@ export default function ThreePanelLayout() {
 
   // Split handle callbacks
   const handleOpenSecondPane = useCallback(() => {
-    setSlotB({ type: 'node', nodeTabs: [], activeNodeTab: null }); // Default to node pane (chat removed in rah-light)
+    setSlotB({ type: 'node', nodeTabs: [], activeNodeTab: null }); // Default to node pane (chat removed in pkm5-light)
     setActivePane('B');
   }, [setSlotB]);
 
@@ -894,7 +894,7 @@ export default function ThreePanelLayout() {
           />
         );
 
-      // case 'chat' removed in rah-light
+      // case 'chat' removed in pkm5-light
       // case 'guides' removed — moved to settings modal
 
       case 'dimensions':
@@ -968,7 +968,7 @@ export default function ThreePanelLayout() {
   return (
     <div
       ref={containerRef}
-      data-rah-app
+      data-pkm5-app
       style={{
         display: 'flex',
         height: '100vh',

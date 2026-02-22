@@ -4,7 +4,7 @@
 
 RA-OS is a minimal knowledge graph UI with MCP server integration. It provides a local-first knowledge management system designed to be extended by external AI agents via the Model Context Protocol.
 
-**Open Source:** [github.com/bradwmorris/ra-h_os](https://github.com/bradwmorris/ra-h_os)
+**Open Source:** [github.com/bradwmorris/pkm5](https://github.com/bradwmorris/pkm5)
 
 ## Design Philosophy
 
@@ -61,9 +61,9 @@ RA-OS is designed to be the knowledge backend for your AI workflows:
 ```json
 {
   "mcpServers": {
-    "ra-h": {
+    "pkm5": {
       "command": "npx",
-      "args": ["ra-h-mcp-server"]
+      "args": ["pkm5-mcp-server"]
     }
   }
 }
@@ -71,7 +71,7 @@ RA-OS is designed to be the knowledge backend for your AI workflows:
 
 Add this to `~/.claude.json` and restart Claude. Works without RA-OS running.
 
-Available tools: `rah_add_node`, `rah_search_nodes`, `rah_update_node`, `rah_get_nodes`, `rah_create_edge`, `rah_query_edges`, `rah_list_dimensions`, `rah_create_dimension`, `rah_update_dimension`, `rah_delete_dimension`
+Available tools: `pkm5_add_node`, `pkm5_search_nodes`, `pkm5_update_node`, `pkm5_get_nodes`, `pkm5_create_edge`, `pkm5_query_edges`, `pkm5_list_dimensions`, `pkm5_create_dimension`, `pkm5_update_dimension`, `pkm5_delete_dimension`
 
 ## Documentation
 

@@ -2,7 +2,7 @@
 /*
  Dev utility: Inspect memory claims ledger and write a Markdown report.
  Usage: node scripts/dev/inspect-memory-ledger.js [--out docs/development/reports/memory-ledger.md] [--versions 5]
- Optionally set RAH_DB_PATH to override the default DB path.
+ Optionally set PKM5_DB_PATH to override the default DB path.
 */
 
 const fs = require('fs');
@@ -16,8 +16,8 @@ const outPath = outIdx >= 0 ? args[outIdx + 1] : 'docs/development/reports/memor
 const verIdx = args.indexOf('--versions');
 const maxVersions = verIdx >= 0 ? parseInt(args[verIdx + 1], 10) : 5;
 
-const defaultDbPath = path.join(os.homedir(), 'Library', 'Application Support', 'RA-H', 'db', 'rah.sqlite');
-const dbPath = process.env.RAH_DB_PATH || defaultDbPath;
+const defaultDbPath = path.join(os.homedir(), 'Library', 'Application Support', 'PKM5', 'db', 'pkm5.sqlite');
+const dbPath = process.env.PKM5_DB_PATH || defaultDbPath;
 
 function q(dbPath, sql, params = []) {
   const paramList = params.map(p => typeof p === 'number' ? String(p) : `'${String(p).replace(/'/g, "''")}'`).join(',');

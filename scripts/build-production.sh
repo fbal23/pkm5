@@ -13,7 +13,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DIST_ROOT="$REPO_ROOT/dist/local-app"
 RUNTIME_ROOT="$REPO_ROOT/dist/runtime/node-universal"
 STAGING_ROOT="$REPO_ROOT/dist/.staging/production"
-SEED_SOURCE="$REPO_ROOT/dist/resources/rah_seed.sqlite"
+SEED_SOURCE="$REPO_ROOT/dist/resources/pkm5_seed.sqlite"
 NEXT_BUILD_DIR="$REPO_ROOT/.next"
 
 resolve_public_env_value() {
@@ -61,10 +61,10 @@ prepare_next_standalone() {
   echo "   • Node module ABI: $(node -p 'process.versions.modules')"
   local enable_subscriptions backend_url supabase_url supabase_anon app_url
   enable_subscriptions="$(resolve_public_env_value "NEXT_PUBLIC_ENABLE_SUBSCRIPTION_BACKEND" "true")"
-  backend_url="$(resolve_public_env_value "NEXT_PUBLIC_BACKEND_URL" "https://api.ra-h.app")"
+  backend_url="$(resolve_public_env_value "NEXT_PUBLIC_BACKEND_URL" "https://api.pkm5.app")"
   supabase_url="$(resolve_public_env_value "NEXT_PUBLIC_SUPABASE_URL" "https://wabhzavwgsizrkjpnryd.supabase.co")"
   supabase_anon="$(resolve_public_env_value "NEXT_PUBLIC_SUPABASE_ANON_KEY" "")"
-  app_url="$(resolve_public_env_value "NEXT_PUBLIC_APP_URL" "https://ra-h.app")"
+  app_url="$(resolve_public_env_value "NEXT_PUBLIC_APP_URL" "https://pkm5.app")"
 
   NEXT_PUBLIC_DEPLOYMENT_MODE=cloud \
   NEXT_PUBLIC_ENABLE_SUBSCRIPTION_BACKEND="${enable_subscriptions}" \
@@ -104,7 +104,7 @@ write_splash_bootstrap() {
 <html lang="en" data-build="__BUILD_ID__">
   <head>
     <meta charset="utf-8" />
-    <title>RA-H</title>
+    <title>PKM5</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       :root { color-scheme: dark; }
@@ -136,7 +136,7 @@ write_splash_bootstrap() {
   </head>
   <body data-build="__BUILD_ID__">
     <div class="status">
-      <h1 id="status-title">Starting RA-H…</h1>
+      <h1 id="status-title">Starting PKM5…</h1>
       <p id="status-message">Bootstrap script pending (<span id="status-build">__BUILD_ID__</span>).</p>
       <pre id="status-log">[0 ms] Splash HTML loaded (build __BUILD_ID__)
 </pre>
@@ -195,7 +195,7 @@ write_splash_bootstrap() {
         };
 
         const checkGlobalPort = (source) => {
-          const port = window.__RAH_SIDECAR_PORT;
+          const port = window.__PKM5_SIDECAR_PORT;
           if (port) {
             appendLog('Detected global port', `${port} via ${source}`);
             navigateToPort(port, source);
@@ -204,8 +204,8 @@ write_splash_bootstrap() {
           return false;
         };
 
-        window.addEventListener('rah:sidecar-port', (event) => {
-          appendLog('Event: rah:sidecar-port', JSON.stringify(event?.detail));
+        window.addEventListener('pkm5:sidecar-port', (event) => {
+          appendLog('Event: pkm5:sidecar-port', JSON.stringify(event?.detail));
           navigateToPort(event?.detail, 'custom-event');
         });
 
@@ -312,7 +312,7 @@ copy_seed_database() {
     echo "   Run scripts/database/generate-seed.sh to create it." >&2
     exit 1
   fi
-  cp "$SEED_SOURCE" "$DIST_ROOT/resources/rah_seed.sqlite"
+  cp "$SEED_SOURCE" "$DIST_ROOT/resources/pkm5_seed.sqlite"
 }
 
 prepare_node_runtime() {
@@ -528,7 +528,7 @@ prepare_env_stub() {
     echo "⚠️  Forcing NEXT_PUBLIC_DEPLOYMENT_MODE=cloud for production build" >&2
   fi
   local backend_url
-  backend_url="$(resolve_public_env_value "NEXT_PUBLIC_BACKEND_URL" "https://api.ra-h.app")"
+  backend_url="$(resolve_public_env_value "NEXT_PUBLIC_BACKEND_URL" "https://api.pkm5.app")"
   local supabase_url
   supabase_url="$(resolve_public_env_value "NEXT_PUBLIC_SUPABASE_URL" "https://wabhzavwgsizrkjpnryd.supabase.co")"
   local supabase_anon

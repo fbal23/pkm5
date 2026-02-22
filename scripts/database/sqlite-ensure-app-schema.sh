@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DB_PATH=${1:-rah_trial.db}
+DB_PATH=${1:-pkm5_trial.db}
 
 if [ ! -f "$DB_PATH" ]; then
   echo "Error: Database file not found: $DB_PATH" >&2
@@ -86,17 +86,17 @@ fi
 
 COUNT_AGENTS=$("$SQLITE_BIN" -readonly "$DB_PATH" "SELECT COUNT(*) FROM agents;" 2>/dev/null || echo 0)
 if [ "${COUNT_AGENTS:-0}" = "0" ]; then
-  echo "  Seeding default orchestrator agent (ra-h)..."
+  echo "  Seeding default orchestrator agent (pkm5)..."
   NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  TOOLS_JSON='["queryNodes","createNode","updateNode","createEdge","queryEdge","updateEdge","searchContentEmbeddings","webSearch","think","delegateToMiniRAH"]'
+  TOOLS_JSON='["queryNodes","createNode","updateNode","createEdge","queryEdge","updateEdge","searchContentEmbeddings","webSearch","think","delegateToMiniPKM5"]'
   PROMPTS_JSON='[{"id":"p_seed_0","name":"Summary of Focus","content":"Summarize the primary focused node clearly. Include 3–5 key points and cite [NODE:id:\"title\"]."},{"id":"p_seed_1","name":"Next Steps","content":"Propose 3 concrete next actions based on the focused nodes with references to [NODE:id:\"title\"]."}]'
-  SYSTEM_PROMPT="You are ra-h, the main orchestrator for RA-H. Coordinate work, delegate to mini ra-hs when tasks can be isolated, and keep the conversation focused on the user's goals."
+  SYSTEM_PROMPT="You are pkm5, the main orchestrator for PKM5. Coordinate work, delegate to mini pkm5s when tasks can be isolated, and keep the conversation focused on the user's goals."
   ESCAPED_SYSTEM_PROMPT=${SYSTEM_PROMPT//\'/''}
   "$SQLITE_BIN" "$DB_PATH" <<SQL
 INSERT INTO agents(key, display_name, role, system_prompt, available_tools, model, description, enabled, created_at, updated_at, prompts)
 VALUES (
-  'ra-h',
-  'ra-h',
+  'pkm5',
+  'pkm5',
   'orchestrator',
   '$ESCAPED_SYSTEM_PROMPT',
   '$TOOLS_JSON',

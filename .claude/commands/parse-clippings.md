@@ -1,6 +1,6 @@
 # /parse-clippings — Process unread clippings and extract action items
 
-Find unprocessed clipping nodes in RA-H, extract decisions/actions, create links, promote inline `#action` items to task nodes.
+Find unprocessed clipping nodes in PKM5, extract decisions/actions, create links, promote inline `#action` items to task nodes.
 
 ## Input
 
@@ -40,27 +40,27 @@ For each clipping node, extract:
 
 For each identified action item:
 ```
-rah_add_node:
+pkm5_add_node:
   title: "<action item text>"
   dimensions: ["task", "<domain>", "pending"]
   description: "From clipping: <clipping title>"
   metadata: { due: "<parsed date if any>", source_clipping: <clipping_id> }
 ```
 
-Create edge: `rah_create_edge(taskId, clippingId, "action item extracted from")`
+Create edge: `pkm5_create_edge(taskId, clippingId, "action item extracted from")`
 
 ## Step 4: Link to people and projects
 
 For each mentioned person/project found in search:
 ```
-rah_create_edge(clippingId, personId, "mentions <Name>")
-rah_create_edge(clippingId, projectId, "related to project")
+pkm5_create_edge(clippingId, personId, "mentions <Name>")
+pkm5_create_edge(clippingId, projectId, "related to project")
 ```
 
 ## Step 5: Mark clipping as processed
 
 ```
-rah_update_node(id=clippingId, updates={
+pkm5_update_node(id=clippingId, updates={
   dimensions: ["clipping", "<domain>", "active"],  // remove 'pending', add 'active'
   metadata: { ...existing, processed_at: "<today>" }
 })

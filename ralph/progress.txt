@@ -1,7 +1,7 @@
 # Ralph Progress Log - RA-OS Strip-Down
 Started: Thu 29 Jan 2026 15:00:36 AEDT
-Branch: feature/rah-light
-Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
+Branch: feature/pkm5-light
+Goal: Strip pkm5 to lightweight 2-panel UI + MCP server
 
 ## Context
 - Auth/subscription already removed
@@ -12,29 +12,29 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
 - Completed: Thu 29 Jan 2026
 - Files deleted:
   - src/services/agents/delegation.ts
-  - app/api/rah/delegations/route.ts
-  - app/api/rah/delegations/stream/route.ts
-  - app/api/rah/delegations/[sessionId]/route.ts
-  - app/api/rah/delegations/[sessionId]/summary/route.ts
+  - app/api/pkm5/delegations/route.ts
+  - app/api/pkm5/delegations/stream/route.ts
+  - app/api/pkm5/delegations/[sessionId]/route.ts
+  - app/api/pkm5/delegations/[sessionId]/summary/route.ts
   - src/components/agents/DelegationIndicator.tsx
 - Files modified:
   - src/services/agents/workflowExecutor.ts (removed delegation streaming)
   - src/services/agents/quickAdd.ts (direct execution instead of delegation)
   - src/tools/orchestration/executeWorkflow.ts (direct execution)
-  - src/tools/orchestration/delegateToWiseRAH.ts (direct execution)
+  - src/tools/orchestration/delegateToWisePKM5.ts (direct execution)
   - app/api/workflows/execute/route.ts (direct execution)
   - src/components/layout/ThreePanelLayout.tsx (stub type, removed API calls)
-  - src/components/agents/RAHChat.tsx (stub type, stub voice hooks)
+  - src/components/agents/PKM5Chat.tsx (stub type, stub voice hooks)
   - src/components/agents/AgentsPanel.tsx (stub type)
-  - src/components/agents/MiniRAHPanel.tsx (stub type)
-  - src/components/agents/WiseRAHPanel.tsx (stub type)
+  - src/components/agents/MiniPKM5Panel.tsx (stub type)
+  - src/components/agents/WisePKM5Panel.tsx (stub type)
   - src/components/agents/QuickAddStatus.tsx (stub type)
   - src/components/panes/types.ts (stub type)
   - src/components/panes/WorkflowsPane.tsx (import from types.ts)
 - Learnings:
   - Delegation system was deeply integrated with workflows; had to refactor to direct execution
   - UI components that will be deleted later needed stub types to compile
-  - Voice hooks also needed stubs in RAHChat.tsx (will be cleaned up in Story 2)
+  - Voice hooks also needed stubs in PKM5Chat.tsx (will be cleaned up in Story 2)
 
 ## Story 2: Remove voice features
 - Completed: Thu 29 Jan 2026
@@ -47,17 +47,17 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - app/api/realtime/ephemeral-token/route.ts
   - src/services/voice/usageLogger.ts
 - Files modified:
-  - src/components/agents/RAHChat.tsx (removed all voice-related code and stub hooks)
+  - src/components/agents/PKM5Chat.tsx (removed all voice-related code and stub hooks)
   - src/components/agents/TerminalInput.tsx (removed voice props and voice UI)
 - Learnings:
   - Voice hooks were stubbed in Story 1, so removal was straightforward
   - TerminalInput had voice UI (amplitude bars, mic icons) that needed cleanup
   - No imports to these files from other parts of the codebase
 
-## Story 3: Remove orchestration tools (delegateToWiseRAH)
+## Story 3: Remove orchestration tools (delegateToWisePKM5)
 - Completed: Thu 29 Jan 2026
 - Files deleted:
-  - src/tools/orchestration/delegateToWiseRAH.ts
+  - src/tools/orchestration/delegateToWisePKM5.ts
   - tests/evals/scenarios/delegate-wise.ts
   - tests/evals/scenarios/delegate-mini.ts
 - Files modified:
@@ -65,7 +65,7 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - src/tools/infrastructure/groups.ts (removed from TOOL_GROUP_ASSIGNMENTS)
   - tests/evals/scenarios/index.ts (removed deleted test imports)
 - Learnings:
-  - delegateToMiniRAH test also removed since the tool never existed in the registry
+  - delegateToMiniPKM5 test also removed since the tool never existed in the registry
   - The tool was a thin wrapper around WorkflowExecutor, which remains for workflow functionality
   - Clean removal - no other files depended on this tool
 
@@ -73,8 +73,8 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
 - Completed: Thu 29 Jan 2026
 - Files deleted:
   - src/components/agents/AgentsPanel.tsx
-  - src/components/agents/MiniRAHPanel.tsx
-  - src/components/agents/WiseRAHPanel.tsx
+  - src/components/agents/MiniPKM5Panel.tsx
+  - src/components/agents/WisePKM5Panel.tsx
 - Files modified: None
 - Learnings:
   - These components were not imported anywhere in the codebase
@@ -84,12 +84,12 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
 ## Story 5: Remove chat API route
 - Completed: Thu 29 Jan 2026
 - Files deleted:
-  - app/api/rah/chat/route.ts
-  - app/api/rah/usage/route.ts
-  - app/api/rah/ (empty directory)
+  - app/api/pkm5/chat/route.ts
+  - app/api/pkm5/usage/route.ts
+  - app/api/pkm5/ (empty directory)
 - Files modified: None
 - Learnings:
-  - RAHChat.tsx still references /api/rah/chat endpoint (will be deleted in Story 7)
+  - PKM5Chat.tsx still references /api/pkm5/chat endpoint (will be deleted in Story 7)
   - Type-check passes because the endpoint URL is just a string constant
   - tests/evals/runner.ts also references this endpoint (evals won't work until cleaned up)
 
@@ -108,21 +108,21 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - Cmd+\ now opens node pane instead of chat
   - Layout still flexible (2-panel with split handle) but chat option removed
 
-## Story 7: Remove RAHChat component
+## Story 7: Remove PKM5Chat component
 - Completed: Thu 29 Jan 2026
 - Files deleted:
-  - src/components/agents/RAHChat.tsx
+  - src/components/agents/PKM5Chat.tsx
   - src/components/agents/TerminalInput.tsx
   - src/components/agents/TerminalMessage.tsx
   - src/components/agents/hooks/useSSEChat.ts
   - src/components/helpers/ReasoningTrace.tsx
   - src/components/helpers/ToolDisplay.tsx
 - Files modified:
-  - src/components/panes/WorkflowsPane.tsx (simplified - removed RAHChat, shows MCP integration message)
+  - src/components/panes/WorkflowsPane.tsx (simplified - removed PKM5Chat, shows MCP integration message)
 - Learnings:
-  - WorkflowsPane was heavily dependent on RAHChat for delegation detail views
+  - WorkflowsPane was heavily dependent on PKM5Chat for delegation detail views
   - Simplified WorkflowsPane to show a message about MCP integration
-  - ReasoningTrace and ToolDisplay were only used by RAHChat - safe to delete
+  - ReasoningTrace and ToolDisplay were only used by PKM5Chat - safe to delete
   - ~2000 lines of chat UI code removed
 
 ## Story 8: Clean up agent services
@@ -141,7 +141,7 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - src/services/agents/types.ts (AgentDefinition types - still referenced)
 - Learnings:
   - contextBuilder.ts was the bridge between agents and the chat system - with chat gone, it's unused
-  - registry.ts defined agent configurations (ra-h, ra-h-easy, workflow) used only by contextBuilder
+  - registry.ts defined agent configurations (pkm5, pkm5-easy, workflow) used only by contextBuilder
   - ai.ts was a standalone AIService class that was never imported anywhere
   - 776 lines of code removed
   - The remaining agent services are all used by MCP-accessible functionality
@@ -206,14 +206,14 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
   - apps/mcp-server/server.js (removed extraction tools)
   - apps/mcp-server/stdio-server.js (removed extraction tools)
 - Tools removed (called non-existent API routes):
-  - rah_extract_url (called /api/extract/url - doesn't exist)
-  - rah_extract_youtube (called /api/extract/youtube - doesn't exist)
-  - rah_extract_pdf (called /api/extract/pdf - doesn't exist)
+  - pkm5_extract_url (called /api/extract/url - doesn't exist)
+  - pkm5_extract_youtube (called /api/extract/youtube - doesn't exist)
+  - pkm5_extract_pdf (called /api/extract/pdf - doesn't exist)
 - Remaining 11 tools (all verified working):
-  - Node CRUD: rah_add_node, rah_search_nodes, rah_update_node, rah_get_nodes
-  - Edge CRUD: rah_create_edge, rah_query_edges, rah_update_edge
-  - Dimension CRUD: rah_create_dimension, rah_update_dimension, rah_delete_dimension
-  - Semantic search: rah_search_embeddings
+  - Node CRUD: pkm5_add_node, pkm5_search_nodes, pkm5_update_node, pkm5_get_nodes
+  - Edge CRUD: pkm5_create_edge, pkm5_query_edges, pkm5_update_edge
+  - Dimension CRUD: pkm5_create_dimension, pkm5_update_dimension, pkm5_delete_dimension
+  - Semantic search: pkm5_search_embeddings
 - Analysis:
   - MCP servers are pure API clients - no direct code dependencies
   - All tools use callRaHApi() to call Next.js API routes
@@ -228,7 +228,7 @@ Goal: Strip ra-h_os to lightweight 2-panel UI + MCP server
 - Files modified:
   - README.md (complete rewrite)
 - Changes:
-- Renamed from "RA-H Open Source" to "RA-OS"
+- Renamed from "PKM5 Open Source" to "RA-OS"
 - Added "What is RA-OS?" section explaining the stripped-down purpose
   - Explicitly list what's removed: chat agents, voice, delegation
   - Added comprehensive MCP integration section:

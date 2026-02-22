@@ -69,7 +69,7 @@ From weekly review contents, extract:
 ## Step 7: Create monthly review node
 
 ```
-rah_add_node:
+pkm5_add_node:
   title: "Monthly Review — 2026-02"
   dimensions: ["note", "admin"]
   content: |
@@ -103,7 +103,7 @@ rah_add_node:
 
 ## Step 8: Memory guide maintenance
 
-Review `rah_read_guide("memory")` for entries to promote or archive based on the month's evidence.
+Review `pkm5_read_guide("memory")` for entries to promote or archive based on the month's evidence.
 
 ## Edge cases
 

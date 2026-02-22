@@ -1,4 +1,4 @@
-# /parse-clc — Parse CLC-specific content into RA-H nodes
+# /parse-clc — Parse CLC-specific content into PKM5 nodes
 
 Process CLC (Competitive Landscape / Consortium) content and create structured nodes for companies, people, and relationships encountered.
 
@@ -12,8 +12,8 @@ Arguments: `$ARGUMENTS`
 
 ## Step 1: Identify source content
 
-If ID given: `rah_get_nodes([id])` to load content.
-If `search`: `rah_search_nodes(query="CLC", limit=10)` to find CLC-tagged nodes.
+If ID given: `pkm5_get_nodes([id])` to load content.
+If `search`: `pkm5_search_nodes(query="CLC", limit=10)` to find CLC-tagged nodes.
 If raw text: use directly.
 
 ## Step 2: Extract entities
@@ -28,7 +28,7 @@ From the CLC content, identify:
 
 For each company/person:
 ```
-rah_search_nodes(query="<name>", dimensions=["org"/"person"], limit=2)
+pkm5_search_nodes(query="<name>", dimensions=["org"/"person"], limit=2)
 ```
 
 Classify each as: resolved (existing) | new (create)
@@ -37,7 +37,7 @@ Classify each as: resolved (existing) | new (create)
 
 **New org**:
 ```
-rah_add_node:
+pkm5_add_node:
   title: "<Company Name>"
   dimensions: ["org", "<domain>"]
   metadata: { org-type: "partner/competitor/funder", aliases: ["<abbrev>"] }
@@ -46,27 +46,27 @@ rah_add_node:
 
 **New person**:
 ```
-rah_add_node:
+pkm5_add_node:
   title: "<Full Name>"
   dimensions: ["person", "<domain>"]
   metadata: { org: "<org name>", role: "<role>", cited: 1 }
 ```
 
-**Update existing** (if new info found): `rah_update_node` with updated metadata.
+**Update existing** (if new info found): `pkm5_update_node` with updated metadata.
 
 ## Step 5: Create relationship edges
 
 ```
-rah_create_edge(personId, orgId, "works at")
-rah_create_edge(org1Id, org2Id, "partners with in <project>")
-rah_create_edge(orgId, clippingId, "mentioned in")
+pkm5_create_edge(personId, orgId, "works at")
+pkm5_create_edge(org1Id, org2Id, "partners with in <project>")
+pkm5_create_edge(orgId, clippingId, "mentioned in")
 ```
 
 ## Step 6: Mark source as processed
 
 If source was a clipping node:
 ```
-rah_update_node(sourceId, updates={
+pkm5_update_node(sourceId, updates={
   dimensions: ["clipping", "<domain>", "active"]  // remove 'pending'
 })
 ```

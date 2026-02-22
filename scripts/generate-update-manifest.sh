@@ -4,8 +4,8 @@ set -euo pipefail
 # Generate a Tauri updater manifest for the universal DMG build.
 # Usage:
 #   scripts/generate-update-manifest.sh \
-#     --file dist/bundle/RA-H.dmg \
-#     --url https://updates.ra-h.app/dmg/RA-H.dmg \
+#     --file dist/bundle/PKM5.dmg \
+#     --url https://updates.pkm5.app/dmg/PKM5.dmg \
 #     --version 0.1.0 \
 #     --out dist/update/latest.json \
 #     [--notes release-notes.md] \

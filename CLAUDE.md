@@ -1,4 +1,4 @@
-# RA-H — Knowledge Management System
+# PKM5 — Knowledge Management System
 
 ## What This Is
 
@@ -11,7 +11,7 @@ LLM-powered personal knowledge graph. Local SQLite, fully on-device. Replaces Ob
 ## Quick Start
 
 ```bash
-cd "/Users/balazsfurjes/Cursor files/ra-h_os"
+cd "/Users/balazsfurjes/Cursor files/pkm5"
 npm run dev          # http://localhost:3000
 ```
 
@@ -20,7 +20,7 @@ MCP server (for Claude Code integration):
 node apps/mcp-server-standalone/index.js
 ```
 
-Database: `~/Library/Application Support/RA-H/db/rah.sqlite`
+Database: `~/Library/Application Support/PKM5/db/pkm5.sqlite`
 
 ---
 
@@ -46,26 +46,26 @@ Full reference: `.claude/guides/pkm-dimensions.md`
 
 ## Available MCP Tools
 
-All 14 tools via `ra-h-standalone` MCP server:
+All 14 tools via `pkm5-standalone` MCP server:
 
 | Tool | Purpose |
 |------|---------|
-| `rah_add_node` | Create a node (title, content, dimensions, metadata) |
-| `rah_search_nodes` | Keyword + semantic search with dimension filters |
-| `rah_get_nodes` | Load nodes by ID |
-| `rah_update_node` | Update node fields (title, content append, dimensions, metadata) |
-| `rah_create_edge` | Create directed edge between nodes |
-| `rah_update_edge` | Update edge explanation |
-| `rah_query_edges` | Find edges for a node |
-| `rah_list_dimensions` | List all dimensions |
-| `rah_create_dimension` | Create a new dimension |
-| `rah_update_dimension` | Update/rename a dimension |
-| `rah_delete_dimension` | Delete a dimension |
-| `rah_list_guides` | List available guides |
-| `rah_read_guide` | Read a guide by name |
-| `rah_write_guide` | Create/update a guide |
-| `rah_search_content` | Search within node chunks |
-| `rah_sqlite_query` | Execute read-only SQL queries |
+| `pkm5_add_node` | Create a node (title, content, dimensions, metadata) |
+| `pkm5_search_nodes` | Keyword + semantic search with dimension filters |
+| `pkm5_get_nodes` | Load nodes by ID |
+| `pkm5_update_node` | Update node fields (title, content append, dimensions, metadata) |
+| `pkm5_create_edge` | Create directed edge between nodes |
+| `pkm5_update_edge` | Update edge explanation |
+| `pkm5_query_edges` | Find edges for a node |
+| `pkm5_list_dimensions` | List all dimensions |
+| `pkm5_create_dimension` | Create a new dimension |
+| `pkm5_update_dimension` | Update/rename a dimension |
+| `pkm5_delete_dimension` | Delete a dimension |
+| `pkm5_list_guides` | List available guides |
+| `pkm5_read_guide` | Read a guide by name |
+| `pkm5_write_guide` | Create/update a guide |
+| `pkm5_search_content` | Search within node chunks |
+| `pkm5_sqlite_query` | Execute read-only SQL queries |
 
 ---
 
@@ -76,7 +76,7 @@ All 20 skills in `.claude/commands/`. Invoke with `/skill-name [args]`.
 ### Planning & Capture
 | Skill | Purpose |
 |-------|---------|
-| `/quick <text>` | Ultra-fast task capture → `rah_add_node` |
+| `/quick <text>` | Ultra-fast task capture → `pkm5_add_node` |
 | `/new <text>` | Full entity creation with edges |
 | `/dashboard [domain:X]` | Visual overview of pending work |
 | `/pending [domain:X]` | List pending tasks by urgency |
@@ -127,11 +127,11 @@ All 20 skills in `.claude/commands/`. Invoke with `/skill-name [args]`.
 
 ## Memory System
 
-The memory system uses RA-H guides (not MEMORY.md files).
+The memory system uses PKM5 guides (not MEMORY.md files).
 
 ```
-rah_read_guide("memory")          # Read curated memory
-rah_write_guide("memory", ...)    # Update memory guide
+pkm5_read_guide("memory")          # Read curated memory
+pkm5_write_guide("memory", ...)    # Update memory guide
 ```
 
 Guides in `.claude/guides/`:
@@ -160,12 +160,12 @@ Full reference: `.claude/docs/ingestion-modes.md`
 
 | Source | Method |
 |--------|--------|
-| Quick tasks | `/quick` skill → `rah_add_node` |
+| Quick tasks | `/quick` skill → `pkm5_add_node` |
 | Meetings | `/post-meeting` skill |
 | Email clippings | AppleScript → `POST /api/ingest/email` |
-| Web articles | RA-H chat → `websiteExtractTool` |
-| PDFs | RA-H chat → `paperExtractTool` |
-| YouTube | RA-H chat → `youtubeExtractTool` |
+| Web articles | PKM5 chat → `websiteExtractTool` |
+| PDFs | PKM5 chat → `paperExtractTool` |
+| YouTube | PKM5 chat → `youtubeExtractTool` |
 | Paperless docs | `scripts/paperless/ingest.py` (Phase 4) |
 
 ---
@@ -202,7 +202,7 @@ apps/
 
 scripts/
   migrate/
-    import_pkm2026.ts     # Obsidian → RA-H migration
+    import_pkm2026.ts     # Obsidian → PKM5 migration
 
 docs/
   2_schema.md             # Database schema
@@ -240,8 +240,8 @@ Full schema: `docs/2_schema.md`
 
 ## Infrastructure
 
-- **Neo4j** (Maci): stays operational for BIO-RED project graph — not replaced by RA-H
-- **Paperless-ngx** (Maci): document archive, linked to RA-H via `metadata.paperless_id`
+- **Neo4j** (Maci): stays operational for BIO-RED project graph — not replaced by PKM5
+- **Paperless-ngx** (Maci): document archive, linked to PKM5 via `metadata.paperless_id`
 - **Ollama** (Maci): local LLM for confidential content routing
 
 ---

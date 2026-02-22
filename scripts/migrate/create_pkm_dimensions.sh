@@ -1,8 +1,8 @@
 #!/bin/bash
 # create_pkm_dimensions.sh
 #
-# Create all PKM dimensions in RA-H via the HTTP API.
-# Run once after RA-H is started (npm run dev).
+# Create all PKM dimensions in PKM5 via the HTTP API.
+# Run once after PKM5 is started (npm run dev).
 #
 # Usage: bash scripts/migrate/create_pkm_dimensions.sh [--dry-run]
 
@@ -37,18 +37,18 @@ create_dimension() {
 }
 
 echo "========================================"
-echo "Creating PKM dimensions in RA-H"
+echo "Creating PKM dimensions in PKM5"
 echo "API: $RA_H_API"
 [ "$DRY_RUN" = "--dry-run" ] && echo "Mode: DRY RUN"
 echo "========================================"
 
-# Check RA-H is running
+# Check PKM5 is running
 if [ "$DRY_RUN" != "--dry-run" ]; then
   if ! curl -sf "$RA_H_API/health" > /dev/null 2>&1; then
-    echo "✗ RA-H API not reachable. Start with: npm run dev"
+    echo "✗ PKM5 API not reachable. Start with: npm run dev"
     exit 1
   fi
-  echo "✓ RA-H API reachable"
+  echo "✓ PKM5 API reachable"
 fi
 
 echo ""

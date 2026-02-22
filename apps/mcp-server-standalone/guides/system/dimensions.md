@@ -23,7 +23,7 @@ Dimensions are how nodes are categorized and organized. Think of them as flexibl
 
 ## Naming Conventions
 
-- Lowercase, concise (e.g., "ai", "philosophy", "ra-h")
+- Lowercase, concise (e.g., "ai", "philosophy", "pkm5")
 - Use singular form where natural
 - Avoid overlapping names (don't have both "ai" and "artificial-intelligence")
 
