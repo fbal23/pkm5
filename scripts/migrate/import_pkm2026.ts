@@ -285,7 +285,9 @@ async function apiPost(endpoint: string, body: unknown): Promise<{ id: number; [
     throw new Error(`API ${endpoint} failed (${res.status}): ${text}`);
   }
 
-  return res.json() as Promise<{ id: number; [key: string]: unknown }>;
+  const json = await res.json() as { success?: boolean; data?: { id: number; [key: string]: unknown }; id?: number; [key: string]: unknown };
+  // RA-H API wraps responses in { success, data: { id, ... } }
+  return (json.data ?? json) as { id: number; [key: string]: unknown };
 }
 
 // ---------------------------------------------------------------------------
