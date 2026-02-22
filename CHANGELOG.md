@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 2026-02-22
+
+**Outcome:** Renamed entire project from RA-H to PKM5 — all source files, env vars (RAH_ → PKM5_), MCP tool names (rah_ → pkm5_), package names, plist, and DB path updated. Database migrated to ~/Library/Application Support/PKM5/db/pkm5.sqlite. Directory renamed from ra-h_os to pkm5.
+**Files:** 128 files across src/, apps/, scripts/, .claude/, docs/, package.json, .mcp.json
+
 ## [0.1.0] - 2025-01-XX
 
 ### Added
