@@ -1,21 +1,87 @@
-# RA-OS Capture Shortcuts
+# RA-H Capture Shortcuts
 
-Two capture integrations: email via Apple Shortcuts, and files via a macOS Quick Action.
+Three capture integrations for iOS and macOS:
+- **Quick Task** — capture any task or note from iOS/macOS
+- **Email → RA-H** — add emails to the knowledge graph
+- **File → RA-H** — ingest PDFs, markdown, and documents
 
-Both require RA-OS running locally at `http://localhost:3000`.
+All shortcuts require RA-H running locally. From iOS, use Tailscale so your phone and MacBook share a VPN network — then replace `localhost` with your Mac's Tailscale IP (e.g. `100.x.x.x`).
 
 ---
 
-## 1. Email → Vault (Apple Shortcut)
+## 1. Quick Task Capture (iOS + macOS)
 
-Adds a "Add to RA-OS Vault" option to the Mail share sheet on macOS and iOS.
+Capture any task, idea, or note in a few taps. Supports `domain:X` and `due:YYYY-MM-DD` inline syntax.
+
+**Examples of valid input:**
+- `Review EIT Water proposal`
+- `domain:HAC26 Write executive summary due:2026-03-01`
+- `family: Call parents this weekend`
+
+### iOS Shortcut
+
+1. Open **Shortcuts** → New Shortcut → name it **"Add to RA-H"**
+2. Add these actions:
+
+**Action 1 — Ask for Input**
+- Input type: **Text**
+- Prompt: `Task or note (use domain:X, due:YYYY-MM-DD)`
+
+**Action 2 — Get Contents of URL**
+- URL: `http://localhost:3000/api/nodes` *(replace localhost with Tailscale IP for iOS)*
+- Method: **POST**
+- Headers: `Content-Type: application/json`
+- Request Body: **JSON**
+  ```json
+  {
+    "title": [Ask for Input result],
+    "dimensions": ["task", "pending"],
+    "metadata": {}
+  }
+  ```
+
+**Action 3 — Show Notification**
+- Title: **Captured**
+- Body: [Ask for Input result]
+
+3. Enable **"Show in Share Sheet"** and **"Show in Menu Bar"** (macOS) or **"Add to Home Screen"** (iOS)
+
+### macOS Menu Bar Shortcut
+
+Same shortcut works on macOS via the Shortcuts menu bar icon. Assign a keyboard shortcut (e.g. ⌘⇧T) in Shortcut settings → **Use as Quick Action**.
+
+### Parsing domain and due date (optional enhancement)
+
+If you want the shortcut to strip inline `domain:X` and `due:YYYY-MM-DD` from the title and populate metadata properly, use this Python snippet in a **Run Script over SSH** action (requires Tailscale + SSH to Mac):
+
+```bash
+python3 -c "
+import re, json, sys
+text = sys.argv[1]
+domain = re.search(r'domain:(\S+)', text)
+due = re.search(r'due:(\d{4}-\d{2}-\d{2})', text)
+title = re.sub(r'(domain:|due:)\S+', '', text).strip().strip(':').strip()
+dims = ['task', 'pending']
+if domain: dims.append(domain.group(1))
+meta = {}
+if due: meta['due'] = due.group(1)
+print(json.dumps({'title': title, 'dimensions': dims, 'metadata': meta}))
+" \"$1\"
+```
+
+Then POST the output directly to `/api/nodes`.
+
+---
+
+## 2. Email → RA-H (Apple Shortcut)
+
+Adds **"Add to RA-H"** to the Mail share sheet on macOS and iOS.
 
 ### Setup
 
-1. Open the **Shortcuts** app (macOS or iOS).
-2. Create a new Shortcut named **"Add to RA-OS Vault"**.
-3. Set **"Receive"** input to **Mail Message** from the share sheet.
-4. Add these actions in order:
+1. Open **Shortcuts** → New Shortcut → name it **"Add Email to RA-H"**
+2. Set **"Receive"** input to **Mail Message** from the share sheet.
+3. Add these actions:
 
 **Action 1 — Get Details of Mail Message**
 - Detail: **Subject** → save as `subject`
@@ -38,40 +104,32 @@ Adds a "Add to RA-OS Vault" option to the Mail share sheet on macOS and iOS.
   ```
 
 **Action 3 — Show Notification**
-- Title: **Added to RA-OS Vault**
-- Body: `[subject variable]`
+- Title: **Added to RA-H**
+- Body: [subject variable]
 
-5. In the shortcut settings, enable **"Show in Share Sheet"**.
+4. Enable **"Show in Share Sheet"**.
 
 ### Usage
 
-- **macOS Mail**: Select an email → click the Share button → "Add to RA-OS Vault"
-- **iOS Mail**: Open an email → tap the Share icon → scroll to find "Add to RA-OS Vault"
-
-### Using over a local network (iOS → Mac)
-
-The shortcut uses `localhost`. On iOS, replace `localhost` with your Mac's local IP address
-(e.g., `http://192.168.1.x:3000/api/ingest/email`) or use Tailscale so both devices share
-the same VPN network and `localhost` resolves via the Tailscale IP.
+- **macOS Mail**: select email → Share → "Add Email to RA-H"
+- **iOS Mail**: open email → tap Share → scroll to "Add Email to RA-H"
 
 ---
 
-## 2. File → Vault (macOS Quick Action)
+## 3. File → RA-H (macOS Quick Action)
 
-Adds "Add to RA-OS Vault" to Finder's right-click context menu.
+Adds **"Add to RA-H"** to Finder's right-click menu.
 
 **Supported formats:** PDF, TXT, Markdown (.md), Word (.docx)
 
 ### Setup via Automator
 
-1. Open **Automator** (Applications → Automator).
-2. Choose **New Document** → select **Quick Action**.
-3. Set:
-   - **Workflow receives current**: `files or folders` in `Finder`
-4. Add a **Run Shell Script** action:
+1. Open **Automator** → New Document → **Quick Action**
+2. Set **Workflow receives current**: `files or folders` in `Finder`
+3. Add a **Run Shell Script** action:
    - Shell: `/bin/bash`
    - Pass input: `as arguments`
-5. Paste this script:
+4. Paste this script:
 
 ```bash
 #!/bin/bash
@@ -86,35 +144,49 @@ HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | head -1)
 
 if [ "$HTTP_CODE" -eq 200 ]; then
-  TITLE=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('title','$FILENAME'))" 2>/dev/null || echo "$FILENAME")
-  osascript -e "display notification \"$TITLE\" with title \"Added to RA-OS Vault\""
+  TITLE=$(echo "$BODY" | python3 -c \
+    "import sys,json; print(json.load(sys.stdin).get('title','$FILENAME'))" 2>/dev/null \
+    || echo "$FILENAME")
+  osascript -e "display notification \"$TITLE\" with title \"Added to RA-H\""
 else
-  osascript -e "display notification \"Failed: HTTP $HTTP_CODE\" with title \"RA-OS Vault Error\""
+  osascript -e "display notification \"Failed: HTTP $HTTP_CODE\" with title \"RA-H Error\""
 fi
 ```
 
-6. Save as **"Add to RA-OS Vault"** (Automator saves it to `~/Library/Services/` automatically).
+5. Save as **"Add to RA-H"** (saved automatically to `~/Library/Services/`).
 
 ### Usage
 
-Right-click any supported file in Finder → **Services** → **Add to RA-OS Vault**
+Right-click any supported file in Finder → **Services** → **Add to RA-H**
 
-If "Services" is not visible in the context menu, go to **System Settings → Keyboard → Keyboard Shortcuts → Services** and enable the action.
+If "Services" isn't visible: **System Settings → Keyboard → Keyboard Shortcuts → Services** and enable it.
 
 ---
 
 ## API Reference
+
+### `POST /api/nodes` — Quick capture
+
+```json
+{
+  "title": "string (required)",
+  "dimensions": ["task", "pending", "admin"],
+  "metadata": { "due": "2026-03-01" },
+  "notes": "optional longer content"
+}
+```
+
+Returns `{ success, data: { id, title, dimensions, ... } }`.
 
 ### `POST /api/ingest/email`
 
 ```json
 {
   "subject": "string (required)",
-  "body":    "string (required)",
-  "from":    "string (required)",
-  "date":    "ISO 8601 string (required)",
-  "to":      "string (optional)",
-  "attachments": ["string"]
+  "body": "string (required)",
+  "from": "string (required)",
+  "date": "ISO 8601 string (required)",
+  "to": "string (optional)"
 }
 ```
 
@@ -124,11 +196,7 @@ Returns `{ success, nodeId, title }`.
 
 Multipart form upload with field `file`.
 
-Supported MIME types:
-- `application/pdf`
-- `text/plain`
-- `text/markdown`
-- `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+Supported MIME types: `application/pdf`, `text/plain`, `text/markdown`, `.docx`
 
 Returns `{ success, nodeId, title, fileType, textLength }`.
 
@@ -137,16 +205,27 @@ Returns `{ success, nodeId, title, fileType, textLength }`.
 ## Verification
 
 ```bash
-# Test email ingest
+# Quick task capture
+curl -X POST http://localhost:3000/api/nodes \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test task from shortcut","dimensions":["task","pending","admin"],"metadata":{"due":"2026-03-01"}}'
+
+# Email ingest
 curl -X POST http://localhost:3000/api/ingest/email \
   -H "Content-Type: application/json" \
-  -d '{"subject":"Test Email","body":"Hello world","from":"test@example.com","date":"2026-02-19T10:00:00Z"}'
+  -d '{"subject":"Test","body":"Hello","from":"test@example.com","date":"2026-02-22T10:00:00Z"}'
 
-# Test file upload (txt)
+# File upload
 echo "My notes" > /tmp/test.txt
 curl -F "file=@/tmp/test.txt" http://localhost:3000/api/extract/file/upload
-
-# Test file upload (markdown)
-echo "# My Header\nSome content" > /tmp/test.md
-curl -F "file=@/tmp/test.md" http://localhost:3000/api/extract/file/upload
 ```
+
+---
+
+## Tailscale setup (iOS → MacBook)
+
+1. Install Tailscale on both iPhone and MacBook
+2. Sign in with the same account
+3. Find your MacBook's Tailscale IP: `tailscale ip -4`
+4. In all shortcuts, replace `localhost` with that IP (e.g. `100.x.x.x`)
+5. RA-H must be running on the MacBook (`npm run dev` or production build)
