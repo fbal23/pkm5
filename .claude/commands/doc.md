@@ -31,7 +31,7 @@ Authorization: Token <token>
 
 For each result, also search RA-H for linked nodes:
 ```sql
-SELECT n.id, n.title, GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+SELECT n.id, n.title, GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
 WHERE json_extract(n.metadata, '$.paperless_id') = <paperless_doc_id>
 GROUP BY n.id

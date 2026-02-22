@@ -26,9 +26,9 @@ Query tasks that were due today:
 SELECT n.id, n.title,
   json_extract(n.metadata, '$.due') AS due,
   json_extract(n.metadata, '$.completed_at') AS completed_at,
-  GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+  GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'task')
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'task')
   AND json_extract(n.metadata, '$.due') = '<date>'
 GROUP BY n.id
 ```

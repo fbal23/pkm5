@@ -18,7 +18,7 @@ First and last day of the target month.
 ```sql
 SELECT n.id, n.title, n.content
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE nd.dimension_name = 'note'
+WHERE nd.dimension = 'note'
   AND n.title LIKE 'Weekly Review — %'
   AND json_extract(n.metadata, '$.date_range') LIKE '<YYYY-MM>%'
   OR (n.created_at BETWEEN '<first>' AND '<last>' AND n.title LIKE 'Weekly Review — %')
@@ -29,15 +29,15 @@ ORDER BY n.created_at ASC
 
 ```sql
 SELECT
-  nd2.dimension_name AS domain,
+  nd2.dimension AS domain,
   COUNT(*) AS completed_tasks
 FROM nodes n
-JOIN node_dimensions nd ON nd.node_id = n.id AND nd.dimension_name = 'task'
+JOIN node_dimensions nd ON nd.node_id = n.id AND nd.dimension = 'task'
 JOIN node_dimensions nd2 ON nd2.node_id = n.id
-JOIN node_dimensions nd3 ON nd3.node_id = n.id AND nd3.dimension_name = 'complete'
+JOIN node_dimensions nd3 ON nd3.node_id = n.id AND nd3.dimension = 'complete'
 WHERE json_extract(n.metadata, '$.completed_at') BETWEEN '<first>' AND '<last>'
-  AND nd2.dimension_name NOT IN ('task', 'complete', 'pending', 'active', 'archived')
-GROUP BY nd2.dimension_name
+  AND nd2.dimension NOT IN ('task', 'complete', 'pending', 'active', 'archived')
+GROUP BY nd2.dimension
 ORDER BY completed_tasks DESC
 ```
 
@@ -45,12 +45,12 @@ ORDER BY completed_tasks DESC
 
 ```sql
 SELECT
-  nd.dimension_name AS type_or_domain,
+  nd.dimension AS type_or_domain,
   COUNT(*) AS created
 FROM nodes n
 JOIN node_dimensions nd ON nd.node_id = n.id
 WHERE n.created_at BETWEEN '<first>' AND '<last>'
-GROUP BY nd.dimension_name
+GROUP BY nd.dimension
 ORDER BY created DESC
 ```
 

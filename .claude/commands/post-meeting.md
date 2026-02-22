@@ -119,11 +119,50 @@ If yes: `rah_add_node(title="<insight>", dimensions=["insight", "<domain>"], des
 Next: run /consolidate to promote #action items to task nodes.
 ```
 
-## LLM routing
+## LLM routing policy
 
-If `metadata.confidential == true` is flagged during extraction:
-- Set `metadata.confidential: true` on the meeting node
-- Do not route content to cloud for synthesis — process locally
+### Step 2a: Classify the meeting
+
+Before extracting structured data, determine confidentiality using this priority order:
+
+| Condition | Classification | Confidence |
+|-----------|---------------|------------|
+| User explicitly says "confidential" or "private" | Confidential | 1.0 |
+| Meeting involves board-level decisions, HR matters, legal issues, personal grievances, or compensation | Confidential | 0.9 |
+| Meeting domain has past confidential meetings (check RA-H for `domain + meeting + confidential:true`) | Confidential | 0.7 |
+| Participants are all internal (same org) and topic is operational | Public | 0.7 |
+| No signal | Public (default) | 0.5 |
+
+Ask once if unclear: "Should this meeting be stored as confidential? (yes/no)"
+
+### Routing behaviour by classification
+
+**Public meeting** (default):
+- Claude extracts all fields, generates governance observations, suggests memory updates freely
+- `metadata.confidential: false` on the node
+
+**Confidential meeting**:
+- Claude DOES: create the meeting node, create attendee edges, update person `last`/`cited` counts
+- Claude DOES NOT:
+  - Include governance observations in the `description` field (description is indexed for search — keep it generic: "Meeting on YYYY-MM-DD with [Names]")
+  - Suggest adding specific insights to the memory guide (memory guide is cloud-accessible)
+  - Produce a synthesis that could appear in future cloud context windows
+- Set `metadata.confidential: true` on the node
+- Content section (full notes) is still stored — it lives in local SQLite only
+- For Step 7 (memory suggestions): skip entirely if confidential
+
+### Local Ollama for confidential analysis
+
+If the user later wants to analyse a confidential meeting node, direct them to:
+```bash
+# Get node content
+sqlite3 ~/Library/Application\ Support/RA-H/db/rah.sqlite \
+  "SELECT notes FROM nodes WHERE id = <node_id>"
+
+# Analyse locally (Maci, requires Tailscale)
+curl http://100.100.142.16:11434/api/generate \
+  -d '{"model":"qwen2.5:32b","stream":false,"prompt":"<meeting content>\n\nExtract action items and key decisions."}'
+```
 
 ## Edge cases
 

@@ -16,11 +16,11 @@ Arguments: `$ARGUMENTS`
 SELECT n.id, n.title, n.content,
   json_extract(n.metadata, '$.from') AS sender,
   json_extract(n.metadata, '$.subject') AS subject,
-  GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+  GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n
 JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'clipping')
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'pending')
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'clipping')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'pending')
 GROUP BY n.id
 ORDER BY n.created_at ASC
 LIMIT 20

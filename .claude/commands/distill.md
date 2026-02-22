@@ -23,7 +23,7 @@ Example: `/distill query:"BIO-RED value chain methodology" domain:BIO-RED`
 ```sql
 SELECT n.id, n.title, n.content
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE nd.dimension_name = '<domain>'
+WHERE nd.dimension = '<domain>'
   AND n.created_at > date('now', '-30 days')
 ORDER BY n.created_at DESC LIMIT 15
 ```

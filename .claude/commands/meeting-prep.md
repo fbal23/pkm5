@@ -49,12 +49,12 @@ Load the org node content for context.
 SELECT n.id, n.title,
   json_extract(n.metadata, '$.due') AS due,
   json_extract(n.metadata, '$.confidential') AS confidential,
-  GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+  GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n
 JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'commitment')
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name IN ('pending','active'))
-  AND (n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = '<domain>'))
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'commitment')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension IN ('pending','active'))
+  AND (n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = '<domain>'))
 ORDER BY due ASC NULLS LAST
 ```
 
@@ -109,11 +109,45 @@ Summary:
 - Past meetings: N on file
 - Memory mentions: N
 
-## LLM routing
+## LLM routing policy
 
-- Confidential commitment nodes: show title only, redact details
-- Confidential meeting notes: summarise locally (do not send to cloud)
-- All other content: Claude handles directly
+Apply per-node routing as context is loaded. Priority order:
+
+| Condition | Route | Action |
+|-----------|-------|--------|
+| `metadata.confidential == true` on any node | **Local** (certain) | Redact content; show title + date + 🔒 only |
+| Node is a commitment or meeting with no confidential flag | **Cloud** | Show full content |
+| Org/person context | **Cloud** | Always safe to show |
+
+### Confidential node handling (applies to commitments, past meetings, and related notes)
+
+**Commitments**: show title + due date + domain only. Replace body with `[confidential]`.
+```
+- **[confidential]** (EIT Water) — due 2026-03-15 (21 days)
+```
+
+**Past meeting notes**: show date + title only. Do not show preview or content.
+```
+- **2026-02-10** — [confidential meeting]  🔒
+```
+
+**Related notes/tasks**: if confidential, show title only, no preview.
+
+### Synthesis rules
+
+Claude may synthesise freely from non-confidential nodes.
+
+For confidential nodes, do NOT include their content in any synthesis or summary. Instead note:
+```
+🔒 N confidential item(s) loaded but withheld from synthesis.
+```
+
+If the user needs to reason about confidential content during prep, direct to Maci Ollama:
+```bash
+curl http://100.100.142.16:11434/api/generate \
+  -d '{"model":"qwen2.5:32b","stream":false,"prompt":"<confidential content>\n\nSummarise key points for a meeting prep."}'
+```
+Requires Tailscale active. Model: `qwen2.5:32b` on Maci (`http://100.100.142.16:11434`).
 
 ## Edge cases
 

@@ -18,7 +18,7 @@ Q1: Jan–Mar | Q2: Apr–Jun | Q3: Jul–Sep | Q4: Oct–Dec
 ```sql
 SELECT n.id, n.title, n.content
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE nd.dimension_name = 'note'
+WHERE nd.dimension = 'note'
   AND n.title LIKE 'Monthly Review — %'
   AND n.created_at BETWEEN '<quarter_start>' AND '<quarter_end>'
 ORDER BY n.created_at ASC
@@ -27,14 +27,14 @@ ORDER BY n.created_at ASC
 ## Step 3: Load domain-level task completion over the quarter
 
 ```sql
-SELECT nd2.dimension_name AS domain, COUNT(*) AS completed
+SELECT nd2.dimension AS domain, COUNT(*) AS completed
 FROM nodes n
-JOIN node_dimensions nd ON nd.node_id = n.id AND nd.dimension_name = 'task'
+JOIN node_dimensions nd ON nd.node_id = n.id AND nd.dimension = 'task'
 JOIN node_dimensions nd2 ON nd2.node_id = n.id
-JOIN node_dimensions nd3 ON nd3.node_id = n.id AND nd3.dimension_name = 'complete'
+JOIN node_dimensions nd3 ON nd3.node_id = n.id AND nd3.dimension = 'complete'
 WHERE json_extract(n.metadata, '$.completed_at') BETWEEN '<start>' AND '<end>'
-  AND nd2.dimension_name NOT IN ('task','complete','pending','active','archived','insight','proposal','memory-log')
-GROUP BY nd2.dimension_name
+  AND nd2.dimension NOT IN ('task','complete','pending','active','archived','insight','proposal','memory-log')
+GROUP BY nd2.dimension
 ORDER BY completed DESC
 ```
 

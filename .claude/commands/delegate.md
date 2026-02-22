@@ -70,9 +70,9 @@ rah_sqlite_query:
 SELECT n.title, json_extract(n.metadata, '$.delegated_to') AS delegate,
   json_extract(n.metadata, '$.due') AS due
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE nd.dimension_name = 'task'
+WHERE nd.dimension = 'task'
   AND json_extract(n.metadata, '$.delegated_to') IS NOT NULL
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'pending')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'pending')
 ORDER BY due ASC
 ```
 

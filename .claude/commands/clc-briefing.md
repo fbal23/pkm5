@@ -13,10 +13,10 @@ Arguments: `$ARGUMENTS`
 
 ```sql
 SELECT n.id, n.title, n.content, n.metadata,
-  GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+  GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'org')
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = '<domain>')
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'org')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = '<domain>')
 GROUP BY n.id ORDER BY n.title
 ```
 
@@ -25,8 +25,8 @@ GROUP BY n.id ORDER BY n.title
 ```sql
 SELECT n.id, n.title, n.metadata
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'person')
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = '<domain>')
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'person')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = '<domain>')
 GROUP BY n.id ORDER BY json_extract(n.metadata, '$.last') DESC NULLS LAST
 ```
 
@@ -36,8 +36,8 @@ GROUP BY n.id ORDER BY json_extract(n.metadata, '$.last') DESC NULLS LAST
 SELECT n.id, n.title, json_extract(n.metadata, '$.from') AS sender,
   json_extract(n.metadata, '$.subject') AS subject
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'clipping')
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = '<domain>')
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'clipping')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = '<domain>')
   AND n.created_at > date('now', '-30 days')
 GROUP BY n.id ORDER BY n.created_at DESC LIMIT 10
 ```

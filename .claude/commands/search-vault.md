@@ -22,47 +22,75 @@ Use `rah_search_nodes` with the query. Pass domain and type as dimension filters
 
 If keyword search returns fewer than 3 results, also run `rah_search_content` with the same query to search across node chunks.
 
-## Step 3: Handle confidential content
+## Step 3: Apply LLM routing policy per result
 
-For each result, check `metadata.confidential`:
+For each result node, evaluate routing using this priority order:
 
-- **Not confidential** (default): Claude answers directly using the node content
-- **Confidential** (`metadata.confidential == true`): Route to local LLM
+### Routing decision table
 
-For confidential content routing:
+| Condition | Route | Action |
+|-----------|-------|--------|
+| `metadata.confidential == true` | **Local** (priority 1, certain) | Withhold content; show title + date only; note at end |
+| Query is simple task (`summarize`, `list`, `extract`, `classify`, `format`, `convert`) | **Local** (priority 2, 0.7 confidence) | Process via Maci Ollama — see local call below |
+| Query is complex reasoning (`analyze`, `synthesize`, `plan`, `evaluate`, `recommend`, `compare`) | **Cloud** (priority 3, 0.7 confidence) | Claude answers directly |
+| No signal | **Cloud** (default, 0.5 confidence) | Claude answers directly |
+
+### For confidential nodes (route = local)
+
+Do NOT include node content in your response. Display:
+
 ```
-The following content is flagged confidential.
-Route synthesis to Maci local LLM (Qwen 2.5 32B via Ollama).
-Do not include confidential content in the main response.
-Note: "N confidential nodes found — synthesised locally."
+### N. <Node Title>  🔒 confidential
+**Type**: meeting | **Domain**: EIT Water | **Date**: 2026-02-15
+[Content withheld — confidential flag set]
 ```
+
+To process a confidential node locally, the user can run:
+```bash
+curl http://100.100.142.16:11434/api/generate \
+  -d '{"model":"qwen2.5:32b","stream":false,"prompt":"<paste node content here>\n\nQuestion: <query>"}'
+```
+Maci Ollama endpoint: `http://100.100.142.16:11434` — requires Tailscale to be active.
+
+### For non-confidential nodes (route = cloud)
+
+Include full content in synthesis. Claude answers directly.
 
 ## Step 4: Display results
 
 ```
 ## Search: "<query>" [domain: X | type: Y]
-Found N results
+Found N results (N public, M confidential 🔒)
 
 ### 1. Node Title
 **Type**: meeting | **Domain**: EIT Water
 **Date**: 2026-02-15
-**Relevance**: high
 
 > Description or first 200 chars of content...
 
 ---
 
-### 2. ...
+### 2. Node Title  🔒 confidential
+**Type**: commitment | **Domain**: EIT Water
+[Content withheld — confidential flag set]
+
+---
 ```
 
 ## Step 5: Synthesise answer
 
-After showing results, synthesise a direct answer to the query using the retrieved context. Attribute each claim:
-- Public content: answered directly
-- Confidential content: "synthesised locally (not shown)"
+Synthesise a direct answer using only non-confidential content. Attribute each claim.
+
+If confidential nodes were withheld, append:
+```
+---
+🔒 N confidential node(s) matched but were withheld.
+To query them locally: curl http://100.100.142.16:11434/api/generate \
+  -d '{"model":"qwen2.5:32b","stream":false,"prompt":"<content>\n\nQuestion: <query>"}'
+```
 
 ## Edge cases
 
 - No results: "No matches found for '<query>'. Try broader terms or check dimensions."
 - Query too short: expand before searching
-- All results confidential: "All matches are confidential — routing to local LLM for synthesis."
+- All results confidential: "All N matches are confidential 🔒 — no public content to synthesise. Use local Ollama to query them."

@@ -19,7 +19,7 @@ Calculate Monday and Sunday dates for the target week.
 SELECT n.id, n.title, n.content, n.created_at
 FROM nodes n
 JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE nd.dimension_name = 'note'
+WHERE nd.dimension = 'note'
   AND n.title LIKE 'Daily Plan — %'
   AND n.created_at BETWEEN '<monday>' AND '<sunday>'
 ORDER BY n.created_at ASC
@@ -30,10 +30,10 @@ ORDER BY n.created_at ASC
 ```sql
 SELECT n.id, n.title,
   json_extract(n.metadata, '$.completed_at') AS completed_at,
-  GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+  GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'task')
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'complete')
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'task')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'complete')
   AND json_extract(n.metadata, '$.completed_at') BETWEEN '<monday>' AND '<sunday>'
 GROUP BY n.id
 ```
@@ -41,7 +41,7 @@ GROUP BY n.id
 ## Step 4: Load created nodes for the week
 
 ```sql
-SELECT id, title, GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+SELECT id, title, GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
 WHERE n.created_at BETWEEN '<monday>' AND '<sunday>'
 GROUP BY n.id ORDER BY n.created_at ASC

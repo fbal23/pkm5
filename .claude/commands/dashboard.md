@@ -18,11 +18,11 @@ Run these queries (use `rah_sqlite_query`):
 ```sql
 SELECT n.id, n.title,
   json_extract(n.metadata, '$.due') AS due,
-  GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+  GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n
 JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'task')
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'pending')
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'task')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'pending')
 GROUP BY n.id ORDER BY due ASC NULLS LAST LIMIT 30
 ```
 
@@ -30,11 +30,11 @@ GROUP BY n.id ORDER BY due ASC NULLS LAST LIMIT 30
 ```sql
 SELECT n.id, n.title,
   json_extract(n.metadata, '$.outcome') AS outcome,
-  GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+  GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n
 JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'project')
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'active')
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'project')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'active')
 GROUP BY n.id ORDER BY n.created_at DESC LIMIT 10
 ```
 
@@ -43,11 +43,11 @@ GROUP BY n.id ORDER BY n.created_at DESC LIMIT 10
 SELECT n.id, n.title,
   json_extract(n.metadata, '$.due') AS due,
   json_extract(n.metadata, '$.confidential') AS confidential,
-  GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+  GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n
 JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'commitment')
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name IN ('pending', 'active'))
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'commitment')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension IN ('pending', 'active'))
 GROUP BY n.id ORDER BY due ASC NULLS LAST LIMIT 10
 ```
 
@@ -56,11 +56,11 @@ GROUP BY n.id ORDER BY due ASC NULLS LAST LIMIT 10
 SELECT n.id, n.title,
   json_extract(n.metadata, '$.from') AS sender,
   json_extract(n.metadata, '$.subject') AS subject,
-  GROUP_CONCAT(nd.dimension_name, '|') AS dimensions
+  GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n
 JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'clipping')
-  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension_name = 'pending')
+WHERE n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'clipping')
+  AND n.id IN (SELECT node_id FROM node_dimensions WHERE dimension = 'pending')
 GROUP BY n.id ORDER BY n.created_at DESC LIMIT 10
 ```
 

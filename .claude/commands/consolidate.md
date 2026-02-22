@@ -18,7 +18,7 @@ Find meeting and clipping nodes containing `#action` tagged items that haven't b
 ```sql
 SELECT n.id, n.title, n.content
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE nd.dimension_name IN ('meeting', 'clipping')
+WHERE nd.dimension IN ('meeting', 'clipping')
   AND n.content LIKE '%#action%'
   AND n.id NOT IN (
     SELECT e.source_id FROM edges e WHERE e.explanation LIKE 'action item extracted from%'
@@ -74,7 +74,7 @@ Find person and org nodes where `metadata.last` is >90 days old or `metadata.cit
 ```sql
 SELECT n.id, n.title, n.metadata
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
-WHERE nd.dimension_name = 'person'
+WHERE nd.dimension = 'person'
   AND (
     json_extract(n.metadata, '$.last') < date('now', '-90 days')
     OR json_extract(n.metadata, '$.cited') = 0
