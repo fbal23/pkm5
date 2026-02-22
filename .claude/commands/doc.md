@@ -1,39 +1,44 @@
-# /doc — Search Paperless-ngx documents and their linked RA-H nodes
+# /doc — Search and manage Paperless-ngx documents
 
-Search for documents in Paperless-ngx, show their linked RA-H nodes, and optionally ingest new documents.
+Search for documents in Paperless-ngx, show their linked RA-H nodes, and trigger ingestion.
 
 ## Input
 
 Arguments: `$ARGUMENTS`
 
-- Search text → search Paperless for matching documents
-- `ingest` → trigger Paperless → RA-H ingest pipeline
-- `orphans` → show Paperless docs with no RA-H node
+- Search text → search Paperless for matching documents (Mode 1)
+- `ingest` → ingest unlinked Paperless docs into RA-H (Mode 2)
+- `orphans` → list Paperless docs with no RA-H node (Mode 3)
+- `enrich` → fetch OCR content for nodes missing it (Mode 4)
 
 ## Setup check
 
-Read Paperless token:
 ```bash
 cat ~/.config/pkm/paperless_token
 ```
 
 If missing: "Set up Paperless token: `echo 'TOKEN' > ~/.config/pkm/paperless_token`"
 
-Paperless base URL: `http://maci:8000` (adjust if different).
+Paperless runs on Maci via Docker (port 8000). Access via SSH tunnel — the scripts handle this automatically.
 
 ## Mode 1: Search documents
 
-Call Paperless API:
-```
-GET http://maci:8000/api/documents/?search=<query>&page_size=10
-Authorization: Token <token>
+Open SSH tunnel and call Paperless API:
+```bash
+# Open tunnel in background (if not already open)
+ssh -N -L 18000:localhost:8000 maci &
+sleep 2
+TOKEN=$(cat ~/.config/pkm/paperless_token)
+curl -s "http://localhost:18000/api/documents/?search=<query>&page_size=10" \
+  -H "Authorization: Token $TOKEN" | jq '.results[] | {id, title, created, correspondent}'
 ```
 
-For each result, also search RA-H for linked nodes:
+For each result, also find linked RA-H nodes:
 ```sql
 SELECT n.id, n.title, GROUP_CONCAT(nd.dimension, '|') AS dimensions
 FROM nodes n JOIN node_dimensions nd ON nd.node_id = n.id
 WHERE json_extract(n.metadata, '$.paperless_id') = <paperless_doc_id>
+   OR json_extract(n.metadata, '$.obsidian.paperless_id') = <paperless_doc_id>
 GROUP BY n.id
 ```
 
@@ -50,48 +55,56 @@ Linked RA-H nodes:
   · [clipping] Budget email thread (ID: 91)
 
 ---
-
-### 2. ...
 ```
+
+If no RA-H nodes found for a document, note: "Not yet ingested — run `/doc ingest` to link"
 
 ## Mode 2: Ingest new documents
 
-Find Paperless documents without a corresponding RA-H node:
-```
-GET http://maci:8000/api/documents/?page_size=100
-```
-
-Cross-reference: `SELECT json_extract(metadata, '$.paperless_id') FROM nodes`
-
-For each unlinked document, create RA-H node:
-```
-rah_add_node:
-  title: "<Paperless doc title>"
-  dimensions: ["clipping", "<inferred domain>", "pending"]
-  content: "<OCR text from Paperless>"
-  metadata: {
-    paperless_id: <id>,
-    correspondent: "<name>",
-    paperless_created: "<date>",
-    tags: ["<tag1>", "<tag2>"]
-  }
+Run the ingestion script:
+```bash
+cd /Users/balazsfurjes/Cursor\ files/ra-h_os
+python scripts/paperless/ingest.py --mode ingest
 ```
 
-Infer domain from Paperless correspondent/tags using domain keywords.
+For a dry run first:
+```bash
+python scripts/paperless/ingest.py --mode ingest --dry-run
+```
+
+The script:
+- Finds Paperless docs with no linked RA-H node
+- Creates `clipping` nodes with domain inferred from `domain:` tags
+- Fetches OCR content and stores it in the node
+- Creates edges to correspondent person/org nodes
 
 ## Mode 3: Find orphan documents
 
-Show Paperless docs that have no RA-H node:
-```
-All Paperless IDs: from API
-Linked IDs: SELECT json_extract(metadata, '$.paperless_id') FROM nodes WHERE ...
-Orphans = All - Linked
+```bash
+python scripts/paperless/ingest.py --mode orphans
 ```
 
-Display orphan list with Paperless IDs and titles for batch ingest.
+Shows a table of all Paperless docs with no RA-H node, grouped by domain/correspondent.
+
+## Mode 4: Enrich with OCR content
+
+```bash
+python scripts/paperless/ingest.py --mode enrich
+```
+
+Fetches full OCR text for existing RA-H nodes that have a `paperless_id` but no OCR content yet.
+
+Use `--force` to re-fetch even if already enriched.
+
+## Run all modes
+
+```bash
+python scripts/paperless/ingest.py --mode all
+```
 
 ## Edge cases
 
-- Paperless unreachable: "Paperless unavailable at maci:8000 — check if Docker is running."
-- No token: show setup instructions
-- Document already linked: skip (don't create duplicate)
+- Paperless unreachable: script exits with clear error + instructions to check Docker on Maci
+- No token: reads from `~/.config/pkm/paperless_token` or falls back to hardcoded value
+- Document already linked: skipped automatically (no duplicates)
+- RA-H not running: ingest mode exits with instructions to start `npm run dev`; enrich mode uses direct SQLite and works without the server
